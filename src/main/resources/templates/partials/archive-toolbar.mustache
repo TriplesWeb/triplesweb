@@ -5,10 +5,10 @@
         {{#hasCombo}}<input type="hidden" name="combo" value="{{comboValue}}">{{/hasCombo}}
         {{#hasSourceFilter}}<input type="hidden" name="source" value="{{sourceKey}}">{{/hasSourceFilter}}
         <input type="hidden" name="size" value="{{archiveSize}}" data-archive-filter-size>
-        <div class="ar-filter-tools">
-            <div class="ar-sort">
-                <span class="ar-sort-label" id="archiveSortLabel">정렬</span>
-                <span class="ar-sort-control">
+        <div class="ar-filter-tools objekt-filter-bar">
+            <div class="objekt-filter ar-sort relative">
+                <span class="objekt-filter-label" id="archiveSortLabel">정렬</span>
+                <span class="ar-sort-control objekt-filter-control objekt-filter-select-wrap">
                     <select id="archiveSort" name="sort" aria-labelledby="archiveSortLabel">
                         <option value="newest"{{#sortNewest}} selected{{/sortNewest}}>최신순</option>
                         <option value="oldest"{{#sortOldest}} selected{{/sortOldest}}>오래된 순</option>
@@ -20,7 +20,7 @@
                         <option value="last-member" data-member-sort{{#sortLastMember}} selected{{/sortLastMember}}>멤버번호 높은순</option>
                         {{/folderIsSolo}}
                     </select>
-                    <span class="material-symbols-outlined" aria-hidden="true">arrow_drop_down</span>
+                    <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
                 </span>
             </div>
             {{>partials/date-range-filter}}
@@ -33,19 +33,25 @@
             </select>
             {{/showChemistryFilter}}
             {{#showMemberFilter}}
-            <button type="button" class="ar-member-toggle" id="archiveMemberToggle" aria-expanded="false" aria-controls="archiveMemberPanel">
-                <span class="material-symbols-outlined" aria-hidden="true">group</span>
-                <span data-member-toggle-label>{{#showChemistryFilter}}멤버 · 케미{{/showChemistryFilter}}{{^showChemistryFilter}}멤버 선택{{/showChemistryFilter}}</span>
-                <span class="ar-member-count" id="archiveMemberCount" hidden>0</span>
-                <span class="material-symbols-outlined ar-member-chevron" aria-hidden="true">expand_more</span>
-            </button>
+            <div class="objekt-filter ar-member-filter relative{{#hasSelectedMembers}} is-filtered{{/hasSelectedMembers}}">
+                <span class="objekt-filter-label">멤버</span>
+                <button type="button" class="ar-member-toggle objekt-filter-control" id="archiveMemberToggle" aria-expanded="false" aria-controls="archiveMemberPanel">
+                    <span data-member-toggle-label class="truncate">{{#showChemistryFilter}}멤버 · 케미{{/showChemistryFilter}}{{^showChemistryFilter}}멤버 선택{{/showChemistryFilter}}</span>
+                    <span class="ar-member-count" id="archiveMemberCount" hidden>0</span>
+                    <span class="material-symbols-outlined objekt-filter-caret ar-member-chevron" aria-hidden="true">expand_more</span>
+                </button>
+            </div>
             {{/showMemberFilter}}
-            <div class="ar-search-row">
-                <label class="ar-search-wrap">
-                    <span class="material-symbols-outlined" aria-hidden="true">search</span>
-                    <input class="ar-search" type="search" name="q" value="{{query}}" placeholder="{{#imageArchive}}사진 설명 검색{{/imageArchive}}{{^imageArchive}}영상 제목 검색{{/imageArchive}}" aria-label="{{#imageArchive}}사진 설명 검색{{/imageArchive}}{{^imageArchive}}영상 제목 검색{{/imageArchive}}">
-                </label>
-                <a class="site-btn site-btn--reset ar-reset" href="{{archiveHomePath}}"{{^hasActiveArchiveFilters}} hidden{{/hasActiveArchiveFilters}}>초기화</a>
+            <div class="ar-search-row objekt-search-row">
+                <div class="ar-search-wrap objekt-search site-search">
+                    <span class="objekt-search-glyph" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>
+                    </span>
+                    <label class="ar-search-field">
+                        <input class="ar-search objekt-search-input site-search__input" type="search" name="q" value="{{query}}" placeholder="{{#imageArchive}}사진 설명 검색{{/imageArchive}}{{^imageArchive}}영상 제목 검색{{/imageArchive}}" aria-label="{{#imageArchive}}사진 설명 검색{{/imageArchive}}{{^imageArchive}}영상 제목 검색{{/imageArchive}}" autocomplete="off">
+                    </label>
+                </div>
+                <a class="site-btn site-btn--reset ar-reset objekt-reset-button" href="{{archiveHomePath}}"{{^hasActiveArchiveFilters}} hidden{{/hasActiveArchiveFilters}}>초기화</a>
             </div>
         </div>
     </form>

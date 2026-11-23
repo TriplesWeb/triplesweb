@@ -1,6 +1,6 @@
 {{#unitCheckboxOptions}}
 <label class="unit-chip">
-    <input type="checkbox" value="{{unitId}}"{{#membersCsv}} data-members="{{membersCsv}}"{{/membersCsv}}>
+    <input type="checkbox" value="{{unitId}}"{{#membersCsv}} data-members="{{membersCsv}}"{{/membersCsv}}{{#formationDate}} data-formation-date="{{formationDate}}"{{/formationDate}}{{#unitColor}} data-unit-color="{{unitColor}}"{{/unitColor}}>
     <span>{{unitName}}</span>
 </label>
 {{/unitCheckboxOptions}}

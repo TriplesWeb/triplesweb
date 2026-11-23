@@ -45,6 +45,37 @@ public class ArchiveFolderArt {
             Map.entry("aura", 42)
     );
 
+    /**
+     * 유닛 폴더 PNG에서 뽑은 배지·액센트 색.
+     * 흰/검정 바탕 폴더는 로고 포인트 색을 쓴다.
+     */
+    private static final Map<String, String> UNIT_COLORS = Map.ofEntries(
+            Map.entry("acid angel from asia", "#c699d4"),
+            Map.entry("acid angel of asia", "#c699d4"),
+            Map.entry("+(kr)ystal eyes", "#90d8e8"),
+            Map.entry("acid eyes", "#ff00bd"),
+            Map.entry("lovelution", "#0092ff"),
+            Map.entry("evolution", "#fcaa46"),
+            Map.entry("nxt", "#1496b4"),
+            Map.entry("glow", "#e682c8"),
+            Map.entry("aria", "#c8a0be"),
+            Map.entry("visionary vision", "#b0b0b0"),
+            Map.entry("∞!", "#f8b0c8"),
+            Map.entry("alphie", "#0a466e"),
+            Map.entry("msnz moon", "#fae600"),
+            Map.entry("msnz sun", "#faaadc"),
+            Map.entry("msnz neptune", "#1ebefa"),
+            Map.entry("msnz zenith", "#82dc14"),
+            Map.entry("aura", "#6878f0")
+    );
+
+    /** 유닛 폴더와 맞춘 배지 색. 없으면 빈 문자열. */
+    public static String unitColor(String label) {
+        if (label == null || label.isBlank()) return "";
+        String color = UNIT_COLORS.get(label.strip().toLowerCase(Locale.ROOT));
+        return color == null ? "" : color;
+    }
+
     private final Path uploadRoot;
 
     public ArchiveFolderArt(@Value("${file.upload-dir:./uploads}") String uploadDir) {

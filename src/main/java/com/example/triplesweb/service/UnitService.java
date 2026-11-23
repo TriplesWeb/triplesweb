@@ -5,6 +5,7 @@ import com.example.triplesweb.entity.Unit;
 import com.example.triplesweb.entity.UnitMember;
 import com.example.triplesweb.repository.AlbumRepository;
 import com.example.triplesweb.repository.UnitRepository;
+import com.example.triplesweb.util.ArchiveFolderArt;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -86,6 +87,14 @@ public class UnitService {
                     String membersCsv = checkboxMemberNames(unit);
                     if (!membersCsv.isEmpty()) {
                         row.put("membersCsv", membersCsv);
+                    }
+                    String formation = unit.getFormationDate();
+                    if (formation != null && !formation.isBlank()) {
+                        row.put("formationDate", formation.trim());
+                    }
+                    String color = ArchiveFolderArt.unitColor(unit.getUnitName());
+                    if (!color.isBlank()) {
+                        row.put("unitColor", color);
                     }
                     return row;
                 })

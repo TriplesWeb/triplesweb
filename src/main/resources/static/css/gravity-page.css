@@ -89,12 +89,7 @@
     gap: 1rem;
 }
 .gv-section-title h2 { font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size: 1.25rem; font-weight: 650; }
-.gv-icon-btn {
-    width: 2.25rem; height: 2.25rem; border-radius: 9999px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    background: #292a2e; color: #b9cac4;
-}
-.gv-icon-btn:hover { color: #00f5d4; border-color: #00f5d4; }
+/* 아이콘 버튼 크롬은 site-ui.css .site-btn--icon / .gv-icon-btn 공통 */
 
 .gv-track {
     display: flex;

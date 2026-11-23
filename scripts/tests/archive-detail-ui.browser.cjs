@@ -45,12 +45,22 @@ ${site}${css}${siteUi}${chemCss}
         <button type="button" class="mpp-item is-active" data-value="주빈">주빈</button>
         <button type="button" class="mpp-item is-active" data-value="마유">마유</button>
         <button type="button" class="mpp-item" data-value="지연" data-name="지연" data-keep-option="true"><span class="artist-tab-avatar"><img class="artist-tab-photo" src="/missing-profile.jpg"></span><span>지연</span></button>
+        <button type="button" class="mpp-item" data-value="윤서연">윤서연</button>
+        <button type="button" class="mpp-item" data-value="정혜린">정혜린</button>
       </div>
     </div>
   </section>
+  <div class="unit-checks" hidden>
+    <label class="unit-chip"><input type="checkbox" value="42" data-members="윤서연,정혜린"><span>Aura</span></label>
+  </div>
   <section class="ar-hero">
     <div class="ar-panel ar-headline">
-      <div class="ar-stats" id="archiveStats">
+      <div class="ar-headline-toolbar"></div>
+      <div class="ar-headline-body is-copy-only">
+        <div class="ar-headline-copy">
+          <div class="ar-kicker">Archive</div>
+          <h1>아카이브</h1>
+        </div>
       </div>
     </div>
   </section>
@@ -255,20 +265,25 @@ ${chemistryModals}
       };
     });
     assert.equal(toggle.selected, '주빈,마유');
-    assert.equal(toggle.text, '심장마빈즈', '케미명이 있는 멤버 조합이 인원 수로 보인다: ' + toggle.text);
+    assert.equal(toggle.text, '2명', '케미명이 토글에 보이면 안 된다: ' + toggle.text);
     assert.equal(toggle.count, '2');
     assert.equal(toggle.countHidden, false);
     const pick = (name) => page.evaluate((value) => {
       document.querySelector(`#archive-member-picker .mpp-item[data-value="${value}"]`).click();
     }, name);
     await pick('지연');
-    assert.equal(await page.locator('[data-member-toggle-label]').innerText(), '셋');
+    assert.equal(await page.locator('[data-member-toggle-label]').innerText(), '3명', '케미명이 토글에 보이면 안 된다');
     await pick('주빈');
     assert.equal(await page.locator('[data-member-toggle-label]').innerText(), '2명', '케미명이 없는 조합이 인원 수를 유지하지 않는다');
     await pick('지연');
     assert.equal(await page.locator('[data-member-toggle-label]').innerText(), '마유', '멤버 한 명일 때 이름이 보이지 않는다');
     await pick('주빈');
-    assert.equal(await page.locator('[data-member-toggle-label]').innerText(), '심장마빈즈');
+    assert.equal(await page.locator('[data-member-toggle-label]').innerText(), '2명', '케미명이 토글에 다시 보이면 안 된다');
+    await pick('마유');
+    await pick('주빈');
+    await pick('윤서연');
+    await pick('정혜린');
+    assert.equal(await page.locator('[data-member-toggle-label]').innerText(), 'Aura', '유닛 조합은 유닛명이 보여야 한다');
     const toggleBox = await page.locator('#archiveMemberToggle').boundingBox();
     await page.screenshot({
       path: path.join(artifactDir, 'archive-member-toggle-chemistry.png'),

@@ -257,6 +257,21 @@ public class ArchiveService {
 
     private record SortRow(Long id, String artistNames, LocalDate registeredOn, String title) {}
 
+    /** 수동 unitId가 가리키는 유닛 구성과 선택 멤버 필터가 같을 때. */
+    private static boolean matchesStoredUnitMemberFilter(Long storedUnitId, List<String> comboMembers,
+                                                         List<ArchiveFolderClassifier.UnitMembers> units) {
+        if (storedUnitId == null || comboMembers == null || comboMembers.isEmpty() || units == null) {
+            return false;
+        }
+        Set<String> wanted = new LinkedHashSet<>(ArchiveFolderClassifier.membersOf(String.join(",", comboMembers)));
+        for (ArchiveFolderClassifier.UnitMembers unit : units) {
+            if (unit == null || unit.members() == null || unit.members().isEmpty()) continue;
+            if (!storedUnitId.equals(unit.unitId())) continue;
+            return unit.members().equals(wanted);
+        }
+        return false;
+    }
+
     private static Comparator<SortRow> rowComparator(ArchiveSort sort) {
         Comparator<SortRow> byIdDesc = Comparator.comparing(SortRow::id, Comparator.nullsLast(Long::compareTo)).reversed();
         Comparator<SortRow> byIdAsc = Comparator.comparing(SortRow::id, Comparator.nullsLast(Long::compareTo));
@@ -363,30 +378,68 @@ public class ArchiveService {
                                      List<ArchiveFolderClassifier.UnitMembers> units, ArchiveSort sort) {
         ArchiveSort order = sort == null ? ArchiveSort.NEWEST : sort;
         String folderKey = folder == null ? "" : folder.trim();
-        // 전체 멤버 폴더(s)에서 멤버 필터가 없을 때만 DB 페이징 고속 경로를 쓴다.
-        // 멤버가 있으면 별칭(서연/S1 등) 매칭을 위해 classify 스캔 경로를 탄다.
+        // folder=s: 멤버 없음·솔로/비유닛은 DB 페이징. 유닛 완전일치는 후보만 DB에서 좁힌 뒤 정확 매칭.
         if (folderKey.equalsIgnoreCase("s")) {
             List<String> wanted = (comboMembers != null && !comboMembers.isEmpty()) ? comboMembers : members;
             boolean hasMemberFilter = wanted != null && wanted.stream().anyMatch(name -> name != null && !name.isBlank());
             if (!hasMemberFilter) {
-                String pageKey = filterCacheKey("browse", type, keyword, wanted, from, to, source, unclassifiedOnly, true, order)
-                        + "|p=" + page + "|z=" + size;
-                long now = System.currentTimeMillis();
-                evictExpiredCaches(now);
-                CachedBrowse cachedBrowse = browsePageCache.get(pageKey);
-                if (cachedBrowse != null && now - cachedBrowse.at() < FILTER_TTL_MS) {
-                    return cachedBrowse.value();
-                }
-                Set<ArchiveSource> sources = availableSources(type, keyword, wanted, from, to, true);
-                Page<Archive> pageResult = pageByType(type, page, size, keyword, wanted, from, to, source, unclassifiedOnly, true, order);
-                FolderBrowse browse = new FolderBrowse(pageResult, sources);
-                browsePageCache.put(pageKey, new CachedBrowse(browse, now));
-                return browse;
+                return cachedPagedBrowse(type, page, size, keyword, List.of(), from, to, source, unclassifiedOnly, true, order);
+            }
+            List<String> canonicalWanted = ArchiveFolderClassifier.membersOf(String.join(",", wanted));
+            Set<String> wantedSet = new LinkedHashSet<>(canonicalWanted);
+            if (!ArchiveFolderClassifier.isExactUnitMemberSet(wantedSet, units)) {
+                // containsAll ≡ requireAllMembers. 전체 테이블 classify 스캔을 피한다.
+                return cachedPagedBrowse(type, page, size, keyword, canonicalWanted, from, to, source, unclassifiedOnly, true, order);
+            }
+            Long unitId = unitIdForMembers(wantedSet, units);
+            Specification<Archive> narrowed = archiveSpec(type, keyword, canonicalWanted, from, to, null, false, true);
+            if (unitId != null) {
+                Long lockedUnitId = unitId;
+                narrowed = narrowed.or((root, query, cb) -> cb.equal(root.get("unitId"), lockedUnitId));
+            }
+            return browseMatchedRows(narrowed, page, size, source, unclassifiedOnly, folderKey, comboMembers, units, order);
+        }
+
+        String lowerFolder = folderKey.toLowerCase(Locale.ROOT);
+        if (lowerFolder.startsWith("unit-")) {
+            Long unitId = parseUnitFolderId(folderKey);
+            ArchiveFolderClassifier.UnitMembers unit = unitById(unitId, units);
+            if (unit != null && unit.members() != null && !unit.members().isEmpty()) {
+                List<String> unitMembers = List.copyOf(unit.members());
+                Long lockedUnitId = unit.unitId();
+                Specification<Archive> narrowed = archiveSpec(type, keyword, unitMembers, from, to, null, false, true)
+                        .or((root, query, cb) -> cb.equal(root.get("unitId"), lockedUnitId));
+                return browseMatchedRows(narrowed, page, size, source, unclassifiedOnly, folderKey, comboMembers, units, order);
             }
         }
 
-        // 그 외 폴더: 매칭 행을 모아 정렬한 뒤 페이지 본문만 조회한다.
+        // 콤보 등: 매칭 행을 모아 정렬한 뒤 페이지 본문만 조회한다.
         Specification<Archive> scanSpec = archiveSpec(type, keyword, members, from, to, null, false, false);
+        return browseMatchedRows(scanSpec, page, size, source, unclassifiedOnly, folderKey, comboMembers, units, order);
+    }
+
+    private FolderBrowse cachedPagedBrowse(MediaType type, int page, int size, String keyword, List<String> members,
+                                           LocalDate from, LocalDate to, ArchiveSource source, boolean unclassifiedOnly,
+                                           boolean requireAllMembers, ArchiveSort order) {
+        String pageKey = filterCacheKey("browse", type, keyword, members, from, to, source, unclassifiedOnly, requireAllMembers, order)
+                + "|p=" + page + "|z=" + size;
+        long now = System.currentTimeMillis();
+        evictExpiredCaches(now);
+        CachedBrowse cachedBrowse = browsePageCache.get(pageKey);
+        if (cachedBrowse != null && now - cachedBrowse.at() < FILTER_TTL_MS) {
+            return cachedBrowse.value();
+        }
+        Set<ArchiveSource> sources = availableSources(type, keyword, members, from, to, requireAllMembers);
+        Page<Archive> pageResult = pageByType(type, page, size, keyword, members, from, to, source, unclassifiedOnly, requireAllMembers, order);
+        FolderBrowse browse = new FolderBrowse(pageResult, sources);
+        browsePageCache.put(pageKey, new CachedBrowse(browse, now));
+        return browse;
+    }
+
+    private FolderBrowse browseMatchedRows(Specification<Archive> scanSpec, int page, int size,
+                                           ArchiveSource source, boolean unclassifiedOnly,
+                                           String folderKey, List<String> comboMembers,
+                                           List<ArchiveFolderClassifier.UnitMembers> units, ArchiveSort order) {
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
         CriteriaQuery<Object[]> scanQuery = cb.createQuery(Object[].class);
         Root<Archive> root = scanQuery.from(Archive.class);
@@ -396,7 +449,8 @@ public class ArchiveService {
                 root.get("artistNames"),
                 root.get("source"),
                 root.get("registeredOn"),
-                root.get("title"));
+                root.get("title"),
+                root.get("unitId"));
         if (base != null) scanQuery.where(base);
 
         List<SortRow> matched = new ArrayList<>();
@@ -405,8 +459,21 @@ public class ArchiveService {
             Long id = (Long) row[0];
             String artistNames = (String) row[1];
             ArchiveSource rowSource = (ArchiveSource) row[2];
-            if (!ArchiveFolderClassifier.matches(
-                    ArchiveFolderClassifier.classify(artistNames, units), folderKey, comboMembers, units)) {
+            LocalDate registeredOn = (LocalDate) row[3];
+            Long storedUnitId = (Long) row[5];
+            ArchiveFolderClassifier.Match classified =
+                    ArchiveFolderClassifier.classify(artistNames, units, registeredOn);
+            boolean inFolder = ArchiveFolderClassifier.matches(
+                    classified, folderKey, comboMembers, units, registeredOn);
+            // 수동 지정한 unitId는 결성일 이전이어도 해당 유닛 폴더에 남긴다.
+            if (!inFolder && storedUnitId != null && folderKey.toLowerCase(Locale.ROOT).startsWith("unit-")
+                    && folderKey.equalsIgnoreCase("unit-" + storedUnitId)) {
+                inFolder = true;
+            } else if (!inFolder && storedUnitId != null && folderKey.equalsIgnoreCase("s")
+                    && comboMembers != null && !comboMembers.isEmpty()) {
+                inFolder = matchesStoredUnitMemberFilter(storedUnitId, comboMembers, units);
+            }
+            if (!inFolder) {
                 continue;
             }
             if (rowSource != null) sources.add(rowSource);
@@ -415,7 +482,7 @@ public class ArchiveService {
             } else if (source != null && !source.equals(rowSource)) {
                 continue;
             }
-            matched.add(new SortRow(id, artistNames, (LocalDate) row[3], (String) row[4]));
+            matched.add(new SortRow(id, artistNames, registeredOn, (String) row[4]));
         }
         matched.sort(rowComparator(order));
 
@@ -430,6 +497,34 @@ public class ArchiveService {
                 .map(SortRow::id)
                 .toList();
         return new FolderBrowse(new PageImpl<>(loadInOrder(pageIds), pageable, matched.size()), Set.copyOf(sources));
+    }
+
+    private static Long unitIdForMembers(Set<String> members, List<ArchiveFolderClassifier.UnitMembers> units) {
+        if (members == null || units == null) return null;
+        for (ArchiveFolderClassifier.UnitMembers unit : units) {
+            if (unit == null || unit.members() == null || unit.members().isEmpty()) continue;
+            if (unit.members().equals(members)) return unit.unitId();
+        }
+        return null;
+    }
+
+    private static ArchiveFolderClassifier.UnitMembers unitById(Long unitId, List<ArchiveFolderClassifier.UnitMembers> units) {
+        if (unitId == null || units == null) return null;
+        for (ArchiveFolderClassifier.UnitMembers unit : units) {
+            if (unit != null && unitId.equals(unit.unitId())) return unit;
+        }
+        return null;
+    }
+
+    private static Long parseUnitFolderId(String folder) {
+        if (folder == null) return null;
+        String key = folder.trim();
+        if (key.length() <= 5 || !key.toLowerCase(Locale.ROOT).startsWith("unit-")) return null;
+        try {
+            return Long.parseLong(key.substring(5));
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
     }
 
     /** 전체 보기 출처 탭용. 본문 없이 source 컬럼만 distinct 조회한다. */

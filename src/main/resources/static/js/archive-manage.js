@@ -152,6 +152,8 @@
         if (!cb) return null;
         const label = (cb.closest('label')?.querySelector('span')?.textContent || '').trim();
         if (!label) return null;
+        const folderColor = (cb.dataset.unitColor || '').trim();
+        if (folderColor) return { label, color: folderColor };
         const members = window.UnitCheckboxGroup
             ? UnitCheckboxGroup.parseMembers(cb)
             : String(cb.dataset.members || '').split(',').map(part => part.trim()).filter(Boolean);
@@ -162,28 +164,21 @@
         return { label, color: memberColor(first) };
     }
 
-    /** 체크된 유닛 우선, 없으면 출연진 완전 일치 유닛. */
+    function registeredOnOf(root) {
+        const form = root?.querySelector?.('form') || root?.closest?.('form') || root;
+        return form?.querySelector?.('[name="registeredOn"]')?.value || '';
+    }
+
+    /**
+     * 폼 미리보기 유닛 배지.
+     * 체크된 유닛만 반영한다. 출연진 일치로 다시 추론하면 해제한 뒤에도 배지가 남는다.
+     */
     function matchUnitBadge(memberNames, root) {
         const unitRoot = unitChecksRoot(root) || root?.querySelector?.('[data-unit-checks]') || null;
         const scope = unitRoot || document;
         const checked = scope.querySelector('input[type="checkbox"][data-members]:checked');
-        if (checked) {
-            const fromCheck = unitBadgeFromCheckbox(checked, memberNames);
-            if (fromCheck) return fromCheck;
-        }
-        const selected = new Set((memberNames || []).map(name => String(name || '').trim()).filter(Boolean));
-        if (selected.size < 2) return null;
-        const checks = scope.querySelectorAll('input[type="checkbox"][data-members]');
-        for (const cb of checks) {
-            const members = window.UnitCheckboxGroup
-                ? UnitCheckboxGroup.parseMembers(cb)
-                : String(cb.dataset.members || '').split(',').map(part => part.trim()).filter(Boolean);
-            if (!members.length || members.length !== selected.size) continue;
-            if (!members.every(name => selected.has(name))) continue;
-            const matched = unitBadgeFromCheckbox(cb, members);
-            if (matched) return matched;
-        }
-        return null;
+        if (!checked) return null;
+        return unitBadgeFromCheckbox(checked, memberNames);
     }
 
     function archiveSymbolLogo(frame) {
@@ -1018,44 +1013,11 @@
         });
     }
 
-    /** 사진 미리보기처럼 카드 본문이 없을 때도 출처·유닛 배지를 둘 자리를 만든다. */
+    /** 목록 카드 미리보기 안에 있는 출처·유닛 배지만 갱신한다. 카드 밖에는 만들지 않는다. */
     function ensurePreviewBadgeRow(preview) {
-        let badgeRow = preview.querySelector('[data-preview-badges]');
-        let sourceBadge = preview.querySelector('[data-preview-source]');
-        let unitBadge = preview.querySelector('[data-preview-unit]');
-        if (badgeRow && sourceBadge && unitBadge) {
-            return { badgeRow, sourceBadge, unitBadge };
-        }
-        // 영상 미리보기(카드 슬롯)는 showPreview가 배지를 만든다. 여기서 루트에 중복 삽입하지 않는다.
-        const hasCardSlot = !!preview.querySelector('.ar-preview-card, .ar-preview-full');
-        if (hasCardSlot) {
-            return { badgeRow, sourceBadge, unitBadge };
-        }
-        if (!preview.querySelector('[data-preview-file]')) {
-            return { badgeRow, sourceBadge, unitBadge };
-        }
-        if (!badgeRow) {
-            badgeRow = document.createElement('div');
-            badgeRow.className = 'ar-card-badges';
-            badgeRow.dataset.previewBadges = '';
-            const info = preview.querySelector('[data-preview-file]');
-            if (info) info.after(badgeRow);
-            else preview.prepend(badgeRow);
-        }
-        if (!sourceBadge) {
-            sourceBadge = document.createElement('div');
-            sourceBadge.className = 'ar-source-badge';
-            sourceBadge.dataset.previewSource = '';
-            sourceBadge.hidden = true;
-            badgeRow.appendChild(sourceBadge);
-        }
-        if (!unitBadge) {
-            unitBadge = document.createElement('div');
-            unitBadge.className = 'ar-unit-badge';
-            unitBadge.dataset.previewUnit = '';
-            unitBadge.hidden = true;
-            badgeRow.appendChild(unitBadge);
-        }
+        const badgeRow = preview.querySelector('[data-preview-badges]');
+        const sourceBadge = preview.querySelector('[data-preview-source]');
+        const unitBadge = preview.querySelector('[data-preview-unit]');
         return { badgeRow, sourceBadge, unitBadge };
     }
 
@@ -1186,7 +1148,9 @@
             });
             if (!values.length) chips.textContent = '멤버를 선택하면 여기에 표시됩니다.';
         }
-        window.UnitCheckboxGroup?.syncFromMembers(unitChecksRoot(root), values);
+        window.UnitCheckboxGroup?.syncFromMembers(unitChecksRoot(root), values, {
+            registeredOn: registeredOnOf(root)
+        });
         const form = root.querySelector?.('form') || root.closest?.('form');
         captureSlot(form);
         syncPreview(form);
@@ -1222,7 +1186,15 @@
             applyMembers: (names) => applyArtists(root, names.join(','), { allSlots: true }),
             onChange: () => syncPreview(root.querySelector('form'))
         });
-        root.querySelector('form')?.addEventListener('input', () => syncPreview(root.querySelector('form')));
+        root.querySelector('form')?.addEventListener('input', (event) => {
+            const form = root.querySelector('form');
+            if (event?.target?.name === 'registeredOn') {
+                window.UnitCheckboxGroup?.syncFromMembers(unitChecksRoot(root), selectedArtists(root), {
+                    registeredOn: registeredOnOf(root)
+                });
+            }
+            syncPreview(form);
+        });
         window.MemberPortraitPicker?.clear(root);
         renderArtists(root);
     }

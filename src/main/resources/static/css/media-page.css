@@ -133,7 +133,6 @@ html.media-sync-done form.media-sync[data-admin-only] { display: none !important
     flex: 0 0 auto;
 }
 
-.media-page .media-toolbar .ar-date-filter,
 .media-page .media-toolbar .ar-sort,
 .media-page .media-toolbar .ar-sort-control {
     flex: 0 0 auto;
@@ -143,6 +142,15 @@ html.media-sync-done form.media-sync[data-admin-only] { display: none !important
     max-height: 2.1rem;
 }
 
+.media-page .media-toolbar .ar-date-filter.objekt-filter {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 10.5rem;
+    height: 2.65rem;
+    min-height: 2.65rem;
+    max-height: 2.65rem;
+}
+
 .media-page .media-toolbar .ar-date-toggle,
 .media-page .media-toolbar .ar-member-toggle {
     flex: 0 0 auto;
@@ -150,27 +158,39 @@ html.media-sync-done form.media-sync[data-admin-only] { display: none !important
     height: 2.1rem;
     min-height: 2.1rem;
     max-height: 2.1rem;
-    padding: 0 1rem;
+    padding: 0 0.35rem 0 0.75rem;
     white-space: nowrap;
     box-sizing: border-box;
 }
 
 .media-page .media-toolbar .ar-date-toggle {
-    min-width: 7.75rem;
+    flex: 1 1 auto;
+    min-width: 0;
+    justify-content: space-between;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.045);
+    color: #e8ebf2;
 }
 
-.media-page .media-toolbar .ar-date-toggle > span {
-    flex: 0 0 auto;
+.media-page .media-toolbar .ar-date-toggle > .truncate {
+    flex: 1 1 auto;
+    min-width: 0;
     white-space: nowrap;
 }
 
 .media-page .media-toolbar .ar-member-toggle {
     color: #e3e2e8;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.045);
+    padding: 0 1rem;
 }
 
 .media-page .media-toolbar .ar-member-toggle:hover,
 .media-page .media-toolbar .ar-member-toggle.is-open,
 .media-page .media-toolbar .ar-member-toggle.has-selection {
+    border-color: rgba(0, 245, 212, 0.62);
     color: #00f5d4;
 }
 

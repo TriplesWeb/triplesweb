@@ -20,6 +20,41 @@ const artSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="240" height="180"
   <circle cx="148" cy="102" r="22" fill="#facc15"/>
 </svg>`;
 
+function headline(attrs = {}) {
+  const {
+    back = false,
+    folderTitle = '',
+    solo = false,
+    stats = '',
+    upload = false,
+    color = '#a78bfa',
+    memberSpace = true,
+    home = false
+  } = attrs;
+  const title = folderTitle
+    ? (solo
+      ? `<h1 class="ar-folder-title is-solo" data-base-title="${folderTitle}"><span class="ar-folder-num">S1</span> <span class="ar-folder-name">윤서연</span></h1>`
+      : `<h1 class="ar-folder-title">${folderTitle}</h1>`)
+    : '<h1>아카이브</h1>';
+  const hasStats = Boolean(stats);
+  const toolbar = home ? '' : `<div class="ar-headline-toolbar">
+        ${back ? '<a class="site-back-link site-back-link--chip ar-back-folders" href="/archive">← 목록으로</a>' : ''}
+        <div class="ar-headline-actions">
+          ${upload ? '<button type="button" class="site-btn site-btn--primary site-btn--sm ar-submit ar-home-upload" data-admin-only>사진 추가</button>' : ''}
+        </div>
+      </div>`;
+  return `<div class="ar-panel ar-headline${memberSpace ? ' is-member-space' : ''}" style="--folder-color:${color}">
+      ${toolbar}
+      <div class="ar-headline-body${hasStats ? '' : ' is-copy-only'}">
+        <div class="ar-headline-copy">
+          <div class="ar-kicker">${home ? 'folder ' : ''}Archive</div>
+          ${title}
+        </div>
+        ${stats}
+      </div>
+    </div>`;
+}
+
 function folder(attrs) {
   const {
     extraClass = '',
@@ -55,19 +90,19 @@ body.site-admin-enabled button[data-admin-only] { display: inline-flex !importan
 <body class="site-page site-admin-enabled">
 <main class="archive-page is-folder-home" data-archive-kind="image">
   <section class="ar-hero">
-    <div class="ar-panel ar-headline">
-      <div class="ar-headline-copy">
-        <div class="ar-kicker">Archive</div>
-        <h1>아카이브</h1>
-      </div>
-      <button type="button" class="ar-submit ar-home-upload" data-admin-only>사진 추가</button>
-      <div class="ar-stats" id="archiveStats">
+    ${headline({
+      home: true,
+      memberSpace: false,
+      stats: `<div class="ar-stats" id="archiveStats">
         <article class="ar-stat"><div class="ar-stat-label"><span>등록된 사진</span></div><strong>2<em>장</em></strong></article>
         <article class="ar-stat"><div class="ar-stat-label"><span>등록된 영상</span></div><strong>1<em>개</em></strong></article>
         <article class="ar-stat"><div class="ar-stat-label"><span>폴더</span></div><strong>42<em>개</em></strong></article>
-      </div>
-    </div>
+      </div>`
+    })}
   </section>
+  <div class="ar-folders-head">
+    <button type="button" class="site-btn site-btn--primary site-btn--sm ar-submit ar-home-upload" data-admin-only>사진 추가</button>
+  </div>
   <section class="ar-folders" aria-label="아카이브 폴더">
     ${folder({ extraClass: ' is-group', href: '/archive?folder=s', color: '#f5c518', label: 'tripleS', count: '3' })}
     ${folder({ extraClass: ' is-parent', href: '/archive?folder=units', color: '#a78bfa', label: '디멘션' })}
@@ -75,6 +110,7 @@ body.site-admin-enabled button[data-admin-only] { display: inline-flex !importan
     ${folder({ extraClass: ' is-solo', href: '/archive?folder=s&members=정혜린', color: '#ff8ad4', label: 'S2 정혜린', bundledArt: '/images/archive/member-folders/2.png' })}
   </section>
 </main>
+<script>${browseJs}</script>
 </body></html>`;
 
 const unitsHtml = `<!doctype html><html><head><meta charset="utf-8">
@@ -90,14 +126,7 @@ ${siteUi}
 <body class="site-page">
 <main class="archive-page is-folder-home is-folder-index" data-archive-kind="image">
   <section class="ar-hero">
-    <div class="ar-panel ar-headline is-member-space" style="--folder-color:#a78bfa">
-      <a class="site-back-link ar-back-folders" href="/archive">← 목록으로</a>
-      <div class="ar-headline-copy">
-        <div class="ar-kicker">Archive</div>
-        <h1>아카이브</h1>
-        <p class="ar-folder-title">디멘션</p>
-      </div>
-    </div>
+    ${headline({ back: true, folderTitle: '디멘션', color: '#a78bfa' })}
   </section>
   <section class="ar-folders" aria-label="아카이브 폴더">
     ${folder({ href: '/archive?folder=s&members=윤서연&members=정혜린', color: '#22aeff', label: 'Aura', bundledArt: '/images/archive/unit-folders/42.png' })}
@@ -118,14 +147,7 @@ ${siteUi}
 <body class="site-page">
 <main class="archive-page is-folder-home is-folder-index" data-archive-kind="image">
   <section class="ar-hero">
-    <div class="ar-panel ar-headline is-member-space" style="--folder-color:#7dd3fc">
-      <a class="site-back-link ar-back-folders" href="/archive">← 목록으로</a>
-      <div class="ar-headline-copy">
-        <div class="ar-kicker">Archive</div>
-        <h1>아카이브</h1>
-        <p class="ar-folder-title">케미</p>
-      </div>
-    </div>
+    ${headline({ back: true, folderTitle: '케미', color: '#7dd3fc' })}
   </section>
   <section class="ar-folders" aria-label="아카이브 폴더">
     ${folder({ extraClass: ' is-combo', href: '/archive?folder=combo-2', color: '#7dd3fc', label: '2명 케미', count: '1' })}
@@ -149,15 +171,7 @@ ${siteUi}
 <body class="site-page site-admin-enabled">
 <main class="archive-page is-folder-view" data-archive-kind="image">
   <section class="ar-hero">
-    <div class="ar-panel ar-headline is-member-space" style="--folder-color:#7dd3fc">
-      <a class="site-back-link ar-back-folders" href="/archive">← 목록으로</a>
-      <div class="ar-headline-copy">
-        <div class="ar-kicker">Archive</div>
-        <h1>아카이브</h1>
-        <p class="ar-folder-title" data-base-title="2명 케미">시선강탈</p>
-      </div>
-      <button type="button" class="ar-submit ar-home-upload" data-admin-only>사진 추가</button>
-    </div>
+    ${headline({ back: true, folderTitle: '시선강탈', color: '#7dd3fc', upload: true })}
   </section>
   <section class="ar-panel ar-toolbar">
     <form class="ar-filters" id="archiveFilterForm" method="get" action="/archive">
@@ -223,18 +237,12 @@ ${siteUi}
 <body class="site-page">
 <main class="archive-page is-folder-view" data-archive-kind="image">
   <section class="ar-hero">
-    <div class="ar-panel ar-headline is-member-space" style="--folder-color:#22aeff">
-      <a class="site-back-link ar-back-folders" href="/archive">← 목록으로</a>
-      <div class="ar-headline-copy">
-        <div class="ar-kicker">Archive</div>
-        <h1>아카이브</h1>
-        <p class="ar-folder-title is-solo" data-base-title="S1 윤서연"><span class="ar-folder-num">S1</span> <span class="ar-folder-name">윤서연</span></p>
-      </div>
-      <div class="ar-stats" id="archiveStats">
-        <article class="ar-stat"><div class="ar-stat-label"><span>등록된 사진</span><span class="material-symbols-outlined">image</span></div><strong>0<em>장</em></strong></article>
-        <article class="ar-stat ar-stat-date"><div class="ar-stat-label"><span>날짜</span><span class="material-symbols-outlined">calendar_month</span></div><strong>2026년 11월 16일</strong></article>
-      </div>
-    </div>
+    ${headline({
+      back: true,
+      solo: true,
+      folderTitle: 'S1 윤서연',
+      color: '#22aeff'
+    })}
   </section>
   <section class="ar-panel ar-toolbar">
     <form class="ar-filters" id="archiveFilterForm">
@@ -251,7 +259,7 @@ ${siteUi}
 </main>
 </body></html>`;
 
-const groupHtml = memberHtml.replace(/<p class="ar-folder-title[\s\S]*?<\/p>/, '');
+const groupHtml = memberHtml.replace(/<h1 class="ar-folder-title[\s\S]*?<\/h1>/, '<h1>아카이브</h1>');
 
 const viewHtml = `<!doctype html><html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -266,21 +274,7 @@ ${siteUi}
 <body class="site-page">
 <main class="archive-page is-folder-view" data-archive-kind="image">
   <section class="ar-hero">
-    <div class="ar-panel ar-headline is-member-space" style="--folder-color:#f5c518">
-      <button type="button" class="ar-stats-toggle" data-stats-toggle aria-expanded="true" aria-controls="archiveStats" aria-label="통계 접기">
-        <span data-stats-icon>−</span>
-      </button>
-      <a class="site-back-link ar-back-folders" href="/archive">← 목록으로</a>
-      <div class="ar-headline-copy">
-        <div class="ar-kicker">Archive</div>
-        <h1>아카이브</h1>
-      </div>
-      <div class="ar-stats" id="archiveStats">
-        <article class="ar-stat"><div class="ar-stat-label"><span>등록된 사진</span><span class="material-symbols-outlined">image</span></div><strong>0<em>장</em></strong></article>
-        <article class="ar-stat ar-stat-date"><div class="ar-stat-label"><span>날짜</span><span class="material-symbols-outlined">calendar_month</span></div><strong>전체</strong></article>
-        <article class="ar-stat"><div class="ar-stat-label"><span>페이지</span><span class="material-symbols-outlined">layers</span></div><strong>1<em>/ 1</em></strong></article>
-      </div>
-    </div>
+    ${headline({ back: true, color: '#f5c518' })}
   </section>
 </main>
 </body></html>`;
@@ -367,8 +361,10 @@ ${siteUi}
         uploadVisible: uploadBox.width > 0 && uploadBox.height > 0,
         uploadHeight: Math.round(uploadBox.height),
         hint: document.querySelector('.ar-headline-copy p')?.textContent.trim() || '',
-        uploadRight: Math.round(headline.right - uploadBox.right),
-        uploadBottom: Math.round(headline.bottom - uploadBox.bottom),
+        uploadRight: Math.round(folders.right - uploadBox.right),
+        aboveFolders: uploadBox.bottom <= folders.top + 4,
+        inFoldersHead: Boolean(upload?.closest('.ar-folders-head')),
+        inToolbar: Boolean(upload?.closest('.ar-headline-actions')),
         pageMax: pageStyle.maxWidth,
         padL: parseFloat(pageStyle.paddingLeft),
         padR: parseFloat(pageStyle.paddingRight),
@@ -376,7 +372,8 @@ ${siteUi}
         foldersWidth: Math.round(folders.width),
         statWidth: Math.round(stat.width),
         statHeight: Math.round(stat.height),
-        statShift: ((stats.left + stats.right) / 2) - ((innerLeft + innerRight) / 2),
+        statsOnRight: stats.left > ((innerLeft + innerRight) / 2),
+        bodyColumns: getComputedStyle(document.querySelector('.ar-headline-body')).gridTemplateColumns.split(' ').filter(Boolean).length,
         countHidden: count ? getComputedStyle(count).display === 'none' : false,
         memberHref: member?.getAttribute('href') || '',
         headlineGlow: getComputedStyle(document.querySelector('.ar-headline'), '::after').content
@@ -394,17 +391,29 @@ ${siteUi}
     assert.equal(home.shine, 'none', '폴더의 반짝임 효과가 남아 있다');
     assert.equal(home.uploadText, '사진 추가');
     assert.equal(home.uploadVisible, true, '폴더 홈 사진 추가 버튼이 안 보인다');
-    assert.ok(home.uploadRight >= 8 && home.uploadRight <= 40, '사진 추가가 우측이 아니다: ' + JSON.stringify(home));
-    assert.ok(home.uploadBottom >= 8 && home.uploadBottom <= 40, '사진 추가가 하단이 아니다: ' + JSON.stringify(home));
+    assert.equal(home.inToolbar, false, '사진 추가가 히어로 툴바에 남아 있다');
+    assert.equal(home.inFoldersHead, true, '사진 추가가 폴더 목록 앞에 없다');
+    assert.equal(home.aboveFolders, true, '사진 추가가 폴더 그리드 위에 없다');
+    assert.ok(home.uploadRight >= 0 && home.uploadRight <= 40, '사진 추가가 우측이 아니다: ' + JSON.stringify(home));
     assert.equal(home.pageMax, '1440px', '폴더 홈이 오브젝트처럼 1440px로 안 묶인다: ' + home.pageMax);
     assert.ok(home.padL >= 40 && home.padR >= 40, '폴더 홈 좌우 여백이 좁다: ' + JSON.stringify(home));
     assert.ok(Math.abs(home.headlineWidth - home.foldersWidth) <= 1, '제목 패널과 폴더 폭이 다르다: ' + JSON.stringify(home));
     assert.ok(home.statWidth <= 320, '통계 카드가 여전히 크다: ' + home.statWidth);
-    assert.ok(home.statHeight <= 84, '통계 카드 높이가 그대로다: ' + home.statHeight);
-    assert.ok(home.statShift >= 76 && home.statShift <= 102, '홈 통계가 오른쪽 위로 이동하지 않았다: ' + home.statShift);
+    assert.ok(home.statHeight <= 96, '통계 카드 높이가 그대로다: ' + home.statHeight);
+    assert.equal(home.bodyColumns, 2, '헤드라인이 제목|통계 2열이 아니다: ' + home.bodyColumns);
+    assert.equal(home.statsOnRight, true, '홈 통계가 오른쪽 칸에 없다');
     assert.equal(home.hint, '', '폴더를 선택하세요 안내가 남아 있다');
-    assert.ok(home.uploadHeight >= 32 && home.uploadHeight <= 38, '사진 추가 버튼이 여전히 두껍다: ' + home.uploadHeight);
+    assert.ok(home.uploadHeight >= 32 && home.uploadHeight <= 40, '사진 추가 버튼이 여전히 두껍다: ' + home.uploadHeight);
     assert.equal(home.countHidden, true, '폴더 사진 숫자가 보인다');
+
+    const fonts = await page.evaluate(() => [...document.querySelectorAll('.ar-stat-label span:first-child')].map((el) => getComputedStyle(el).fontFamily));
+    for (const family of fonts) {
+      assert.match(family, /Pretendard/i, '통계 라벨 글꼴이 사이트 본문과 다르다: ' + family);
+      assert.doesNotMatch(family, /JetBrains/i, '통계 라벨이 모노스페이스다: ' + family);
+    }
+
+    assert.equal(await page.locator('[data-stats-toggle]').count(), 0, '통계 접기 버튼이 남아 있다');
+    assert.equal(await page.locator('#archiveStats').count(), 1, '홈 통계가 없다');
 
     await page.hover('.ar-folder.is-group');
     const artifactDir = fs.existsSync('/opt/cursor/artifacts') ? '/opt/cursor/artifacts' : '/tmp/objekt-ui';
@@ -443,101 +452,102 @@ ${siteUi}
       const kicker = document.querySelector('.ar-kicker');
       const headlineBox = headline.getBoundingClientRect();
       const titleBox = title.getBoundingClientRect();
-      const nameBox = name.getBoundingClientRect();
-      const numBox = num.getBoundingClientRect();
       const kickerBox = kicker.getBoundingClientRect();
       const style = getComputedStyle(headline);
       const innerLeft = headlineBox.left + parseFloat(style.paddingLeft);
-      const innerRight = headlineBox.right - parseFloat(style.paddingRight);
       const nameStyle = getComputedStyle(name);
-      const clusterCenter = (numBox.left + nameBox.right) / 2;
-      const panelCenter = (innerLeft + innerRight) / 2;
       return {
-        centered: Math.abs(clusterCenter - panelCenter) <= 12,
+        titleIsH1: title?.tagName === 'H1',
+        noGenericH1: ![...document.querySelectorAll('.ar-headline h1')].some((el) => el.textContent.trim() === '아카이브'),
+        titleLeft: Math.abs(titleBox.left - innerLeft) <= 4,
         kickerLeft: kickerBox.left - innerLeft <= 4,
+        aligned: Math.abs(titleBox.left - kickerBox.left) <= 2,
+        stacked: titleBox.top >= kickerBox.bottom - 1,
         nameText: name.textContent.trim(),
         numText: num.textContent.trim(),
-        underline: nameStyle.borderBottomColor,
-        underlineWidth: parseFloat(nameStyle.borderBottomWidth),
-        numUnderline: parseFloat(getComputedStyle(num).borderBottomWidth),
-        dateStat: document.querySelector('.ar-stat-date strong')?.textContent.trim() || '',
-        dateIcon: document.querySelector('.ar-stat-date .material-symbols-outlined')?.textContent.trim() || '',
-        filterCenter: (() => {
+        titleBar: (() => {
+          const after = getComputedStyle(title, '::after');
+          return {
+            display: after.display,
+            width: after.width,
+            height: after.height,
+            color: after.backgroundColor
+          };
+        })(),
+        nameBar: nameStyle.backgroundImage,
+        noStats: !document.getElementById('archiveStats'),
+        filterFill: (() => {
           const tools = document.querySelector('.ar-filter-tools');
-          if (!tools) return null;
-          const box = tools.getBoundingClientRect();
-          const mid = (box.left + box.right) / 2;
-          return Math.abs(mid - window.innerWidth / 2);
+          const toolbar = document.querySelector('.ar-toolbar');
+          if (!tools || !toolbar) return null;
+          const toolsBox = tools.getBoundingClientRect();
+          const bar = toolbar.getBoundingClientRect();
+          const padL = parseFloat(getComputedStyle(toolbar).paddingLeft);
+          const padR = parseFloat(getComputedStyle(toolbar).paddingRight);
+          return Math.abs(toolsBox.width - (bar.width - padL - padR));
         })()
       };
     });
-    assert.ok(memberTitle.filterCenter != null && memberTitle.filterCenter <= 24, '검색 필터가 가운데 있지 않다: ' + memberTitle.filterCenter);
-    assert.equal(memberTitle.centered, true, '멤버 이름이 가운데 있지 않다: ' + JSON.stringify(memberTitle));
+    assert.ok(memberTitle.filterFill != null && memberTitle.filterFill <= 8, '검색 필터가 툴바 폭을 안 채운다: ' + memberTitle.filterFill);
+    assert.equal(memberTitle.titleIsH1, true, '멤버 이름이 주 제목이 아니다');
+    assert.equal(memberTitle.noGenericH1, true, '폴더 보기에 일반 아카이브 제목이 남아 있다');
+    assert.equal(memberTitle.titleLeft, true, '멤버 이름이 왼쪽 정렬이 아니다: ' + JSON.stringify(memberTitle));
     assert.equal(memberTitle.kickerLeft, true, 'ARCHIVE 라벨이 왼쪽에 있지 않다');
+    assert.equal(memberTitle.aligned, true, '제목과 ARCHIVE 라벨이 어긋난다');
+    assert.equal(memberTitle.stacked, true, 'ARCHIVE와 멤버 제목이 한 줄에 있다');
     assert.equal(memberTitle.nameText, '윤서연');
     assert.equal(memberTitle.numText, 'S1');
-    assert.ok(memberTitle.underlineWidth >= 2, '이름 밑줄이 없다: ' + memberTitle.underlineWidth);
-    assert.ok(memberTitle.numUnderline < 1, 'S1에도 밑줄이 있다');
-    assert.ok(memberTitle.underline.includes('34, 174, 255') || memberTitle.underline.includes('22aeff') || memberTitle.underline.includes('34,174,255'), '이름 밑줄이 멤버색이 아니다: ' + memberTitle.underline);
-    assert.equal(memberTitle.dateStat, '2026년 11월 16일');
-    assert.equal(memberTitle.dateIcon, 'calendar_month');
+    assert.equal(memberTitle.titleBar.display, 'block', '제목 아래 막대가 없다');
+    assert.ok(memberTitle.titleBar.width !== '0px' && memberTitle.titleBar.height !== '0px', '제목 막대 크기가 깨졌다: ' + JSON.stringify(memberTitle.titleBar));
+    assert.ok(
+      memberTitle.titleBar.color.includes('34, 174, 255')
+        || memberTitle.titleBar.color.includes('22aeff')
+        || memberTitle.titleBar.color.includes('34,174,255'),
+      '제목 막대 색이 멤버색이 아니다: ' + memberTitle.titleBar.color
+    );
+    assert.equal(memberTitle.nameBar, 'none', '이름에만 따로 밑줄이 남아 있다');
+    assert.equal(memberTitle.noStats, true, '폴더 보기에 통계가 남아 있다');
     await page.locator('.ar-headline').screenshot({ path: path.join(artifactDir, 'archive-member-title-center.png') });
 
     await page.goto('https://archive-folders.test/group.html', { waitUntil: 'load' });
     assert.equal(await page.locator('.ar-folder-title').count(), 0);
+    assert.equal(await page.locator('.ar-headline h1').textContent(), '아카이브');
     await page.locator('.ar-headline').screenshot({ path: path.join(artifactDir, 'archive-group-title.png') });
 
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto('https://archive-folders.test/view.html', { waitUntil: 'load' });
     const view = await page.evaluate(() => {
       const headline = document.querySelector('.ar-headline');
-      const stats = document.getElementById('archiveStats');
-      const stat = document.querySelector('.ar-stat');
       const back = document.querySelector('.ar-back-folders');
       const toggle = document.querySelector('.ar-stats-toggle');
       const headlineBox = headline.getBoundingClientRect();
-      const statsBox = stats.getBoundingClientRect();
-      const statBox = stat.getBoundingClientRect();
       const backBox = back.getBoundingClientRect();
-      const toggleBox = toggle.getBoundingClientRect();
-      const style = getComputedStyle(headline);
       const backStyle = getComputedStyle(back);
-      const innerLeft = headlineBox.left + parseFloat(style.paddingLeft);
-      const innerRight = headlineBox.right - parseFloat(style.paddingRight);
-      const columns = getComputedStyle(stats).gridTemplateColumns.split(' ').filter(Boolean).length;
       return {
-        statWidth: Math.round(statBox.width),
-        statHeight: Math.round(statBox.height),
-        shift: ((statsBox.left + statsBox.right) / 2) - ((innerLeft + innerRight) / 2),
+        noStats: !document.getElementById('archiveStats'),
+        noToggle: !toggle,
+        bodyCopyOnly: document.querySelector('.ar-headline-body')?.classList.contains('is-copy-only') || false,
         pageMax: getComputedStyle(document.querySelector('.archive-page')).maxWidth,
-        dateSize: parseFloat(getComputedStyle(document.querySelector('.ar-stat-date strong')).fontSize),
-        photoSize: parseFloat(getComputedStyle(document.querySelector('.ar-stat strong')).fontSize),
-        columns,
         backText: back.textContent.trim(),
         backHref: back.getAttribute('href'),
         backRadius: parseFloat(backStyle.borderRadius),
         backBg: backStyle.backgroundColor,
         backColor: backStyle.color,
         backBorder: backStyle.borderTopWidth,
-        gap: toggleBox.left - backBox.right,
-        overlap: backBox.right > toggleBox.left + 1 || backBox.bottom > headlineBox.bottom,
+        inside: backBox.left >= headlineBox.left - 1 && backBox.right <= headlineBox.right + 1,
       };
     });
-    assert.ok(view.statWidth <= 300 && view.statWidth >= 220, '폴더 보기 통계 카드 너비: ' + JSON.stringify(view));
-    assert.ok(view.statHeight <= 96 && view.statHeight >= 76, '폴더 보기 통계 카드 높이: ' + JSON.stringify(view));
-    assert.ok(view.shift >= 52 && view.shift <= 72, '폴더 보기 통계가 오른쪽으로 조금 이동하지 않았다: ' + view.shift);
+    assert.equal(view.noStats, true, '폴더 보기에 통계가 남아 있다');
+    assert.equal(view.noToggle, true, '폴더 보기에 통계 접기가 남아 있다');
+    assert.equal(view.bodyCopyOnly, true, '폴더 보기 헤드라인이 제목 전용이 아니다');
     assert.equal(view.pageMax, '1440px', '폴더 보기 폭이 홈과 다르다: ' + view.pageMax);
-    assert.ok(view.dateSize < view.photoSize && view.dateSize >= 13 && view.dateSize <= 17, '날짜 글자 크기가 맞지 않다: ' + view.dateSize);
-    assert.equal(view.columns, 2);
-    assert.equal(await page.locator('.ar-stat-filter').count(), 0);
     assert.equal(view.backText, '← 목록으로');
     assert.equal(view.backHref, '/archive');
     assert.ok(view.backRadius >= 16, '목록으로가 알약 버튼이 아니다: ' + view.backRadius);
-    assert.ok(view.backBg.includes('41, 42, 46'), '목록으로 배경이 토글과 다르다: ' + view.backBg);
-    assert.ok(view.backColor.includes('0, 245, 212'), '목록으로 글자가 민트가 아니다: ' + view.backColor);
+    assert.ok(view.backBg.includes('13, 14, 18') || view.backBg.includes('rgba(13, 14, 18'), '목록으로 배경이 site-btn 계열이 아니다: ' + view.backBg);
+    assert.ok(view.backColor.includes('185, 202, 196') || view.backColor.includes('b9cac4'), '목록으로 기본색이 muted가 아니다: ' + view.backColor);
     assert.equal(view.backBorder, '1px');
-    assert.ok(view.gap >= 2, '목록으로가 통계 접기 버튼과 겹친다: ' + view.gap);
-    assert.equal(view.overlap, false);
+    assert.equal(view.inside, true);
     await page.locator('.ar-headline').screenshot({ path: path.join(artifactDir, 'archive-folder-view-stats.png') });
     await page.locator('.ar-back-folders').screenshot({ path: path.join(artifactDir, 'archive-folder-view-back.png') });
     await page.hover('.ar-back-folders');
@@ -548,21 +558,19 @@ ${siteUi}
     const narrow = await page.evaluate(() => {
       const headline = document.querySelector('.ar-headline');
       const back = document.querySelector('.ar-back-folders');
-      const toggle = document.querySelector('.ar-stats-toggle');
       const copy = document.querySelector('.ar-headline-copy');
       const backBox = back.getBoundingClientRect();
-      const toggleBox = toggle.getBoundingClientRect();
       const copyBox = copy.getBoundingClientRect();
       const headlineBox = headline.getBoundingClientRect();
       return {
         backText: back.textContent.trim(),
-        gap: toggleBox.left - backBox.right,
+        noToggle: !document.querySelector('.ar-stats-toggle'),
         inside: backBox.left >= headlineBox.left - 1 && backBox.right <= headlineBox.right + 1,
         aboveCopy: backBox.bottom <= copyBox.top + 4
       };
     });
     assert.equal(narrow.backText, '← 목록으로');
-    assert.ok(narrow.gap >= 2, '좁은 화면에서 목록으로가 접기 버튼과 겹친다: ' + narrow.gap);
+    assert.equal(narrow.noToggle, true, '좁은 화면에서 통계 접기가 남아 있다');
     assert.equal(narrow.inside, true, '좁은 화면에서 목록으로가 헤드라인 밖으로 나간다');
     assert.equal(narrow.aboveCopy, true, '좁은 화면에서 목록으로가 제목을 가린다');
     await page.locator('.ar-headline').screenshot({ path: path.join(artifactDir, 'archive-folder-view-narrow.png') });
