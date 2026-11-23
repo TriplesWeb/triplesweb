@@ -37,13 +37,22 @@ public final class ArchiveFolderClassifier {
     }
 
     public static Match classify(String artistNames, List<UnitMembers> units) {
-        return classify(artistNames, units, null);
+        return classify(artistNames, units, null, null);
     }
 
     /**
      * @param registeredOn 사진이 실제로 올라온 날짜. null이면 결성일 필터를 건너뛴다(폴더 제목 등).
      */
     public static Match classify(String artistNames, List<UnitMembers> units, LocalDate registeredOn) {
+        return classify(artistNames, units, registeredOn, null);
+    }
+
+    /**
+     * @param assignedUnitId 저장된 소속 유닛. 있을 때만 {@link Kind#UNIT}.
+     *                       없으면 출연진이 유닛 구성과 같아도 케미({@link Kind#COMBO})로 둔다.
+     */
+    public static Match classify(String artistNames, List<UnitMembers> units, LocalDate registeredOn,
+                                 Long assignedUnitId) {
         List<String> members = membersOf(artistNames);
         Set<String> unique = new LinkedHashSet<>(members);
         if (unique.size() == 24 && unique.containsAll(MemberPortraitOptions.koreanOrder())) {
@@ -57,11 +66,11 @@ public final class ArchiveFolderClassifier {
                 return new Match(Kind.SOLO, "s" + (index + 1), List.of(korean), null, "S" + (index + 1) + " " + korean);
             }
         }
-        if (units != null && unique.size() >= 2) {
+        // 유닛 폴더·배지는 저장된 unitId만 본다. 출연진 일치만으로 UNIT이 되면 해제가 무시된다.
+        if (assignedUnitId != null && units != null) {
             for (UnitMembers unit : units) {
                 if (unit == null || unit.members() == null || unit.members().isEmpty()) continue;
-                if (!unit.members().equals(unique)) continue;
-                if (!isFormedBy(unit, registeredOn)) continue;
+                if (!assignedUnitId.equals(unit.unitId())) continue;
                 String name = unit.unitName() == null || unit.unitName().isBlank() ? "유닛" : unit.unitName();
                 return new Match(Kind.UNIT, "unit-" + unit.unitId(), List.copyOf(unique), unit.unitId(), name);
             }
@@ -141,11 +150,17 @@ public final class ArchiveFolderClassifier {
             if (wanted.isEmpty()) return true;
             Set<String> wantedSet = new LinkedHashSet<>(wanted);
             Set<String> actualSet = new LinkedHashSet<>(actual.members());
-            // 유닛 폴더(선택 멤버 = 유닛 구성): 슈퍼셋이 아니라 완전 일치만.
-            // 결성 전이면 유닛으로 취급하지 않아 이 필터에서도 제외한다.
+            // 유닛 구성 멤버 폴더: 저장된 unitId로 UNIT 분류된 글만. 출연진만 같으면 제외.
             if (isExactUnitMemberSet(wantedSet, units)) {
-                if (!actualSet.equals(wantedSet)) return false;
-                return isExactUnitFormedBy(wantedSet, units, registeredOn);
+                if (actual.kind() != Kind.UNIT || actual.unitId() == null) return false;
+                Long expected = null;
+                for (UnitMembers unit : units) {
+                    if (unit != null && unit.members() != null && unit.members().equals(wantedSet)) {
+                        expected = unit.unitId();
+                        break;
+                    }
+                }
+                return expected != null && expected.equals(actual.unitId());
             }
             return actualSet.containsAll(wantedSet);
         }
@@ -167,14 +182,21 @@ public final class ArchiveFolderClassifier {
         return false;
     }
 
-    private static boolean isExactUnitFormedBy(Set<String> members, List<UnitMembers> units, LocalDate registeredOn) {
-        if (registeredOn == null || units == null) return true;
+    /**
+     * 출연진이 유닛 구성과 완전히 같고 결성일 이후일 때 그 유닛 id.
+     * unit_id 백필·이관용. 평소 분류는 {@link #classify}의 저장 unitId만 본다.
+     */
+    public static Long unitIdForExactCast(String artistNames, LocalDate registeredOn, List<UnitMembers> units) {
+        if (units == null || units.isEmpty()) return null;
+        Set<String> cast = new LinkedHashSet<>(membersOf(artistNames));
+        if (cast.size() < 2) return null;
         for (UnitMembers unit : units) {
-            if (unit == null || unit.members() == null || unit.members().isEmpty()) continue;
-            if (!unit.members().equals(members)) continue;
-            return isFormedBy(unit, registeredOn);
+            if (unit == null || unit.members() == null || unit.members().size() < 2) continue;
+            if (!unit.members().equals(cast)) continue;
+            if (!isFormedBy(unit, registeredOn)) continue;
+            return unit.unitId();
         }
-        return true;
+        return null;
     }
 
     private static boolean matchesCombo(Match actual, String key, List<String> comboMembers) {

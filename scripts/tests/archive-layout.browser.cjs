@@ -37,11 +37,6 @@ ${siteMobile}
 <main class="archive-page is-browse" data-archive-kind="image" data-date-label="사진 날짜">
   <section class="ar-hero ar-hero-browse">
     <div class="ar-panel ar-headline">
-      <div class="ar-headline-toolbar">
-        <div class="ar-headline-actions">
-          <button type="button" class="site-btn site-btn--primary site-btn--sm ar-submit ar-home-upload" data-admin-only>사진 추가</button>
-        </div>
-      </div>
       <div class="ar-headline-body is-copy-only">
         <div class="ar-headline-copy">
           <div class="ar-kicker">Archive</div>
@@ -56,6 +51,18 @@ ${siteMobile}
       <a class="site-section-tab" href="/archive" aria-current="page">사진</a>
       <a class="site-section-tab" href="/archive?type=video">영상</a>
     </nav>
+    <div class="ar-source-bar">
+      <nav class="site-section-tabs ar-source-tabs" aria-label="자료 출처">
+        <a class="site-section-tab" href="/archive" aria-current="page">전체</a>
+      </nav>
+      <div class="ar-source-tools">
+        <button type="button" class="site-btn site-btn--ghost site-btn--sm ar-source-manage" data-admin-only id="archiveSourceManageBtn">출처 관리</button>
+        <button type="button" class="site-btn site-btn--primary site-btn--sm ar-submit ar-home-upload" data-admin-only>사진 추가</button>
+        <label class="ar-density">
+          <select id="archivePageSize" name="size" aria-label="페이지당 개수"><option value="10" selected>10개</option></select>
+        </label>
+      </div>
+    </div>
   </div>
   <section class="ar-panel ar-toolbar">
     <form class="ar-filters" id="archiveFilterForm">
@@ -536,17 +543,22 @@ ${siteMobile}
 
     await page.setViewportSize({ width: 412, height: 900 });
     const mobile = await page.evaluate(() => {
-      const headline = document.querySelector('.ar-headline').getBoundingClientRect();
       const upload = document.querySelector('.ar-home-upload').getBoundingClientRect();
+      const manage = document.querySelector('.ar-source-manage').getBoundingClientRect();
+      const density = document.querySelector('.ar-density').getBoundingClientRect();
+      const sourceTools = document.querySelector('.ar-source-tools').getBoundingClientRect();
       const tools = document.querySelector('.ar-filter-tools').getBoundingClientRect();
       const date = document.querySelector('.ar-date-toggle').getBoundingClientRect();
       const member = document.querySelector('.ar-member-toggle').getBoundingClientRect();
       const reset = document.querySelector('.ar-reset').getBoundingClientRect();
       const sort = document.querySelector('.ar-sort-control').getBoundingClientRect();
       return {
-        uploadWidth: Math.round(upload.width),
-        headlineWidth: Math.round(headline.width),
-        uploadInside: upload.right <= headline.right + 1 && upload.left >= headline.left - 1,
+        inSourceTools: Boolean(document.querySelector('.ar-source-tools .ar-home-upload')),
+        uploadHeight: Math.round(upload.height),
+        manageHeight: Math.round(manage.height),
+        densityHeight: Math.round(density.height),
+        toolsAligned: Math.abs(upload.top - manage.top) <= 4 && Math.abs(upload.top - density.top) <= 4,
+        uploadInsideTools: upload.right <= sourceTools.right + 1 && upload.left >= sourceTools.left - 1,
         dateWidth: Math.round(date.width),
         memberWidth: Math.round(member.width),
         sameRow: Math.abs(date.top - member.top) <= 8,
@@ -557,8 +569,11 @@ ${siteMobile}
         toolsWidth: Math.round(tools.width)
       };
     });
-    assert.ok(mobile.uploadWidth < mobile.headlineWidth * 0.55, '모바일 사진 추가가 가로로 길다: ' + JSON.stringify(mobile));
-    assert.equal(mobile.uploadInside, true, '모바일 사진 추가가 헤드라인 밖에 있다');
+    assert.equal(mobile.inSourceTools, true, '사진 추가가 출처 도구 줄에 없다');
+    assert.equal(mobile.toolsAligned, true, '사진 추가·출처 관리·개수가 한 줄이 아니다: ' + JSON.stringify(mobile));
+    assert.ok(Math.abs(mobile.uploadHeight - mobile.densityHeight) <= 2, '사진 추가와 개수 드롭다운 높이가 다르다: ' + JSON.stringify(mobile));
+    assert.ok(Math.abs(mobile.manageHeight - mobile.densityHeight) <= 2, '출처 관리와 개수 드롭다운 높이가 다르다: ' + JSON.stringify(mobile));
+    assert.equal(mobile.uploadInsideTools, true, '사진 추가가 출처 도구 밖에 있다');
     assert.equal(mobile.sameRow, true, '날짜와 멤버 버튼이 한 줄이 아니다');
     assert.equal(mobile.sideBySide, true, '날짜와 멤버 버튼이 나란히 있지 않다');
     assert.ok(mobile.dateWidth < mobile.toolsWidth * 0.7, '날짜 버튼이 한 줄을 다 차지한다: ' + mobile.dateWidth);

@@ -22,20 +22,8 @@
             {{#hasArchiveBack}}
             <div class="ar-headline-toolbar">
                 <a class="site-back-link site-back-link--chip ar-back-folders" href="{{archiveBackHref}}">← 목록으로</a>
-                {{^archiveFolderHome}}
-                <div class="ar-headline-actions">
-                    <button type="button" class="site-btn site-btn--primary site-btn--sm ar-submit ar-home-upload" data-admin-only onclick="showAddModal()">{{#imageArchive}}사진 추가{{/imageArchive}}{{^imageArchive}}영상 추가{{/imageArchive}}</button>
-                </div>
-                {{/archiveFolderHome}}
             </div>
             {{/hasArchiveBack}}
-            {{^hasArchiveBack}}{{^archiveFolderHome}}
-            <div class="ar-headline-toolbar">
-                <div class="ar-headline-actions">
-                    <button type="button" class="site-btn site-btn--primary site-btn--sm ar-submit ar-home-upload" data-admin-only onclick="showAddModal()">{{#imageArchive}}사진 추가{{/imageArchive}}{{^imageArchive}}영상 추가{{/imageArchive}}</button>
-                </div>
-            </div>
-            {{/archiveFolderHome}}{{/hasArchiveBack}}
             <div class="ar-headline-body{{^archiveFolderHome}} is-copy-only{{/archiveFolderHome}}">
                 <div class="ar-headline-copy">
                     <div class="ar-kicker"><span class="material-symbols-outlined">{{#archiveFolderHome}}folder{{/archiveFolderHome}}{{^archiveFolderHome}}{{#imageArchive}}photo_library{{/imageArchive}}{{#videoArchive}}play_circle{{/videoArchive}}{{/archiveFolderHome}}</span> Archive</div>
@@ -76,13 +64,17 @@
         {{>partials/archive-type-tabs}}
         <div class="ar-source-bar">
             {{>partials/archive-source-tabs}}
-            <label class="ar-density">
-                <select id="archivePageSize" name="size" aria-label="페이지당 개수">
-                    {{#archiveSizeOptions}}
-                    <option value="{{value}}"{{#selected}} selected{{/selected}}>{{label}}</option>
-                    {{/archiveSizeOptions}}
-                </select>
-            </label>
+            <div class="ar-source-tools">
+                <button type="button" class="site-btn site-btn--ghost site-btn--sm ar-source-manage" data-admin-only id="archiveSourceManageBtn">출처 관리</button>
+                <button type="button" class="site-btn site-btn--primary site-btn--sm ar-submit ar-home-upload" data-admin-only onclick="showAddModal()">{{#imageArchive}}사진 추가{{/imageArchive}}{{^imageArchive}}영상 추가{{/imageArchive}}</button>
+                <label class="ar-density">
+                    <select id="archivePageSize" name="size" aria-label="페이지당 개수">
+                        {{#archiveSizeOptions}}
+                        <option value="{{value}}"{{#selected}} selected{{/selected}}>{{label}}</option>
+                        {{/archiveSizeOptions}}
+                    </select>
+                </label>
+            </div>
         </div>
     </div>
 
