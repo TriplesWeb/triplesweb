@@ -503,14 +503,6 @@ public class ArchiveService {
         return null;
     }
 
-    private static ArchiveFolderClassifier.UnitMembers unitById(Long unitId, List<ArchiveFolderClassifier.UnitMembers> units) {
-        if (unitId == null || units == null) return null;
-        for (ArchiveFolderClassifier.UnitMembers unit : units) {
-            if (unit != null && unitId.equals(unit.unitId())) return unit;
-        }
-        return null;
-    }
-
     private static Long parseUnitFolderId(String folder) {
         if (folder == null) return null;
         String key = folder.trim();

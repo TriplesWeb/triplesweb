@@ -54,6 +54,24 @@ class ArchiveFolderClassifierTest {
         assertThat(unassigned.kind()).isEqualTo(ArchiveFolderClassifier.Kind.COMBO);
     }
 
+    @Test void exactUnitSetWithoutAssignmentIsNeverUnitFolder() {
+        var before = ArchiveFolderClassifier.classify(
+                "윤서연,김유연,김나경,공유빈", List.of(aaa()), LocalDate.of(2022, 9, 24));
+        assertThat(before.kind()).isEqualTo(ArchiveFolderClassifier.Kind.COMBO);
+        assertThat(before.key()).isEqualTo("combo-4");
+        assertThat(ArchiveFolderClassifier.matches(
+                before, "s", List.of("윤서연", "김유연", "김나경", "공유빈"), List.of(aaa()),
+                LocalDate.of(2022, 9, 24))).isFalse();
+
+        // 결성일 이후라도 저장 unitId 없으면 유닛 폴더에 넣지 않는다.
+        var onFormation = ArchiveFolderClassifier.classify(
+                "윤서연,김유연,김나경,공유빈", List.of(aaa()), LocalDate.of(2022, 9, 25));
+        assertThat(onFormation.kind()).isEqualTo(ArchiveFolderClassifier.Kind.COMBO);
+        assertThat(ArchiveFolderClassifier.matches(
+                onFormation, "s", List.of("윤서연", "김유연", "김나경", "공유빈"), List.of(aaa()),
+                LocalDate.of(2022, 9, 25))).isFalse();
+    }
+
     @Test void unitMemberFolderRequiresExactCastNotSuperset() {
         var kre = new ArchiveFolderClassifier.UnitMembers(2L, "+(KR)ystal Eyes",
                 Set.of("윤서연", "이지우", "김채연", "김수민"));

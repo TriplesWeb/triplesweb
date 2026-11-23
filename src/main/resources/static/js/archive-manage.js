@@ -176,7 +176,7 @@
     function matchUnitBadge(memberNames, root) {
         const unitRoot = unitChecksRoot(root) || root?.querySelector?.('[data-unit-checks]') || null;
         const scope = unitRoot || document;
-        const checked = scope.querySelector('input[type="checkbox"]:checked');
+        const checked = scope.querySelector('input[type="checkbox"][data-members]:checked');
         if (!checked) return null;
         return unitBadgeFromCheckbox(checked, memberNames);
     }
