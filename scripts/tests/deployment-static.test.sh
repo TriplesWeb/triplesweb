@@ -48,6 +48,7 @@ grep -Fq -- "- '.github/**'" .github/workflows/deploy-main.yml
 python3 scripts/ci-path-filter.py --self-test
 test ! -e docker-compose.bluegreen.yml
 test ! -e scripts/deploy-pi-bluegreen.sh
+reject_match -Eiq 'bluegreen|app_blue|app_green|active_slot|project_container' scripts/deploy-pi-app.sh
 grep -Fq 'bash ./deploy-pi-app.sh' .github/workflows/deploy-main.yml
 grep -Fq '${APP_PORT:-8090}:8080' docker-compose.yml
 grep -Fq 'SPRING_JPA_HIBERNATE_DDL_AUTO: none' docker-compose.yml
