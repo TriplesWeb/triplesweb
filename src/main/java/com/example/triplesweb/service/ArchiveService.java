@@ -1,7 +1,6 @@
 package com.example.triplesweb.service;
 
 import com.example.triplesweb.entity.Archive;
-import com.example.triplesweb.entity.ArchiveSource;
 import com.example.triplesweb.entity.MediaType;
 import com.example.triplesweb.entity.SavedMeta;
 import com.example.triplesweb.repository.ArchiveRepository;
@@ -64,11 +63,11 @@ public class ArchiveService {
     private final ConcurrentHashMap<String, CachedBrowse> browsePageCache = new ConcurrentHashMap<>();
 
     private record CachedLong(long value, long at) {}
-    private record CachedSources(Set<ArchiveSource> value, long at) {}
+    private record CachedSources(Set<String> value, long at) {}
     private record CachedBrowse(FolderBrowse value, long at) {}
 
     /** 폴더 목록 페이지와 출처 탭을 한 번의 필터 스캔으로 만든다. */
-    public record FolderBrowse(Page<Archive> page, Set<ArchiveSource> availableSources) {}
+    public record FolderBrowse(Page<Archive> page, Set<String> availableSources) {}
 
     @Transactional(readOnly = true)
     public List<Archive> index() {
@@ -180,20 +179,20 @@ public class ArchiveService {
 
     @Transactional(readOnly = true)
     public Page<Archive> pageByType(MediaType type, int page, int size, String keyword, List<String> members,
-                                    LocalDate from, LocalDate to, ArchiveSource source, boolean unclassifiedOnly) {
+                                    LocalDate from, LocalDate to, String source, boolean unclassifiedOnly) {
         return pageByType(type, page, size, keyword, members, from, to, source, unclassifiedOnly, false, ArchiveSort.NEWEST);
     }
 
     @Transactional(readOnly = true)
     public Page<Archive> pageByType(MediaType type, int page, int size, String keyword, List<String> members,
-                                    LocalDate from, LocalDate to, ArchiveSource source, boolean unclassifiedOnly,
+                                    LocalDate from, LocalDate to, String source, boolean unclassifiedOnly,
                                     boolean requireAllMembers) {
         return pageByType(type, page, size, keyword, members, from, to, source, unclassifiedOnly, requireAllMembers, ArchiveSort.NEWEST);
     }
 
     @Transactional(readOnly = true)
     public Page<Archive> pageByType(MediaType type, int page, int size, String keyword, List<String> members,
-                                    LocalDate from, LocalDate to, ArchiveSource source, boolean unclassifiedOnly,
+                                    LocalDate from, LocalDate to, String source, boolean unclassifiedOnly,
                                     boolean requireAllMembers, ArchiveSort sort) {
         ArchiveSort order = sort == null ? ArchiveSort.NEWEST : sort;
         int safeSize = Math.max(1, size);
@@ -339,13 +338,13 @@ public class ArchiveService {
     }
 
     private static String filterCacheKey(String kind, MediaType type, String keyword, List<String> members,
-                                         LocalDate from, LocalDate to, ArchiveSource source,
+                                         LocalDate from, LocalDate to, String source,
                                          boolean unclassifiedOnly, boolean requireAllMembers) {
         return filterCacheKey(kind, type, keyword, members, from, to, source, unclassifiedOnly, requireAllMembers, ArchiveSort.NEWEST);
     }
 
     private static String filterCacheKey(String kind, MediaType type, String keyword, List<String> members,
-                                         LocalDate from, LocalDate to, ArchiveSource source,
+                                         LocalDate from, LocalDate to, String source,
                                          boolean unclassifiedOnly, boolean requireAllMembers, ArchiveSort sort) {
         ArchiveSort order = sort == null ? ArchiveSort.NEWEST : sort;
         return kind + '|' + type + '|' + (keyword == null ? "" : keyword.trim()) + '|'
@@ -355,7 +354,7 @@ public class ArchiveService {
 
     @Transactional(readOnly = true)
     public Page<Archive> pageInFolder(MediaType type, int page, int size, String keyword, List<String> members,
-                                      LocalDate from, LocalDate to, ArchiveSource source, boolean unclassifiedOnly,
+                                      LocalDate from, LocalDate to, String source, boolean unclassifiedOnly,
                                       String folder, List<String> comboMembers,
                                       List<ArchiveFolderClassifier.UnitMembers> units) {
         return browseFolder(type, page, size, keyword, members, from, to, source, unclassifiedOnly,
@@ -364,7 +363,7 @@ public class ArchiveService {
 
     @Transactional(readOnly = true)
     public FolderBrowse browseFolder(MediaType type, int page, int size, String keyword, List<String> members,
-                                     LocalDate from, LocalDate to, ArchiveSource source, boolean unclassifiedOnly,
+                                     LocalDate from, LocalDate to, String source, boolean unclassifiedOnly,
                                      String folder, List<String> comboMembers,
                                      List<ArchiveFolderClassifier.UnitMembers> units) {
         return browseFolder(type, page, size, keyword, members, from, to, source, unclassifiedOnly,
@@ -373,7 +372,7 @@ public class ArchiveService {
 
     @Transactional(readOnly = true)
     public FolderBrowse browseFolder(MediaType type, int page, int size, String keyword, List<String> members,
-                                     LocalDate from, LocalDate to, ArchiveSource source, boolean unclassifiedOnly,
+                                     LocalDate from, LocalDate to, String source, boolean unclassifiedOnly,
                                      String folder, List<String> comboMembers,
                                      List<ArchiveFolderClassifier.UnitMembers> units, ArchiveSort sort) {
         ArchiveSort order = sort == null ? ArchiveSort.NEWEST : sort;
@@ -419,7 +418,7 @@ public class ArchiveService {
     }
 
     private FolderBrowse cachedPagedBrowse(MediaType type, int page, int size, String keyword, List<String> members,
-                                           LocalDate from, LocalDate to, ArchiveSource source, boolean unclassifiedOnly,
+                                           LocalDate from, LocalDate to, String source, boolean unclassifiedOnly,
                                            boolean requireAllMembers, ArchiveSort order) {
         String pageKey = filterCacheKey("browse", type, keyword, members, from, to, source, unclassifiedOnly, requireAllMembers, order)
                 + "|p=" + page + "|z=" + size;
@@ -429,7 +428,7 @@ public class ArchiveService {
         if (cachedBrowse != null && now - cachedBrowse.at() < FILTER_TTL_MS) {
             return cachedBrowse.value();
         }
-        Set<ArchiveSource> sources = availableSources(type, keyword, members, from, to, requireAllMembers);
+        Set<String> sources = availableSources(type, keyword, members, from, to, requireAllMembers);
         Page<Archive> pageResult = pageByType(type, page, size, keyword, members, from, to, source, unclassifiedOnly, requireAllMembers, order);
         FolderBrowse browse = new FolderBrowse(pageResult, sources);
         browsePageCache.put(pageKey, new CachedBrowse(browse, now));
@@ -437,7 +436,7 @@ public class ArchiveService {
     }
 
     private FolderBrowse browseMatchedRows(Specification<Archive> scanSpec, int page, int size,
-                                           ArchiveSource source, boolean unclassifiedOnly,
+                                           String source, boolean unclassifiedOnly,
                                            String folderKey, List<String> comboMembers,
                                            List<ArchiveFolderClassifier.UnitMembers> units, ArchiveSort order) {
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
@@ -454,11 +453,11 @@ public class ArchiveService {
         if (base != null) scanQuery.where(base);
 
         List<SortRow> matched = new ArrayList<>();
-        Set<ArchiveSource> sources = new LinkedHashSet<>();
+        Set<String> sources = new LinkedHashSet<>();
         for (Object[] row : entityManager.createQuery(scanQuery).getResultList()) {
             Long id = (Long) row[0];
             String artistNames = (String) row[1];
-            ArchiveSource rowSource = (ArchiveSource) row[2];
+            String rowSource = (String) row[2];
             LocalDate registeredOn = (LocalDate) row[3];
             Long storedUnitId = (Long) row[5];
             ArchiveFolderClassifier.Match classified =
@@ -479,7 +478,7 @@ public class ArchiveService {
             if (rowSource != null) sources.add(rowSource);
             if (unclassifiedOnly) {
                 if (rowSource != null) continue;
-            } else if (source != null && !source.equals(rowSource)) {
+            } else if (source != null && (rowSource == null || !source.equalsIgnoreCase(rowSource))) {
                 continue;
             }
             matched.add(new SortRow(id, artistNames, registeredOn, (String) row[4]));
@@ -529,13 +528,13 @@ public class ArchiveService {
 
     /** 전체 보기 출처 탭용. 본문 없이 source 컬럼만 distinct 조회한다. */
     @Transactional(readOnly = true)
-    public Set<ArchiveSource> availableSources(MediaType type, String keyword, List<String> members,
+    public Set<String> availableSources(MediaType type, String keyword, List<String> members,
                                                LocalDate from, LocalDate to) {
         return availableSources(type, keyword, members, from, to, false);
     }
 
     @Transactional(readOnly = true)
-    public Set<ArchiveSource> availableSources(MediaType type, String keyword, List<String> members,
+    public Set<String> availableSources(MediaType type, String keyword, List<String> members,
                                                LocalDate from, LocalDate to, boolean requireAllMembers) {
         String key = filterCacheKey("sources", type, keyword, members, from, to, null, false, requireAllMembers);
         long now = System.currentTimeMillis();
@@ -546,13 +545,13 @@ public class ArchiveService {
         }
         Specification<Archive> spec = archiveSpec(type, keyword, members, from, to, null, false, requireAllMembers);
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
-        CriteriaQuery<ArchiveSource> query = cb.createQuery(ArchiveSource.class);
+        CriteriaQuery<String> query = cb.createQuery(String.class);
         Root<Archive> root = query.from(Archive.class);
         Predicate base = spec.toPredicate(root, query, cb);
         Predicate notNull = cb.isNotNull(root.get("source"));
         query.select(root.get("source")).distinct(true)
                 .where(base == null ? notNull : cb.and(base, notNull));
-        Set<ArchiveSource> sources = Set.copyOf(entityManager.createQuery(query).getResultList().stream()
+        Set<String> sources = Set.copyOf(entityManager.createQuery(query).getResultList().stream()
                 .filter(Objects::nonNull)
                 .toList());
         sourcesCache.put(key, new CachedSources(sources, now));
@@ -561,13 +560,13 @@ public class ArchiveService {
 
     private static Specification<Archive> archiveSpec(
             MediaType type, String keyword, List<String> members, LocalDate from, LocalDate to,
-            ArchiveSource source, boolean unclassifiedOnly) {
+            String source, boolean unclassifiedOnly) {
         return archiveSpec(type, keyword, members, from, to, source, unclassifiedOnly, false);
     }
 
     private static Specification<Archive> archiveSpec(
             MediaType type, String keyword, List<String> members, LocalDate from, LocalDate to,
-            ArchiveSource source, boolean unclassifiedOnly, boolean requireAllMembers) {
+            String source, boolean unclassifiedOnly, boolean requireAllMembers) {
         String q = keyword == null ? "" : keyword.trim();
         List<String> names = members == null ? List.of() : members.stream()
                 .filter(name -> name != null && !name.isBlank())
@@ -629,13 +628,13 @@ public class ArchiveService {
 
     @Transactional
     public Archive save(MultipartFile file, String title, MediaType requestedType, String artistNames, LocalDate registeredOn,
-                        ArchiveSource source) throws IOException {
+                        String source) throws IOException {
         return save(file, title, requestedType, artistNames, registeredOn, source, null);
     }
 
     @Transactional
     public Archive save(MultipartFile file, String title, MediaType requestedType, String artistNames, LocalDate registeredOn,
-                        ArchiveSource source, String description) throws IOException {
+                        String source, String description) throws IOException {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("업로드 할 파일이 없습니다.");
         }
@@ -667,19 +666,19 @@ public class ArchiveService {
      */
     @Transactional
     public Archive uploadImages(List<MultipartFile> files, String title, String artistNames, LocalDate registeredOn,
-                                ArchiveSource source, String description) throws IOException {
+                                String source, String description) throws IOException {
         return uploadImages(files, title, artistNames, registeredOn, source, description, 0);
     }
 
     @Transactional
     public Archive uploadImages(List<MultipartFile> files, String title, String artistNames, LocalDate registeredOn,
-                                ArchiveSource source, String description, int coverIndex) throws IOException {
+                                String source, String description, int coverIndex) throws IOException {
         return uploadImages(files, title, artistNames, registeredOn, source, description, coverIndex, null);
     }
 
     @Transactional
     public Archive uploadImages(List<MultipartFile> files, String title, String artistNames, LocalDate registeredOn,
-                                ArchiveSource source, String description, int coverIndex, String imageArtistsJson) throws IOException {
+                                String source, String description, int coverIndex, String imageArtistsJson) throws IOException {
         List<MultipartFile> uploads = files == null ? List.of() : files.stream()
                 .filter(file -> file != null && !file.isEmpty())
                 .toList();
@@ -732,13 +731,13 @@ public class ArchiveService {
 
     @Transactional
     public Archive uploadImageOnly(MultipartFile file, String title, MediaType type, String artistNames, LocalDate registeredOn,
-                                   ArchiveSource source) throws IOException {
+                                   String source) throws IOException {
         return uploadImageOnly(file, title, type, artistNames, registeredOn, source, null);
     }
 
     @Transactional
     public Archive uploadImageOnly(MultipartFile file, String title, MediaType type, String artistNames, LocalDate registeredOn,
-                                   ArchiveSource source, String description) throws IOException {
+                                   String source, String description) throws IOException {
         if (type != null && type != MediaType.IMAGE) {
             throw new IllegalArgumentException("이미지 파일만 업로드 가능합니다.");
         }
@@ -770,7 +769,7 @@ public class ArchiveService {
 
     @Transactional
     public Archive uploadVideoOnly(MultipartFile file, String title, MediaType type, String artistNames, MultipartFile thumbnail,
-                                   LocalDate registeredOn, ArchiveSource source) throws IOException {
+                                   LocalDate registeredOn, String source) throws IOException {
         if (type != null && type != MediaType.VIDEO) {
             throw new IllegalArgumentException("비디오 파일만 업로드 가능합니다.");
         }
@@ -819,44 +818,44 @@ public class ArchiveService {
 
     @Transactional
     public Archive update(long id, String title, MultipartFile file, String artistNames, MultipartFile thumbnail, boolean clearThumbnail,
-                          LocalDate registeredOn, ArchiveSource source) throws IOException {
+                          LocalDate registeredOn, String source) throws IOException {
         return update(id, title, file, artistNames, thumbnail, clearThumbnail, registeredOn, source, null);
     }
 
     @Transactional
     public Archive update(long id, String title, MultipartFile file, String artistNames, MultipartFile thumbnail, boolean clearThumbnail,
-                          LocalDate registeredOn, ArchiveSource source, String description) throws IOException {
+                          LocalDate registeredOn, String source, String description) throws IOException {
         List<MultipartFile> files = file == null || file.isEmpty() ? List.of() : List.of(file);
         return update(id, title, files, artistNames, thumbnail, clearThumbnail, registeredOn, source, true, description, null, null);
     }
 
     @Transactional
     public Archive update(long id, String title, List<MultipartFile> files, String artistNames, MultipartFile thumbnail, boolean clearThumbnail,
-                          LocalDate registeredOn, ArchiveSource source, String description) throws IOException {
+                          LocalDate registeredOn, String source, String description) throws IOException {
         return update(id, title, files, artistNames, thumbnail, clearThumbnail, registeredOn, source, true, description, null, null);
     }
 
     @Transactional
     public Archive update(long id, String title, List<MultipartFile> files, String artistNames, MultipartFile thumbnail, boolean clearThumbnail,
-                          LocalDate registeredOn, ArchiveSource source, String description, String keepImageUrlsJson) throws IOException {
+                          LocalDate registeredOn, String source, String description, String keepImageUrlsJson) throws IOException {
         return update(id, title, files, artistNames, thumbnail, clearThumbnail, registeredOn, source, true, description, keepImageUrlsJson, null);
     }
 
     @Transactional
     public Archive update(long id, String title, List<MultipartFile> files, String artistNames, MultipartFile thumbnail, boolean clearThumbnail,
-                          LocalDate registeredOn, ArchiveSource source, String description, String keepImageUrlsJson,
+                          LocalDate registeredOn, String source, String description, String keepImageUrlsJson,
                           String imageOrderJson) throws IOException {
         return update(id, title, files, artistNames, thumbnail, clearThumbnail, registeredOn, source, true, description, keepImageUrlsJson, imageOrderJson);
     }
 
     private Archive update(long id, String title, MultipartFile file, String artistNames, MultipartFile thumbnail, boolean clearThumbnail,
-                           LocalDate registeredOn, ArchiveSource source, boolean applySource) throws IOException {
+                           LocalDate registeredOn, String source, boolean applySource) throws IOException {
         List<MultipartFile> files = file == null || file.isEmpty() ? List.of() : List.of(file);
         return update(id, title, files, artistNames, thumbnail, clearThumbnail, registeredOn, source, applySource, null, null, null);
     }
 
     private Archive update(long id, String title, List<MultipartFile> files, String artistNames, MultipartFile thumbnail, boolean clearThumbnail,
-                           LocalDate registeredOn, ArchiveSource source, boolean applySource, String description,
+                           LocalDate registeredOn, String source, boolean applySource, String description,
                            String keepImageUrlsJson, String imageOrderJson) throws IOException {
         return update(id, title, files, artistNames, thumbnail, clearThumbnail, registeredOn, source, applySource,
                 description, keepImageUrlsJson, imageOrderJson, null);
@@ -864,7 +863,7 @@ public class ArchiveService {
 
     @Transactional
     public Archive update(long id, String title, List<MultipartFile> files, String artistNames, MultipartFile thumbnail,
-                          boolean clearThumbnail, LocalDate registeredOn, ArchiveSource source,
+                          boolean clearThumbnail, LocalDate registeredOn, String source,
                           String description, String keepImageUrlsJson, String imageOrderJson, Integer coverIndex) throws IOException {
         return update(id, title, files, artistNames, thumbnail, clearThumbnail, registeredOn, source, true,
                 description, keepImageUrlsJson, imageOrderJson, coverIndex, null);
@@ -872,7 +871,7 @@ public class ArchiveService {
 
     @Transactional
     public Archive update(long id, String title, List<MultipartFile> files, String artistNames, MultipartFile thumbnail,
-                          boolean clearThumbnail, LocalDate registeredOn, ArchiveSource source,
+                          boolean clearThumbnail, LocalDate registeredOn, String source,
                           String description, String keepImageUrlsJson, String imageOrderJson, Integer coverIndex,
                           String imageArtistsJson) throws IOException {
         return update(id, title, files, artistNames, thumbnail, clearThumbnail, registeredOn, source, true,
@@ -880,14 +879,14 @@ public class ArchiveService {
     }
 
     private Archive update(long id, String title, List<MultipartFile> files, String artistNames, MultipartFile thumbnail,
-                           boolean clearThumbnail, LocalDate registeredOn, ArchiveSource source, boolean applySource,
+                           boolean clearThumbnail, LocalDate registeredOn, String source, boolean applySource,
                            String description, String keepImageUrlsJson, String imageOrderJson, Integer coverIndex) throws IOException {
         return update(id, title, files, artistNames, thumbnail, clearThumbnail, registeredOn, source, applySource,
                 description, keepImageUrlsJson, imageOrderJson, coverIndex, null);
     }
 
     private Archive update(long id, String title, List<MultipartFile> files, String artistNames, MultipartFile thumbnail,
-                           boolean clearThumbnail, LocalDate registeredOn, ArchiveSource source, boolean applySource,
+                           boolean clearThumbnail, LocalDate registeredOn, String source, boolean applySource,
                            String description, String keepImageUrlsJson, String imageOrderJson, Integer coverIndex,
                            String imageArtistsJson) throws IOException {
         Archive archive = show(id);
@@ -1080,7 +1079,7 @@ public class ArchiveService {
     }
 
     /** 같은 멤버·날짜·출처·설명(미입력 포함)의 사진 게시글이 있으면 추가를 막는다. */
-    private void ensureUniqueImagePost(LocalDate registeredOn, ArchiveSource source, String description, String artistNames) {
+    private void ensureUniqueImagePost(LocalDate registeredOn, String source, String description, String artistNames) {
         if (registeredOn == null || source == null) {
             throw new IllegalArgumentException("날짜와 출처를 선택해 주세요.");
         }

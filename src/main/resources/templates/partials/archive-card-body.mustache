@@ -2,7 +2,7 @@
     {{#hasHeadline}}<h3>{{headline}}</h3>{{/hasHeadline}}
     {{#hasBadgeRow}}
     <div class="ar-card-badges">
-        {{#hasSource}}<div class="ar-source-badge" data-source="{{sourceValue}}">{{sourceLabel}}</div>{{/hasSource}}
+        {{#hasSource}}<div class="ar-source-badge" data-source="{{sourceValue}}" style="--source-color: {{sourceColor}}">{{sourceLabel}}</div>{{/hasSource}}
         {{#hasUnitBadge}}<div class="ar-unit-badge" style="--unit-color: {{unitBadgeColor}}" title="{{unitBadgeLabel}}">{{unitBadgeLabel}}</div>{{/hasUnitBadge}}
     </div>
     {{/hasBadgeRow}}

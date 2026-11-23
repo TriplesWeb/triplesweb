@@ -1,6 +1,5 @@
 package com.example.triplesweb.repository;
 
-import com.example.triplesweb.entity.ArchiveSource;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -24,7 +23,7 @@ class ArchiveSourceMigrationTest {
 
             var sources = jdbc.queryForList("SELECT source FROM archive ORDER BY id", String.class);
             assertThat(sources).containsExactly("TEASER_BEHIND", "TEASER_BEHIND", "MAGAZINE", null);
-            assertThat(ArchiveSource.valueOf(sources.get(1))).isEqualTo(ArchiveSource.TEASER_BEHIND);
+            assertThat(sources.get(1)).isEqualTo("TEASER_BEHIND");
         } finally {
             dataSource.shutdown();
         }

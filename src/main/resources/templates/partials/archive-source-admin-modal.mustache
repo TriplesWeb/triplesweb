@@ -1,0 +1,39 @@
+<div class="ar-dialog" id="archiveSourceManageModal" hidden>
+    <div class="ar-dialog-backdrop" aria-hidden="true"></div>
+    <div class="ar-dialog-panel ar-source-admin-panel" role="dialog" aria-modal="true" aria-labelledby="archiveSourceManageLabel">
+        <div class="ar-dialog-head">
+            <h2 id="archiveSourceManageLabel">출처 관리</h2>
+            <button type="button" class="ar-dialog-close" data-source-admin-close aria-label="닫기">×</button>
+        </div>
+        <div class="ar-source-admin-body">
+            <p class="ar-source-admin-hint">탭에 보이는 출처를 추가·수정하거나, 쓰지 않는 출처는 숨기거나 삭제할 수 있습니다. 사용 중인 출처는 삭제할 수 없습니다.</p>
+            <ul class="ar-source-admin-list" id="archiveSourceAdminList"></ul>
+            <form class="ar-source-admin-form" id="archiveSourceAdminForm" novalidate>
+                <input type="hidden" name="id" value="">
+                <div class="ar-source-admin-fields">
+                    <label class="ar-field">코드
+                        <input type="text" name="code" maxlength="32" placeholder="예: FAN_MEET" autocomplete="off" required>
+                    </label>
+                    <label class="ar-field">이름
+                        <input type="text" name="label" maxlength="64" placeholder="표시 이름" required>
+                    </label>
+                    <label class="ar-field">색
+                        <input type="color" name="color" value="#00f5d4" aria-label="배지 색">
+                    </label>
+                    <label class="ar-field">순서
+                        <input type="number" name="sortOrder" min="0" step="1" placeholder="자동">
+                    </label>
+                    <label class="ar-field ar-source-admin-visible">
+                        <input type="checkbox" name="visible" checked>
+                        탭에 표시
+                    </label>
+                </div>
+                <p class="ar-source-admin-error" id="archiveSourceAdminError" hidden></p>
+                <div class="ar-source-admin-actions">
+                    <button type="button" class="site-btn site-btn--ghost site-btn--sm" data-source-admin-reset>새로 추가</button>
+                    <button type="submit" class="site-btn site-btn--primary site-btn--sm" id="archiveSourceAdminSave">저장</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

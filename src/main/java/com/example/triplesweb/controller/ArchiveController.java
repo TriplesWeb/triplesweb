@@ -8,6 +8,7 @@ import com.example.triplesweb.entity.UnitMember;
 import com.example.triplesweb.dto.ChemistryDto;
 import com.example.triplesweb.dto.ChemistryGroupDto;
 import com.example.triplesweb.service.ArchiveService;
+import com.example.triplesweb.service.ArchiveSourceService;
 import com.example.triplesweb.service.AboutAdminAuth;
 import com.example.triplesweb.service.ArtistSnapshotService;
 import com.example.triplesweb.service.ChemistryGroupService;
@@ -57,6 +58,7 @@ public class ArchiveController {
     private static final List<Integer> ARCHIVE_SIZE_OPTIONS = List.of(10, 20, 30, 40, 50);
 
     private final ArchiveService archiveService;
+    private final ArchiveSourceService archiveSourceService;
     private final AboutAdminAuth aboutAdminAuth;
     private final ArtistSnapshotService artistSnapshot;
     private final UnitService unitService;
@@ -247,9 +249,10 @@ public class ArchiveController {
             fromDate = toDate;
             toDate = swap;
         }
-        ArchiveSource source = parseSourceFilter(sourceSlug);
-        String sourceKey = source == null ? sourceSlug : source.getSlug();
-        boolean externalView = source == ArchiveSource.EXTERNAL;
+        ArchiveSource sourceEntity = parseSourceFilter(sourceSlug);
+        String source = sourceEntity == null ? null : sourceEntity.getCode();
+        String sourceKey = sourceEntity == null ? sourceSlug : sourceEntity.getSlug();
+        boolean externalView = sourceEntity != null && "external".equalsIgnoreCase(sourceEntity.getSlug());
         int safeSize = normalizeArchiveSize(size);
         ArchiveSort sort = ArchiveSort.from(sortRaw);
         if (sort == ArchiveSort.TITLE && type != MediaType.VIDEO) sort = ArchiveSort.NEWEST;
@@ -363,7 +366,7 @@ public class ArchiveController {
         model.addAttribute("sourceKey", sourceKey == null ? "" : sourceKey.trim());
         model.addAttribute("hasSourceFilter", sourceSlug != null && !sourceSlug.isBlank());
         model.addAttribute("chemQuery", "");
-        model.addAttribute("archiveSources", sourceOptions(source));
+        model.addAttribute("archiveSources", sourceOptions(sourceEntity));
         model.addAttribute("hasActiveArchiveFilters", (q != null && !q.isBlank())
                 || (showMemberFilter && !selectedMembers.isEmpty())
                 || fromDate != null || toDate != null || onDate != null
@@ -387,7 +390,7 @@ public class ArchiveController {
                     joinHref("/archive", folderQuery(folderKey, "") + membersQuery + typeQuery));
         }
         // 출처 탭: 폴더는 한 번 스캔한 결과, 전체 보기는 source 컬럼만 distinct 조회.
-        Set<ArchiveSource> availableSources = browse
+        Set<String> availableSources = browse
                 ? archiveService.availableSources(type, q, selectedMembers, fromDate, toDate)
                 : folderBrowse.availableSources();
         String keptFilters = (type == MediaType.VIDEO ? "&type=video" : "") + folderQuery(folderKey, "")
@@ -503,10 +506,8 @@ public class ArchiveController {
         return registeredOn;
     }
 
-    private static ArchiveSource requireSource(String source) {
-        ArchiveSource parsed = ArchiveSource.parse(source);
-        if (parsed == null) throw new IllegalArgumentException("출처를 선택하세요.");
-        return parsed;
+    private String requireSource(String source) {
+        return archiveSourceService.requireVisible(source).getCode();
     }
 
     private static String memberQuery(List<String> selected) {
@@ -519,6 +520,7 @@ public class ArchiveController {
     }
 
     private List<Map<String, Object>> archiveCards(Page<Archive> archives, List<Artist> artists, List<Unit> units, List<String> selectedMembers) {
+        Map<String, ArchiveSource> sourceCatalog = archiveSourceService.byCode();
         Map<String, String> colors = new LinkedHashMap<>();
         for (Artist artist : artists) {
             String color = artist.getColor();
@@ -578,9 +580,13 @@ public class ArchiveController {
             card.put("file", archive.getFile());
             String imagesJson = ArchiveImages.write(imageUrls, objectMapper);
             String viewJson = ArchiveImages.write(viewUrls, objectMapper);
-            String previewSource = viewUrls.isEmpty()
-                    ? (archive.getFile() == null || archive.getFile().getUrl() == null ? "" : archive.getFile().getUrl())
-                    : viewUrls.get(0);
+            // 목록 표지는 imagesJson 순서가 아니라 대표(file.url)를 쓴다.
+            String coverUrl = archive.getFile() == null || archive.getFile().getUrl() == null
+                    ? ""
+                    : archive.getFile().getUrl().trim();
+            String previewSource = !coverUrl.isEmpty()
+                    ? coverUrl
+                    : (viewUrls.isEmpty() ? "" : viewUrls.get(0));
             card.put("imageUrls", imageUrls);
             card.put("imageUrlsJson", imagesJson == null ? "[]" : imagesJson);
             card.put("viewUrlsJson", viewJson == null ? "[]" : viewJson);
@@ -606,10 +612,20 @@ public class ArchiveController {
             card.put("registeredOn", registered);
             card.put("registeredOnDisplay", registered.replace('-', '/'));
             card.put("hasRegisteredOn", !registered.isBlank());
-            ArchiveSource source = archive.getSource();
-            card.put("sourceValue", source == null ? "" : source.name());
-            card.put("sourceLabel", source == null ? "" : source.getLabel());
-            card.put("hasSource", source != null);
+            String sourceCode = archive.getSource();
+            ArchiveSource sourceMeta = sourceCode == null || sourceCode.isBlank()
+                    ? null : sourceCatalog.get(sourceCode.toUpperCase(Locale.ROOT));
+            if (sourceMeta == null && sourceCode != null && !sourceCode.isBlank()) {
+                sourceMeta = archiveSourceService.find(sourceCode);
+            }
+            card.put("sourceValue", sourceMeta == null ? (sourceCode == null ? "" : sourceCode) : sourceMeta.getCode());
+            card.put("sourceLabel", sourceMeta == null
+                    ? (sourceCode == null ? "" : sourceCode)
+                    : sourceMeta.getLabel());
+            card.put("sourceColor", sourceMeta == null || sourceMeta.getColor() == null
+                    ? "#00f5d4"
+                    : sourceMeta.getColor());
+            card.put("hasSource", sourceCode != null && !sourceCode.isBlank());
             Long storedUnitId = archive.getUnitId();
             card.put("unitId", storedUnitId == null ? "" : String.valueOf(storedUnitId));
             ArchiveFolderClassifier.UnitMembers storedUnit = storedUnitId == null ? null : unitMembers.stream()
@@ -636,7 +652,7 @@ public class ArchiveController {
                 card.put("unitBadgeColor", "");
                 card.put("unitBadgeKey", "");
             }
-            card.put("hasBadgeRow", source != null || unitBadge);
+            card.put("hasBadgeRow", (sourceCode != null && !sourceCode.isBlank()) || unitBadge);
             cards.add(card);
         }
         return cards;
@@ -783,15 +799,11 @@ public class ArchiveController {
         model.addAttribute("dateExactLabel", "이날");
     }
 
-    private static ArchiveSource parseSourceFilter(String sourceSlug) {
+    private ArchiveSource parseSourceFilter(String sourceSlug) {
         if (sourceSlug == null || sourceSlug.isBlank()) {
             return null;
         }
-        try {
-            return ArchiveSource.parse(sourceSlug);
-        } catch (IllegalArgumentException ignored) {
-            return null;
-        }
+        return archiveSourceService.find(sourceSlug);
     }
 
     private static boolean isSoloFolder(String folder) {
@@ -939,28 +951,36 @@ public class ArchiveController {
         return "&chem=" + URLEncoder.encode(chem.trim(), StandardCharsets.UTF_8);
     }
 
-    private static List<Map<String, Object>> sourceOptions(ArchiveSource selected) {
+    private List<Map<String, Object>> sourceOptions(ArchiveSource selected) {
         List<Map<String, Object>> options = new ArrayList<>();
-        for (ArchiveSource source : ArchiveSource.values()) {
+        String selectedCode = selected == null ? null : selected.getCode();
+        for (var dto : archiveSourceService.listVisible()) {
             Map<String, Object> option = new LinkedHashMap<>();
-            option.put("value", source.name());
-            option.put("slug", source.getSlug());
-            option.put("label", source.getLabel());
-            option.put("selected", source == selected);
+            option.put("value", dto.code());
+            option.put("slug", dto.slug());
+            option.put("label", dto.label());
+            option.put("color", dto.color());
+            option.put("selected", selectedCode != null && selectedCode.equalsIgnoreCase(dto.code()));
             options.add(option);
         }
         return options;
     }
 
-    private static List<Map<String, Object>> sourceTabs(String path, String extraQuery, String sourceSlug, Set<ArchiveSource> availableSources) {
+    private List<Map<String, Object>> sourceTabs(String path, String extraQuery, String sourceSlug, Set<String> availableSources) {
         List<Map<String, Object>> tabs = new ArrayList<>();
         String current = sourceSlug == null ? "" : sourceSlug.trim();
         tabs.add(sourceTab("전체", joinHref(path, extraQuery), current.isBlank()));
-        for (ArchiveSource source : ArchiveSource.values()) {
-            if (!availableSources.contains(source)) continue;
-            tabs.add(sourceTab(source.getLabel(),
-                    joinHref(path, extraQuery + "&source=" + source.getSlug()),
-                    current.equalsIgnoreCase(source.getSlug()) || current.equalsIgnoreCase(source.name())));
+        Set<String> available = new LinkedHashSet<>();
+        if (availableSources != null) {
+            for (String code : availableSources) {
+                if (code != null && !code.isBlank()) available.add(code.toUpperCase(Locale.ROOT));
+            }
+        }
+        for (var dto : archiveSourceService.listVisible()) {
+            if (!available.contains(dto.code().toUpperCase(Locale.ROOT))) continue;
+            tabs.add(sourceTab(dto.label(),
+                    joinHref(path, extraQuery + "&source=" + dto.slug()),
+                    current.equalsIgnoreCase(dto.slug()) || current.equalsIgnoreCase(dto.code())));
         }
         return tabs;
     }
@@ -1527,7 +1547,7 @@ public class ArchiveController {
         try {
             String names = artistNames == null ? "" : String.join(",", artistNames);
             LocalDate date = requireDate(registeredOn);
-            ArchiveSource archiveSource = requireSource(source);
+            String archiveSource = requireSource(source);
             String safeTitle = title == null ? "" : title;
             List<MultipartFile> uploads = files == null ? List.of() : files.stream()
                     .filter(file -> file != null && !file.isEmpty())
@@ -1600,10 +1620,13 @@ public class ArchiveController {
         aboutAdminAuth.requireAdmin(request, session);
         try {
             String castNames = unionArtistNames(artistNames, imageArtistsJson);
+            String sourceCode = source == null || source.isBlank()
+                    ? null
+                    : archiveSourceService.requireExisting(source).getCode();
             if (imageArtistsJson == null || imageArtistsJson.isBlank()) {
                 archiveService.update(id, title == null ? "" : title, files, castNames, thumbnail, clearThumbnail,
                         requireDate(registeredOn),
-                        source == null || source.isBlank() ? null : ArchiveSource.parse(source),
+                        sourceCode,
                         description,
                         keepImageUrlsJson,
                         imageOrderJson,
@@ -1611,7 +1634,7 @@ public class ArchiveController {
             } else {
                 archiveService.update(id, title == null ? "" : title, files, castNames, thumbnail, clearThumbnail,
                         requireDate(registeredOn),
-                        source == null || source.isBlank() ? null : ArchiveSource.parse(source),
+                        sourceCode,
                         description,
                         keepImageUrlsJson,
                         imageOrderJson,

@@ -87,8 +87,10 @@
             else dateValue.removeAttribute('datetime');
         }
         if (source) {
+            const sourceColor = (card.dataset.sourceColor || '').trim() || '#00f5d4';
             source.hidden = !sourceLabel;
             source.dataset.source = sourceValue || '';
+            source.style.setProperty('--source-color', sourceColor);
             source.textContent = sourceLabel || '';
         }
         const unit = document.getElementById('archiveVideoUnit');

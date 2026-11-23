@@ -39,9 +39,9 @@ public class Archive {
     @Column(name = "registered_on")
     private LocalDate registeredOn;
 
-    @Enumerated(EnumType.STRING)
+    /** {@link ArchiveSource#getCode()} 와 같은 키. */
     @Column(length = 32)
-    private ArchiveSource source;
+    private String source;
 
     /** 이미지 URL JSON 배열. 표지(첫 장)는 {@link #file}과 동기화. */
     @Column(name = "images_json", columnDefinition = "TEXT")

@@ -1,40 +1,45 @@
 package com.example.triplesweb.entity;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.util.Locale;
 
-/** 아카이브 자료가 올라온 출처. */
-public enum ArchiveSource {
-    COSMO_ROOM("코스모룸"),
-    COSMO_TALK("코스모톡/프롬"),
-    OFFICIAL_SNS("공식 SNS"),
-    POLAROID("폴라로이드"),
-    TEASER_BEHIND("티저/비하인드"),
-    MAGAZINE("화보/매거진"),
-    EXTERNAL("외부 컨텐츠/방송");
+/** 아카이브 자료 출처. 관리자가 추가·수정·삭제한다. */
+@Entity
+@Table(name = "archive_source")
+@Getter
+@Setter
+@NoArgsConstructor
+public class ArchiveSource {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    private final String label;
+    /** archive.source 에 저장하는 키. 생성 후 변경하지 않는다. */
+    @Column(nullable = false, unique = true, length = 32)
+    private String code;
 
-    ArchiveSource(String label) {
-        this.label = label;
-    }
+    @Column(nullable = false, length = 64)
+    private String label;
 
-    public String getLabel() {
-        return label;
-    }
+    @Column(nullable = false, length = 7)
+    private String color = "#00f5d4";
+
+    @Column(name = "sort_order", nullable = false)
+    private int sortOrder;
+
+    @Column(nullable = false)
+    private boolean visible = true;
 
     public String getSlug() {
-        return name().toLowerCase(Locale.ROOT);
-    }
-
-    public static ArchiveSource parse(String raw) {
-        if (raw == null || raw.isBlank()) return null;
-        String value = raw.trim();
-        if ("teaser".equalsIgnoreCase(value)) return TEASER_BEHIND;
-        for (ArchiveSource source : values()) {
-            if (source.name().equalsIgnoreCase(value) || source.getSlug().equalsIgnoreCase(value)) {
-                return source;
-            }
-        }
-        throw new IllegalArgumentException("출처를 선택하세요.");
+        return code == null ? "" : code.toLowerCase(Locale.ROOT);
     }
 }

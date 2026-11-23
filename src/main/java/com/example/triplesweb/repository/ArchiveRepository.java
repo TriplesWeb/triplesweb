@@ -1,7 +1,6 @@
 package com.example.triplesweb.repository;
 
 import com.example.triplesweb.entity.Archive;
-import com.example.triplesweb.entity.ArchiveSource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -42,9 +41,11 @@ public interface ArchiveRepository extends JpaRepository<Archive, Long>, JpaSpec
             """)
     boolean existsImageDuplicate(@Param("type") MediaType type,
                                  @Param("registeredOn") LocalDate registeredOn,
-                                 @Param("source") ArchiveSource source,
+                                 @Param("source") String source,
                                  @Param("description") String description,
                                  @Param("artistNames") String artistNames);
+
+    long countBySourceIgnoreCase(String source);
 
     @Query("""
             select a from Archive a

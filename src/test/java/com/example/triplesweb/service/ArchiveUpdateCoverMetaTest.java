@@ -1,7 +1,6 @@
 package com.example.triplesweb.service;
 
 import com.example.triplesweb.entity.Archive;
-import com.example.triplesweb.entity.ArchiveSource;
 import com.example.triplesweb.entity.MediaType;
 import com.example.triplesweb.entity.SavedMeta;
 import com.example.triplesweb.repository.ArchiveRepository;
@@ -53,7 +52,7 @@ class ArchiveUpdateCoverMetaTest {
                 null,
                 false,
                 LocalDate.of(2023, 4, 24),
-                ArchiveSource.MAGAZINE,
+                "MAGAZINE",
                 "Vanity Teen",
                 "[\"/uploads/images/a.jpg\"]",
                 null);
@@ -83,7 +82,7 @@ class ArchiveUpdateCoverMetaTest {
                 null,
                 false,
                 LocalDate.of(2023, 4, 24),
-                ArchiveSource.MAGAZINE,
+                "MAGAZINE",
                 "Vanity Teen",
                 existing.getImagesJson(),
                 existing.getImagesJson(),

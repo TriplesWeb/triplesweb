@@ -92,7 +92,7 @@
         {{>partials/archive-photo-card}}
         {{/imageArchive}}
         {{#videoArchive}}
-        <article class="ar-panel ar-card" data-id="{{id}}" data-title="{{title}}" data-artists="{{artistNames}}" data-member-order="{{memberOrder}}" data-registered="{{registeredOn}}" data-url="{{file.url}}" data-source="{{sourceValue}}" data-source-label="{{sourceLabel}}" data-unit-id="{{unitId}}" data-unit-label="{{unitBadgeLabel}}" data-unit-color="{{unitBadgeColor}}" data-thumbnail-url="{{thumbnailUrl}}">
+        <article class="ar-panel ar-card" data-id="{{id}}" data-title="{{title}}" data-artists="{{artistNames}}" data-member-order="{{memberOrder}}" data-registered="{{registeredOn}}" data-url="{{file.url}}" data-source="{{sourceValue}}" data-source-label="{{sourceLabel}}" data-source-color="{{sourceColor}}" data-unit-id="{{unitId}}" data-unit-label="{{unitBadgeLabel}}" data-unit-color="{{unitBadgeColor}}" data-thumbnail-url="{{thumbnailUrl}}">
             <a class="ar-photo-link ar-video-thumb" href="{{file.url}}" data-archive-video data-poster="{{thumbnailUrl}}" aria-label="{{#title}}{{title}}{{/title}}{{^title}}영상{{/title}} 자세히 보기">
                 <span class="ar-video-placeholder" aria-hidden="true"></span>
                 {{#thumbnailUrl}}<img src="{{thumbnailUrl}}" alt="" loading="lazy" decoding="async">{{/thumbnailUrl}}
@@ -187,7 +187,6 @@
         <form id="archiveEditForm" enctype="multipart/form-data" novalidate>
             <div class="ar-dialog-head">
                 <h2 id="editModalLabel">사진 수정</h2>
-                <button type="button" class="ar-close" data-ar-close aria-label="닫기">&times;</button>
             </div>
             <div class="ar-dialog-body">
                 {{>partials/archive-date-field}}
@@ -236,7 +235,7 @@
                 </div>
             </div>
             <div class="ar-dialog-foot">
-                <button type="button" class="ar-text-btn" data-ar-close>취소</button>
+                <button type="button" class="ar-text-btn" data-ar-close>닫기</button>
                 <button type="submit" class="ar-submit">저장</button>
             </div>
         </form>
@@ -305,7 +304,6 @@
         <form id="archiveEditForm" enctype="multipart/form-data" novalidate>
             <div class="ar-dialog-head">
                 <h2 id="editModalLabel">영상 수정</h2>
-                <button type="button" class="ar-close" data-ar-close aria-label="닫기">&times;</button>
             </div>
             <div class="ar-dialog-body">
                 <label class="ar-field">제목
@@ -338,7 +336,7 @@
                 </div>
             </div>
             <div class="ar-dialog-foot">
-                <button type="button" class="ar-text-btn" data-ar-close>취소</button>
+                <button type="button" class="ar-text-btn" data-ar-close>닫기</button>
                 <button type="submit" class="ar-submit">저장</button>
             </div>
         </form>
@@ -377,6 +375,7 @@
 </dialog>
 {{/videoArchive}}
 
+{{>partials/archive-source-admin-modal}}
 {{#chemistryNamesJson}}
 <script type="application/json" id="archiveChemistryNames">{{{chemistryNamesJson}}}</script>
 {{/chemistryNamesJson}}
@@ -386,6 +385,7 @@
 <script src="{{#asset}}/js/member-portrait-picker.js{{/asset}}"></script>
 <script src="{{#asset}}/js/unit-checkbox-group.js{{/asset}}"></script>
 <script src="{{#asset}}/js/archive-manage.js{{/asset}}"></script>
+<script src="{{#asset}}/js/archive-source-admin.js{{/asset}}"></script>
 <script src="{{#asset}}/js/date-range-filter.js{{/asset}}"></script>
 <script src="{{#asset}}/js/archive-browse.js{{/asset}}"></script>
 {{^archiveFolderHome}}
