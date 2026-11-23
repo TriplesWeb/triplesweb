@@ -1160,7 +1160,7 @@
     }
 
     function selectedUnitId(root) {
-        const checked = unitChecksRoot(root)?.querySelector('input[type="checkbox"][data-members]:checked');
+        const checked = unitChecksRoot(root)?.querySelector('input[type="checkbox"]:checked');
         const value = checked?.value?.trim();
         return value || '';
     }

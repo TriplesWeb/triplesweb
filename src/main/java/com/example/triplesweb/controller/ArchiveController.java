@@ -427,13 +427,9 @@ public class ArchiveController {
             int index = Integer.parseInt(folderKey.substring(1)) - 1;
             return List.of(MemberPortraitOptions.koreanOrder().get(index));
         }
+        // unit-N 은 unitId로 직접 조회한다. 멤버 폴더로 바꾸면 출연진·unitId가 어긋날 때 빈 목록이 된다.
         if (folderKey.toLowerCase(Locale.ROOT).startsWith("unit-")) {
-            for (ArchiveFolderClassifier.UnitMembers unit : unitSnapshots(unitService.listVisibleForArchive())) {
-                if (("unit-" + unit.unitId()).equalsIgnoreCase(folderKey)) {
-                    return ArchiveFolderClassifier.membersOf(String.join(",", unit.members()));
-                }
-            }
-            return List.of();
+            return null;
         }
         if (isComboIndex(folderKey) || isComboFolder(folderKey)) {
             List<String> fromChemistry = chemistryMembers(chem, ArchiveFolderClassifier.comboSize(folderKey));
@@ -563,9 +559,6 @@ public class ArchiveController {
                 frame.put("memberBadges", memberBadges(castNamesAt(archive, artistRows, i), artists, colors));
                 imageCasts.add(frame);
             }
-            List<Map<String, Object>> badges = imageCasts.isEmpty()
-                    ? memberBadges(archive.getArtistNames(), artists, colors)
-                    : castBadges(imageCasts.get(0));
             Map<String, Object> card = new LinkedHashMap<>();
             String title = archive.getTitle() == null ? "" : archive.getTitle().trim();
             String description = archive.getDescription() == null ? "" : archive.getDescription().trim();
@@ -590,6 +583,10 @@ public class ArchiveController {
             String previewSource = coverVisible
                     ? coverUrl
                     : (viewUrls.isEmpty() ? "" : viewUrls.get(0));
+            // 표지에 보이는 장의 출연진으로 배지를 맞춘다.
+            List<Map<String, Object>> badges = imageCasts.isEmpty()
+                    ? memberBadges(archive.getArtistNames(), artists, colors)
+                    : castBadges(imageCasts.get(previewCastIndex(viewUrls, previewSource, imageCasts.size())));
             card.put("imageUrls", imageUrls);
             card.put("imageUrlsJson", imagesJson == null ? "[]" : imagesJson);
             card.put("viewUrlsJson", viewJson == null ? "[]" : viewJson);
@@ -631,14 +628,12 @@ public class ArchiveController {
             card.put("hasSource", sourceCode != null && !sourceCode.isBlank());
             Long storedUnitId = archive.getUnitId();
             card.put("unitId", storedUnitId == null ? "" : String.valueOf(storedUnitId));
+            // 유닛 배지는 저장된 unitId만. 목록에 없는 유닛이어도 id가 있으면 배지를 남긴다.
             ArchiveFolderClassifier.UnitMembers storedUnit = storedUnitId == null ? null : unitMembers.stream()
                     .filter(unit -> unit != null && storedUnitId.equals(unit.unitId()))
                     .findFirst()
                     .orElse(null);
-            ArchiveFolderClassifier.Match match = ArchiveFolderClassifier.classify(
-                    archive.getArtistNames(), unitMembers, archive.getRegisteredOn());
-            boolean unitBadge = storedUnit != null
-                    || (match != null && match.kind() == ArchiveFolderClassifier.Kind.UNIT && match.unitId() != null);
+            boolean unitBadge = storedUnitId != null;
             card.put("hasUnitBadge", unitBadge);
             if (storedUnit != null) {
                 String label = storedUnit.unitName() == null || storedUnit.unitName().isBlank()
@@ -646,10 +641,10 @@ public class ArchiveController {
                 card.put("unitBadgeLabel", label);
                 card.put("unitBadgeColor", unitColors.getOrDefault(storedUnit.unitId(), "#a78bfa"));
                 card.put("unitBadgeKey", "unit-" + storedUnit.unitId());
-            } else if (unitBadge) {
-                card.put("unitBadgeLabel", match.label());
-                card.put("unitBadgeColor", unitColors.getOrDefault(match.unitId(), "#a78bfa"));
-                card.put("unitBadgeKey", match.key());
+            } else if (storedUnitId != null) {
+                card.put("unitBadgeLabel", "유닛");
+                card.put("unitBadgeColor", unitColors.getOrDefault(storedUnitId, "#a78bfa"));
+                card.put("unitBadgeKey", "unit-" + storedUnitId);
             } else {
                 card.put("unitBadgeLabel", "");
                 card.put("unitBadgeColor", "");
@@ -840,10 +835,15 @@ public class ArchiveController {
         if (isComboFolder(folder)) return "/archive?folder=combos";
         if (folder != null && folder.equalsIgnoreCase("s")
                 && selectedMembers != null && !selectedMembers.isEmpty()) {
-            ArchiveFolderClassifier.Match match = ArchiveFolderClassifier.classify(
-                    String.join(",", selectedMembers), unitSnapshots(units));
+            List<ArchiveFolderClassifier.UnitMembers> snapshots = unitSnapshots(units);
+            Set<String> wanted = new LinkedHashSet<>(
+                    ArchiveFolderClassifier.membersOf(String.join(",", selectedMembers)));
             // 디멘션에서 연 유닛 그룹은 유닛 목록으로, 솔로는 홈 카드로, 그 외 멤버 선택은 전체 폴더로.
-            if (match.kind() == ArchiveFolderClassifier.Kind.UNIT) return "/archive?folder=units";
+            if (ArchiveFolderClassifier.isExactUnitMemberSet(wanted, snapshots)) {
+                return "/archive?folder=units";
+            }
+            ArchiveFolderClassifier.Match match = ArchiveFolderClassifier.classify(
+                    String.join(",", selectedMembers), snapshots);
             if (match.kind() == ArchiveFolderClassifier.Kind.SOLO) return "/archive";
             return "/archive?folder=s";
         }
@@ -897,6 +897,20 @@ public class ArchiveController {
     private static List<Map<String, Object>> castBadges(Map<String, Object> frame) {
         Object badges = frame.get("memberBadges");
         return badges instanceof List<?> list ? (List<Map<String, Object>>) list : List.of();
+    }
+
+    /** viewUrls 안에서 표지 URL과 같은 장의 인덱스. 없으면 0. */
+    private static int previewCastIndex(List<String> viewUrls, String previewSource, int castCount) {
+        if (castCount <= 0) return 0;
+        if (previewSource == null || previewSource.isBlank() || viewUrls == null || viewUrls.isEmpty()) {
+            return 0;
+        }
+        String wanted = previewSource.trim();
+        for (int i = 0; i < viewUrls.size() && i < castCount; i++) {
+            String url = viewUrls.get(i);
+            if (url != null && wanted.equals(url.trim())) return i;
+        }
+        return 0;
     }
 
     private static List<Map<String, Object>> memberBadges(String names, List<Artist> artists, Map<String, String> colors) {
@@ -1033,10 +1047,15 @@ public class ArchiveController {
         if (folder == null || folder.isBlank()) return "";
         if (folder.equalsIgnoreCase("s")) {
             if (comboMembers == null || comboMembers.isEmpty()) return "";
+            Set<String> wanted = new LinkedHashSet<>(ArchiveFolderClassifier.membersOf(String.join(",", comboMembers)));
+            for (ArchiveFolderClassifier.UnitMembers unit : units == null ? List.<ArchiveFolderClassifier.UnitMembers>of() : units) {
+                if (unit != null && unit.members() != null && unit.members().equals(wanted)) {
+                    return unit.unitName() == null || unit.unitName().isBlank() ? "유닛" : unit.unitName();
+                }
+            }
             ArchiveFolderClassifier.Match match = ArchiveFolderClassifier.classify(
                     String.join(",", comboMembers), units);
-            if (match.kind() == ArchiveFolderClassifier.Kind.UNIT
-                    || match.kind() == ArchiveFolderClassifier.Kind.SOLO) {
+            if (match.kind() == ArchiveFolderClassifier.Kind.SOLO) {
                 return match.label();
             }
             return "";
@@ -1065,16 +1084,20 @@ public class ArchiveController {
         if (folder == null || folder.isBlank()) return "#00f5d4";
         if (folder.equalsIgnoreCase("s")) {
             if (selectedMembers != null && !selectedMembers.isEmpty()) {
-                ArchiveFolderClassifier.Match match = ArchiveFolderClassifier.classify(
-                        String.join(",", selectedMembers), unitSnapshots(units));
-                if (match.kind() == ArchiveFolderClassifier.Kind.UNIT && match.unitId() != null) {
-                    for (Unit unit : units == null ? List.<Unit>of() : units) {
-                        if (match.unitId().equals(unit.getUnitId())) {
+                List<ArchiveFolderClassifier.UnitMembers> snapshots = unitSnapshots(units);
+                Set<String> wanted = new LinkedHashSet<>(
+                        ArchiveFolderClassifier.membersOf(String.join(",", selectedMembers)));
+                for (Unit unit : units == null ? List.<Unit>of() : units) {
+                    if (unit.getUnitId() == null) continue;
+                    for (ArchiveFolderClassifier.UnitMembers snap : snapshots) {
+                        if (snap != null && unit.getUnitId().equals(snap.unitId())
+                                && snap.members() != null && snap.members().equals(wanted)) {
                             return unitColor(unit, artists);
                         }
                     }
-                    return "#a78bfa";
                 }
+                ArchiveFolderClassifier.Match match = ArchiveFolderClassifier.classify(
+                        String.join(",", selectedMembers), snapshots);
                 if (match.kind() == ArchiveFolderClassifier.Kind.SOLO && !match.members().isEmpty()) {
                     int index = MemberPortraitOptions.memberIndex(match.members().get(0));
                     if (index < 24) {
@@ -1128,7 +1151,7 @@ public class ArchiveController {
         for (Archive archive : archives) {
             counts.merge("s", 1, Integer::sum);
             ArchiveFolderClassifier.Match match = ArchiveFolderClassifier.classify(
-                    archive.getArtistNames(), unitMembers, archive.getRegisteredOn());
+                    archive.getArtistNames(), unitMembers, archive.getRegisteredOn(), archive.getUnitId());
             if (match.kind() == ArchiveFolderClassifier.Kind.OTHER) continue;
             List<String> cast = match.members();
             for (String name : cast) {
@@ -1136,13 +1159,12 @@ public class ArchiveController {
                 if (index < 24) counts.merge("s" + (index + 1), 1, Integer::sum);
             }
             if (unitMembers == null) continue;
-            Set<String> present = new LinkedHashSet<>(cast);
             String preview = archivePreview(archive);
             Long storedUnitId = archive.getUnitId();
+            // 유닛 폴더 수는 저장된 unitId만. 출연진만 겹치면 세지 않는다.
+            if (storedUnitId == null) continue;
             for (ArchiveFolderClassifier.UnitMembers unit : unitMembers) {
-                if (unit.members() == null || unit.members().isEmpty() || !present.containsAll(unit.members())) continue;
-                boolean manual = storedUnitId != null && storedUnitId.equals(unit.unitId());
-                if (!manual && !ArchiveFolderClassifier.isFormedBy(unit, archive.getRegisteredOn())) continue;
+                if (unit == null || !storedUnitId.equals(unit.unitId())) continue;
                 String key = "unit-" + unit.unitId();
                 counts.merge(key, 1, Integer::sum);
                 if (!preview.isBlank()) previews.putIfAbsent(key, preview);
@@ -1188,7 +1210,7 @@ public class ArchiveController {
         for (Unit unit : units == null ? List.<Unit>of() : units) {
             if (unit.getUnitId() == null) continue;
             String key = "unit-" + unit.getUnitId();
-            String href = groupFolderHref(unitMembersOf(unit));
+            String href = "/archive?folder=unit-" + unit.getUnitId();
             String color = unitColor(unit, artists);
             folders.add(folderCard(key, unit.getUnitName(), color, href, counted.counts().getOrDefault(key, 0),
                     firstNonBlank(counted.previews().get(key), registeredUnitImage(unit)),
@@ -1473,8 +1495,16 @@ public class ArchiveController {
     }
 
     private String folderRedirect(MediaType type, String artistNames) {
-        ArchiveFolderClassifier.Match match = ArchiveFolderClassifier.classify(artistNames, unitSnapshots(unitService.listVisibleForArchive()));
+        return folderRedirect(type, artistNames, null);
+    }
+
+    private String folderRedirect(MediaType type, String artistNames, Long assignedUnitId) {
         String typeQuery = type == MediaType.VIDEO ? "type=video&" : "";
+        if (assignedUnitId != null && assignedUnitId > 0) {
+            return "/archive?" + typeQuery + "folder=unit-" + assignedUnitId;
+        }
+        ArchiveFolderClassifier.Match match = ArchiveFolderClassifier.classify(
+                artistNames, unitSnapshots(unitService.listVisibleForArchive()), null, null);
         if (match.kind() == ArchiveFolderClassifier.Kind.OTHER || match.members().isEmpty()) {
             return type == MediaType.VIDEO ? "/archive?type=video" : "/archive";
         }
@@ -1532,7 +1562,7 @@ public class ArchiveController {
             String names = artistNames == null ? "" : String.join(",", artistNames);
             Archive saved = archiveService.save(file, title, type, names, requireDate(registeredOn), requireSource(source));
             applyUploadedUnitId(saved, unitId);
-            String location = folderRedirect(type, names);
+            String location = folderRedirect(type, names, parseUnitId(unitId));
             idempotencyService.complete(IdempotencyService.SCOPE_ARCHIVE_UPLOAD, idempotencyKey, location);
             return "redirect:" + location;
         } catch (RuntimeException | IOException error) {
@@ -1577,7 +1607,7 @@ public class ArchiveController {
                 saved = archiveService.uploadImages(uploads, safeTitle, castNames, date, archiveSource, description, coverIndex, imageArtistsJson);
             }
             applyUploadedUnitId(saved, unitId);
-            String location = folderRedirect(MediaType.IMAGE, names);
+            String location = folderRedirect(MediaType.IMAGE, names, parseUnitId(unitId));
             idempotencyService.complete(IdempotencyService.SCOPE_ARCHIVE_UPLOAD, idempotencyKey, location);
             return "redirect:" + location;
         } catch (RuntimeException | IOException error) {
@@ -1604,7 +1634,7 @@ public class ArchiveController {
             String names = artistNames == null ? "" : String.join(",", artistNames);
             Archive saved = archiveService.uploadVideoOnly(file, title, MediaType.VIDEO, names, thumbnail, requireDate(registeredOn), requireSource(source));
             applyUploadedUnitId(saved, unitId);
-            String location = folderRedirect(MediaType.VIDEO, names);
+            String location = folderRedirect(MediaType.VIDEO, names, parseUnitId(unitId));
             idempotencyService.complete(IdempotencyService.SCOPE_ARCHIVE_UPLOAD, idempotencyKey, location);
             return "redirect:" + location;
         } catch (RuntimeException | IOException error) {

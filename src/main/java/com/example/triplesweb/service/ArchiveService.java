@@ -391,21 +391,16 @@ public class ArchiveService {
                 return cachedPagedBrowse(type, page, size, keyword, canonicalWanted, from, to, source, unclassifiedOnly, true, order);
             }
             Long unitId = unitIdForMembers(wantedSet, units);
-            // 공통 필터(타입·검색·날짜)는 유지하고, 멤버 매칭 OR unitId만 대안 조건으로 둔다.
-            Specification<Archive> narrowed = archiveFiltersWithMembership(
-                    type, keyword, canonicalWanted, from, to, true, unitId);
+            // 유닛 멤버 폴더는 저장된 unitId만. 출연진만 같으면 케미로 두고 여기 넣지 않는다.
+            Specification<Archive> narrowed = archivesAssignedToUnit(type, keyword, from, to, unitId);
             return browseMatchedRows(narrowed, page, size, source, unclassifiedOnly, folderKey, comboMembers, units, order);
         }
 
         String lowerFolder = folderKey.toLowerCase(Locale.ROOT);
         if (lowerFolder.startsWith("unit-")) {
             Long unitId = parseUnitFolderId(folderKey);
-            ArchiveFolderClassifier.UnitMembers unit = unitById(unitId, units);
-            if (unit != null && unit.members() != null && !unit.members().isEmpty()) {
-                List<String> unitMembers = List.copyOf(unit.members());
-                Long lockedUnitId = unit.unitId();
-                Specification<Archive> narrowed = archiveFiltersWithMembership(
-                        type, keyword, unitMembers, from, to, true, lockedUnitId);
+            if (unitId != null) {
+                Specification<Archive> narrowed = archivesAssignedToUnit(type, keyword, from, to, unitId);
                 return browseMatchedRows(narrowed, page, size, source, unclassifiedOnly, folderKey, comboMembers, units, order);
             }
         }
@@ -459,16 +454,19 @@ public class ArchiveService {
             LocalDate registeredOn = (LocalDate) row[3];
             Long storedUnitId = (Long) row[5];
             ArchiveFolderClassifier.Match classified =
-                    ArchiveFolderClassifier.classify(artistNames, units, registeredOn);
-            boolean inFolder = ArchiveFolderClassifier.matches(
-                    classified, folderKey, comboMembers, units, registeredOn);
-            // 수동 지정한 unitId는 결성일 이전이어도 해당 유닛 폴더에 남긴다.
-            if (!inFolder && storedUnitId != null && folderKey.toLowerCase(Locale.ROOT).startsWith("unit-")
-                    && folderKey.equalsIgnoreCase("unit-" + storedUnitId)) {
-                inFolder = true;
-            } else if (!inFolder && storedUnitId != null && folderKey.equalsIgnoreCase("s")
-                    && comboMembers != null && !comboMembers.isEmpty()) {
-                inFolder = matchesStoredUnitMemberFilter(storedUnitId, comboMembers, units);
+                    ArchiveFolderClassifier.classify(artistNames, units, registeredOn, storedUnitId);
+            boolean inFolder;
+            Long unitScopedId = unitScopeId(folderKey, comboMembers, units);
+            if (unitScopedId != null) {
+                // 유닛 폴더(디멘션 카드·unit-N): 해제한 글(unitId null)은 넣지 않는다.
+                inFolder = storedUnitId != null && storedUnitId.equals(unitScopedId);
+            } else {
+                inFolder = ArchiveFolderClassifier.matches(
+                        classified, folderKey, comboMembers, units, registeredOn);
+                if (!inFolder && storedUnitId != null && folderKey.equalsIgnoreCase("s")
+                        && comboMembers != null && !comboMembers.isEmpty()) {
+                    inFolder = matchesStoredUnitMemberFilter(storedUnitId, comboMembers, units);
+                }
             }
             if (!inFolder) {
                 continue;
@@ -501,14 +499,6 @@ public class ArchiveService {
         for (ArchiveFolderClassifier.UnitMembers unit : units) {
             if (unit == null || unit.members() == null || unit.members().isEmpty()) continue;
             if (unit.members().equals(members)) return unit.unitId();
-        }
-        return null;
-    }
-
-    private static ArchiveFolderClassifier.UnitMembers unitById(Long unitId, List<ArchiveFolderClassifier.UnitMembers> units) {
-        if (unitId == null || units == null) return null;
-        for (ArchiveFolderClassifier.UnitMembers unit : units) {
-            if (unit != null && unitId.equals(unit.unitId())) return unit;
         }
         return null;
     }
@@ -632,17 +622,29 @@ public class ArchiveService {
         };
     }
 
-    /** 공통 필터 AND (멤버 매칭 OR 수동 unitId). */
-    private static Specification<Archive> archiveFiltersWithMembership(
-            MediaType type, String keyword, List<String> members, LocalDate from, LocalDate to,
-            boolean requireAllMembers, Long unitId) {
+    /** 공통 필터 AND 지정 unitId. 유닛 폴더 전용. */
+    private static Specification<Archive> archivesAssignedToUnit(
+            MediaType type, String keyword, LocalDate from, LocalDate to, Long unitId) {
         Specification<Archive> common = commonArchiveFilters(type, keyword, from, to, null, false);
-        Specification<Archive> membership = memberArchiveFilters(members, requireAllMembers);
-        if (unitId != null) {
-            Long lockedUnitId = unitId;
-            membership = membership.or((root, query, cb) -> cb.equal(root.get("unitId"), lockedUnitId));
+        if (unitId == null) {
+            return common.and((root, query, cb) -> cb.disjunction());
         }
-        return common.and(membership);
+        Long lockedUnitId = unitId;
+        return common.and((root, query, cb) -> cb.equal(root.get("unitId"), lockedUnitId));
+    }
+
+    /** folder=s + 유닛 구성 멤버, 또는 folder=unit-N 이면 그 유닛 id. */
+    private static Long unitScopeId(String folderKey, List<String> comboMembers,
+                                    List<ArchiveFolderClassifier.UnitMembers> units) {
+        if (folderKey == null) return null;
+        String key = folderKey.trim();
+        if (key.toLowerCase(Locale.ROOT).startsWith("unit-")) {
+            return parseUnitFolderId(key);
+        }
+        if (!key.equalsIgnoreCase("s") || comboMembers == null || comboMembers.isEmpty()) return null;
+        Set<String> wanted = new LinkedHashSet<>(ArchiveFolderClassifier.membersOf(String.join(",", comboMembers)));
+        if (!ArchiveFolderClassifier.isExactUnitMemberSet(wanted, units)) return null;
+        return unitIdForMembers(wanted, units);
     }
 
     @Transactional(readOnly = true)
@@ -1012,6 +1014,30 @@ public class ArchiveService {
         Archive saved = archiveRepository.save(archive);
         invalidateIndexCache();
         return saved;
+    }
+
+    /**
+     * unit_id 가 비어 있고 출연진이 유닛 구성과 완전 일치(결성일 이후)인 글에 unit_id 를 채운다.
+     * 예전 출연진 자동 분류 → 저장 unitId 전환 시 뱃지·유닛 폴더가 비는 것을 한 번 복구한다.
+     * 이미 해제(null)한 뒤 다시 돌리면 동일 조건으로 다시 채워지므로 일회성 runner 에서만 호출한다.
+     */
+    @Transactional
+    public int backfillUnitIdsFromExactCast(List<ArchiveFolderClassifier.UnitMembers> units) {
+        if (units == null || units.isEmpty()) return 0;
+        List<Archive> pending = archiveRepository.findAll(
+                (root, query, cb) -> cb.isNull(root.get("unitId")));
+        List<Archive> toSave = new ArrayList<>();
+        for (Archive archive : pending) {
+            Long matched = ArchiveFolderClassifier.unitIdForExactCast(
+                    archive.getArtistNames(), archive.getRegisteredOn(), units);
+            if (matched == null) continue;
+            archive.setUnitId(matched);
+            toSave.add(archive);
+        }
+        if (toSave.isEmpty()) return 0;
+        archiveRepository.saveAll(toSave);
+        invalidateIndexCache();
+        return toSave.size();
     }
 
     private static void validateCoverIndex(int index, int count) {

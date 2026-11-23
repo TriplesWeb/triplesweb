@@ -533,8 +533,9 @@
     updateMemberToggle();
     updateResetButton();
     function archiveFilterUrl() {
-        form.querySelectorAll('input[name="members"]').forEach(node => node.remove());
+        // 피커가 있을 때만 members를 다시 심는다. 고정 멤버 폴더는 숨은 input을 유지한다.
         if (window.MemberPortraitPicker && panel) {
+            form.querySelectorAll('input[name="members"]').forEach(node => node.remove());
             MemberPortraitPicker.selectedValues(panel).forEach(value => {
                 const input = document.createElement('input');
                 input.type = 'hidden';

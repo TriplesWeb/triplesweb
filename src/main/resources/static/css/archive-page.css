@@ -60,29 +60,19 @@ body.site-page > main.archive-page.is-folder-view {
     gap: 0.65rem;
     min-height: 2.15rem;
 }
-.ar-headline-toolbar:not(:has(.ar-back-folders)) {
-    justify-content: flex-end;
-}
-.ar-headline-actions {
-    display: inline-flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 0.5rem;
-    margin-left: auto;
-}
-.ar-home-upload {
-    min-height: 2.15rem;
-    height: 2.15rem;
-    padding: 0 0.95rem;
-    font-size: 0.82rem;
-    line-height: 1;
-}
 /* 홈: 업로드는 폴더 그리드 직전 — 히어로(브랜드·통계)와 분리 */
 .ar-folders-head {
     display: flex;
     justify-content: flex-end;
     align-items: center;
     margin: 0 0 0.35rem;
+}
+.ar-folders-head .ar-home-upload {
+    min-height: 2rem;
+    height: 2rem;
+    padding: 0 0.85rem;
+    font-size: 0.78rem;
+    line-height: 1;
 }
 .ar-headline-body {
     display: grid;
@@ -217,8 +207,32 @@ body.site-page > main.archive-page.is-folder-view {
     gap: 0.45rem 0.55rem;
     padding-bottom: 0.35rem;
 }
-.ar-source-manage {
-    margin-left: auto;
+/* 출처 관리·추가·개수 — 같은 줄·같은 높이 */
+.ar-source-tools {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.4rem;
+    margin: 0 0 0.35rem;
+}
+.ar-source-tools .ar-source-manage,
+.ar-source-tools .ar-home-upload,
+.ar-source-tools .ar-density {
+    margin: 0;
+    min-height: 2rem;
+    height: 2rem;
+    box-sizing: border-box;
+}
+.ar-source-tools .ar-source-manage,
+.ar-source-tools .ar-home-upload {
+    padding: 0 0.75rem;
+    font-size: 0.78rem;
+    line-height: 1;
+}
+.ar-source-tools .ar-density {
+    padding: 0 0.55rem 0 0.7rem;
 }
 .ar-source-admin-panel {
     max-width: min(42rem, 94vw);
