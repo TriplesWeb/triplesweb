@@ -474,7 +474,7 @@
     }
     reloadCatalog();
     const ytModal = document.getElementById('ytModal');
-    const ytPlayer = document.getElementById('ytPlayer');
+    let ytPlayer = document.getElementById('ytPlayer');
     const editModal = document.getElementById('mediaEditModal');
     const editPicker = document.getElementById('media-edit-picker');
     let currentVideo = null;
@@ -491,14 +491,16 @@
         if (youtubePlayerReady) return;
         // Start only after the YouTube API has initialized the safe volume.
         ytPlayer.src = 'https://www.youtube.com/embed/' + encodeURIComponent(id) + '?rel=0&enablejsapi=1';
-        youtubePlayerReady = window.SiteVideoVolume.attachYouTube(ytPlayer)
-            .then((player) => {
-                youtubePlayer = player;
-                if (!requestedVideoId) return;
-                if (requestedVideoId === id) player.playVideo();
-                else player.loadVideoById(requestedVideoId);
-            })
-            .catch(() => { youtubePlayerReady = null; });
+        const pendingPlayer = window.SiteVideoVolume.attachYouTube(ytPlayer);
+        youtubePlayerReady = pendingPlayer;
+        pendingPlayer.then((player) => {
+            if (youtubePlayerReady !== pendingPlayer) return;
+            youtubePlayer = player;
+            if (requestedVideoId === id) player.playVideo();
+            else player.loadVideoById(requestedVideoId);
+        }, () => {
+            if (youtubePlayerReady === pendingPlayer) youtubePlayerReady = null;
+        });
     }
 
     function text(id, value) {
@@ -815,7 +817,16 @@
 
     ytModal?.addEventListener('site-modal:hidden', () => {
         requestedVideoId = null;
-        youtubePlayer?.stopVideo();
+        if (youtubePlayer) {
+            youtubePlayer.stopVideo();
+        } else if (ytPlayer?.hasAttribute('src')) {
+            youtubePlayerReady = null;
+            // Detach the old iframe so late API callbacks cannot affect the next video.
+            const replacement = ytPlayer.cloneNode(false);
+            replacement.removeAttribute('src');
+            ytPlayer.replaceWith(replacement);
+            ytPlayer = replacement;
+        }
     });
 
     function upgradeStills() {
