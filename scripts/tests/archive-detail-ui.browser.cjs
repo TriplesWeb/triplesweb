@@ -339,7 +339,8 @@ ${chemistryModals}
     assert.equal(detail.dateText, '2026-11-16');
     assert.equal(detail.metaHidden, false);
     assert.equal(detail.castHidden, false);
-    assert.ok(detail.radius.includes('999') || parseFloat(detail.radius) >= 12, '출처가 버튼처럼 보이지 않는다: ' + detail.radius);
+    // 출처는 유닛 필(999)과 겹치지 않는 각진 칩(0.45rem ≈ 7.2px).
+    assert.ok(!detail.radius.includes('999') && parseFloat(detail.radius) > 4 && parseFloat(detail.radius) < 12, '출처가 유닛 필처럼 보인다: ' + detail.radius);
     assert.equal(await page.locator('#archiveDetail .ar-detail-chem').count(), 0, '케미명이 없는 멤버에도 케미 라벨이 있다');
     assert.equal(detail.hasTitle, false, '불필요한 사진 제목이 남아 있다');
     assert.equal(detail.description, '지연');
