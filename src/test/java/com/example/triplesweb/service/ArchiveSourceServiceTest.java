@@ -78,31 +78,22 @@ class ArchiveSourceServiceTest {
     }
 
     @Test
-    void findAcceptsLegacyTeaserAlias() {
-        ArchiveSource teaser = new ArchiveSource();
-        teaser.setCode("TEASER_BEHIND");
-        teaser.setLabel("티저/비하인드");
-        teaser.setVisible(true);
-        when(archiveSourceRepository.findAllByOrderBySortOrderAscIdAsc()).thenReturn(List.of(teaser));
-
-        assertThat(service.find("teaser").getCode()).isEqualTo("TEASER_BEHIND");
-        assertThat(service.resolveCode("TEASER_BEHIND")).isEqualTo("TEASER_BEHIND");
-    }
-
-    @Test
-    void findPrefersExactTeaserCodeOverLegacyAlias() {
-        ArchiveSource custom = new ArchiveSource();
-        custom.setCode("TEASER");
-        custom.setLabel("티저");
-        custom.setVisible(true);
+    void findMapsLegacyTeaserToTeaserBehind() {
         ArchiveSource behind = new ArchiveSource();
         behind.setCode("TEASER_BEHIND");
         behind.setLabel("티저/비하인드");
         behind.setVisible(true);
-        when(archiveSourceRepository.findAllByOrderBySortOrderAscIdAsc()).thenReturn(List.of(custom, behind));
+        when(archiveSourceRepository.findAllByOrderBySortOrderAscIdAsc()).thenReturn(List.of(behind));
 
-        assertThat(service.find("TEASER").getCode()).isEqualTo("TEASER");
-        assertThat(service.find("teaser").getCode()).isEqualTo("TEASER");
+        assertThat(service.find("teaser").getCode()).isEqualTo("TEASER_BEHIND");
+        assertThat(service.find("TEASER").getCode()).isEqualTo("TEASER_BEHIND");
         assertThat(service.resolveCode("TEASER_BEHIND")).isEqualTo("TEASER_BEHIND");
+    }
+
+    @Test
+    void createRejectsReservedTeaserCode() {
+        assertThatThrownBy(() -> service.create("TEASER", "티저", "#00f5d4", null, true))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("TEASER_BEHIND");
     }
 }

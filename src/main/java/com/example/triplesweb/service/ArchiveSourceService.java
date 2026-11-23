@@ -90,6 +90,9 @@ public class ArchiveSourceService {
     @Transactional
     public ArchiveSourceDto create(String code, String label, String color, Integer sortOrder, Boolean visible) {
         String normalized = normalizeNewCode(code);
+        if ("TEASER".equals(normalized)) {
+            throw new IllegalArgumentException("TEASER는 TEASER_BEHIND로 통합됐습니다. TEASER_BEHIND를 쓰세요.");
+        }
         if (archiveSourceRepository.existsByCodeIgnoreCase(normalized)) {
             throw new IllegalArgumentException("이미 있는 출처 코드입니다.");
         }
@@ -137,13 +140,12 @@ public class ArchiveSourceService {
     private ArchiveSource resolve(String raw) {
         if (raw == null || raw.isBlank()) return null;
         String value = raw.trim();
-        ArchiveSource exact = findInCatalog(value);
-        if (exact != null) return exact;
-        // 레거시 URL·폼 값 teaser → TEASER_BEHIND. 카탈로그에 TEASER 코드가 있으면 위에서 먼저 맞춘다.
-        if ("teaser".equalsIgnoreCase(value)) {
+        String normalized = value.toUpperCase(Locale.ROOT).replace('-', '_').replace(' ', '_');
+        // 레거시 TEASER → 정식 TEASER_BEHIND (카탈로그에 TEASER가 있어도 통합 코드를 쓴다).
+        if ("TEASER".equals(normalized)) {
             return findInCatalog("TEASER_BEHIND");
         }
-        return null;
+        return findInCatalog(value);
     }
 
     private ArchiveSource findInCatalog(String value) {
