@@ -13,6 +13,8 @@ import com.example.triplesweb.entity.Unit;
 import com.example.triplesweb.entity.UnitMember;
 import com.example.triplesweb.service.AboutAdminAuth;
 import com.example.triplesweb.service.ArchiveService;
+import com.example.triplesweb.service.ArchiveSourceService;
+import com.example.triplesweb.dto.ArchiveSourceDto;
 import com.example.triplesweb.service.ChemistryGroupService;
 import com.example.triplesweb.service.ChemistryService;
 import com.example.triplesweb.service.IdempotencyService;
@@ -62,6 +64,7 @@ import static org.hamcrest.Matchers.not;
 class ArchiveControllerTest {
     @Autowired MockMvc mvc;
     @MockitoBean ArchiveService archiveService;
+    @MockitoBean ArchiveSourceService archiveSourceService;
     @MockitoBean AboutAdminAuth aboutAdminAuth;
     @MockitoBean ArtistSnapshotService artistSnapshot;
     @MockitoBean UnitService unitService;
@@ -83,16 +86,79 @@ class ArchiveControllerTest {
         lenient().when(chemistryGroupService.findAll()).thenReturn(List.of());
         lenient().when(idempotencyService.claimOrReplay(anyString(), nullable(String.class)))
                 .thenReturn(Optional.empty());
+        List<ArchiveSourceDto> sourceDtos = defaultSourceDtos();
+        lenient().when(archiveSourceService.listVisible()).thenReturn(sourceDtos);
+        lenient().when(archiveSourceService.listAll()).thenReturn(sourceDtos);
+        lenient().when(archiveSourceService.byCode()).thenReturn(defaultSourceMap());
+        lenient().when(archiveSourceService.find(nullable(String.class))).thenAnswer(invocation ->
+                resolveSource(invocation.getArgument(0)));
+        lenient().when(archiveSourceService.requireVisible(anyString())).thenAnswer(invocation -> {
+            ArchiveSource source = resolveSource(invocation.getArgument(0));
+            if (source == null) throw new IllegalArgumentException("출처를 선택하세요.");
+            return source;
+        });
+        lenient().when(archiveSourceService.requireExisting(anyString())).thenAnswer(invocation -> {
+            ArchiveSource source = resolveSource(invocation.getArgument(0));
+            if (source == null) throw new IllegalArgumentException("출처를 선택하세요.");
+            return source;
+        });
+    }
+
+    private static List<ArchiveSourceDto> defaultSourceDtos() {
+        return defaultSources().stream().map(ArchiveSourceDto::from).toList();
+    }
+
+    private static java.util.Map<String, ArchiveSource> defaultSourceMap() {
+        java.util.Map<String, ArchiveSource> map = new java.util.LinkedHashMap<>();
+        for (ArchiveSource source : defaultSources()) {
+            map.put(source.getCode(), source);
+        }
+        return map;
+    }
+
+    private static List<ArchiveSource> defaultSources() {
+        return List.of(
+                source(1L, "COSMO_ROOM", "코스모룸", "#00f5d4", 10),
+                source(2L, "COSMO_TALK", "코스모톡/프롬", "#a78bfa", 20),
+                source(3L, "OFFICIAL_SNS", "공식 SNS", "#60a5fa", 30),
+                source(4L, "POLAROID", "폴라로이드", "#5eead4", 40),
+                source(5L, "TEASER_BEHIND", "티저/비하인드", "#2dd4bf", 50),
+                source(6L, "MAGAZINE", "화보/매거진", "#f472b6", 60),
+                source(7L, "EXTERNAL", "외부 컨텐츠/방송", "#38bdf8", 70)
+        );
+    }
+
+    private static ArchiveSource source(long id, String code, String label, String color, int order) {
+        ArchiveSource source = new ArchiveSource();
+        source.setId(id);
+        source.setCode(code);
+        source.setLabel(label);
+        source.setColor(color);
+        source.setSortOrder(order);
+        source.setVisible(true);
+        return source;
+    }
+
+    private static ArchiveSource resolveSource(String raw) {
+        if (raw == null || raw.isBlank()) return null;
+        String value = raw.trim();
+        if ("teaser".equalsIgnoreCase(value)) value = "TEASER_BEHIND";
+        for (ArchiveSource source : defaultSources()) {
+            if (source.getCode().equalsIgnoreCase(value) || source.getSlug().equalsIgnoreCase(value)) {
+                return source;
+            }
+        }
+        return null;
     }
 
     private void stubFolder(MediaType type, Archive... items) {
-        java.util.Set<ArchiveSource> sources = java.util.Arrays.stream(items)
+        java.util.Set<String> sources = java.util.Arrays.stream(items)
                 .map(Archive::getSource)
                 .filter(java.util.Objects::nonNull)
                 .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new));
         when(archiveService.browseFolder(eq(type), anyInt(), anyInt(), nullable(String.class), any(),
                 nullable(java.time.LocalDate.class), nullable(java.time.LocalDate.class),
-                nullable(ArchiveSource.class), anyBoolean(), any(), any(), any(), any()))
+                nullable(String.class), anyBoolean(), any(), any(), any(), any()))
                 .thenReturn(new ArchiveService.FolderBrowse(new PageImpl<>(List.of(items)), sources));
     }
 
@@ -122,8 +188,12 @@ class ArchiveControllerTest {
                 .andExpect(content().string(containsString("ar-home-upload")))
                 .andExpect(content().string(containsString("사진 추가")))
                 .andExpect(content().string(containsString("id=\"uploadModal\"")))
+                .andExpect(content().string(not(containsString("data-stats-toggle"))))
+                .andExpect(content().string(containsString("id=\"archiveStats\"")))
+                .andExpect(content().string(not(containsString("is-copy-only"))))
                 .andReturn().getResponse().getContentAsString();
         var page = Jsoup.parse(html);
+        org.assertj.core.api.Assertions.assertThat(page.select("#archiveStats .ar-stat")).hasSize(3);
         org.assertj.core.api.Assertions.assertThat(page.select(".ar-folder.is-group img.is-illustrated").attr("src"))
                 .isEqualTo("/images/archive/folder-triples.png");
         org.assertj.core.api.Assertions.assertThat(page.select(".ar-folder.is-parent img.is-illustrated").attr("src"))
@@ -189,7 +259,7 @@ class ArchiveControllerTest {
 
         String html = mvc.perform(get("/archive").param("folder", "units")).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
-        org.assertj.core.api.Assertions.assertThat(html).contains(">디멘션</p>");
+        org.assertj.core.api.Assertions.assertThat(html).contains(">디멘션</h1>");
         org.assertj.core.api.Assertions.assertThat(html).contains("← 목록으로");
         org.assertj.core.api.Assertions.assertThat(html).contains("Aura");
         org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder-art is-bundled-art", "/images/archive/unit-folders/42.png");
@@ -288,12 +358,13 @@ class ArchiveControllerTest {
                 .andExpect(content().string(not(containsString("전체 사진"))))
                 .andExpect(content().string(not(containsString("ar-folder-title"))))
                 .andExpect(content().string(not(containsString("ar-folder-label\">tripleS</span>"))))
-                .andExpect(content().string(containsString("id=\"archive-member-picker\"")))
+                // 멤버가 고정된 폴더라 멤버 필터/피커는 숨긴다.
+                .andExpect(content().string(not(containsString("id=\"archive-member-picker\""))))
                 .andExpect(content().string(not(containsString("id=\"archiveChem\""))));
         verify(archiveService).browseFolder(eq(MediaType.IMAGE), anyInt(), org.mockito.AdditionalMatchers.lt(Integer.MAX_VALUE), nullable(String.class),
                 eq(List.of()),
                 nullable(java.time.LocalDate.class), nullable(java.time.LocalDate.class),
-                nullable(ArchiveSource.class), anyBoolean(), eq("s"),
+                nullable(String.class), anyBoolean(), eq("s"),
                 eq(List.of("윤서연", "정혜린")), any(), any());
     }
 
@@ -381,7 +452,9 @@ class ArchiveControllerTest {
                 .andExpect(content().string(not(containsString("제목순"))))
                 .andExpect(content().string(not(containsString("첫멤버순"))))
                 .andExpect(content().string(containsString("data-member-order=\"0\"")))
-                .andExpect(content().string(containsString("data-stats-toggle")))
+                .andExpect(content().string(not(containsString("data-stats-toggle"))))
+                .andExpect(content().string(not(containsString("id=\"archiveStats\""))))
+                .andExpect(content().string(containsString("is-copy-only")))
                 .andExpect(content().string(containsString("name=\"go\"")))
                 .andExpect(content().string(not(containsString("이 사진 날짜"))))
                 .andExpect(content().string(not(containsString("실제로 올라온 날짜로 찾습니다."))))
@@ -419,7 +492,7 @@ class ArchiveControllerTest {
 
     @Test void sourceTabsOnlyShowSourcesWithPostsAndKeepAllUploadOptions() throws Exception {
         Archive polaroid = photo();
-        polaroid.setSource(ArchiveSource.POLAROID);
+        polaroid.setSource("POLAROID");
         stubFolder(MediaType.IMAGE, polaroid);
         String html = mvc.perform(get("/archive").param("folder", "s"))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
@@ -432,7 +505,7 @@ class ArchiveControllerTest {
 
     @Test void oldTeaserLinkSelectsTheTeaserBehindSource() throws Exception {
         Archive teaserBehind = photo();
-        teaserBehind.setSource(ArchiveSource.TEASER_BEHIND);
+        teaserBehind.setSource("TEASER_BEHIND");
         stubFolder(MediaType.IMAGE, teaserBehind);
 
         String html = mvc.perform(get("/archive").param("folder", "s").param("source", "teaser"))
@@ -449,12 +522,12 @@ class ArchiveControllerTest {
                 .isNotEmpty().containsOnly("티저/비하인드");
         verify(archiveService).browseFolder(eq(MediaType.IMAGE), anyInt(), anyInt(), nullable(String.class), any(),
                 nullable(java.time.LocalDate.class), nullable(java.time.LocalDate.class),
-                eq(ArchiveSource.TEASER_BEHIND), anyBoolean(), any(), any(), any(), any());
+                eq("TEASER_BEHIND"), anyBoolean(), any(), any(), any(), any());
     }
 
     @Test void externalSourceOffersPhotoDensityDropdown() throws Exception {
         Archive external = photo();
-        external.setSource(ArchiveSource.EXTERNAL);
+        external.setSource("EXTERNAL");
         stubFolder(MediaType.IMAGE, external);
 
         String html = mvc.perform(get("/archive").param("folder", "s").param("source", "external").param("size", "20"))
@@ -470,7 +543,7 @@ class ArchiveControllerTest {
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("size=9");
         verify(archiveService).browseFolder(eq(MediaType.IMAGE), eq(0), eq(20), nullable(String.class), any(),
                 nullable(java.time.LocalDate.class), nullable(java.time.LocalDate.class),
-                eq(ArchiveSource.EXTERNAL), anyBoolean(), any(), any(), any(), any());
+                eq("EXTERNAL"), anyBoolean(), any(), any(), any(), any());
     }
 
     @Test void archiveMemberPickerUsesPortraitsNotSymbolLogos() throws Exception {
@@ -537,7 +610,8 @@ class ArchiveControllerTest {
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("ar-folder-label\">tripleS</span>");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("ar-folder-title is-solo");
         org.assertj.core.api.Assertions.assertThat(html).contains(">날짜<");
-        org.assertj.core.api.Assertions.assertThat(html).contains("calendar_month");
+        org.assertj.core.api.Assertions.assertThat(html).contains("objekt-filter");
+        org.assertj.core.api.Assertions.assertThat(html).contains("arrow_drop_down");
         org.assertj.core.api.Assertions.assertThat(html).contains(">전체<");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain(">이 페이지<");
         org.assertj.core.api.Assertions.assertThat(html).contains("← 목록으로");
@@ -582,8 +656,8 @@ class ArchiveControllerTest {
         var baseDoc = org.jsoup.Jsoup.parse(baseline);
         org.assertj.core.api.Assertions.assertThat(baseDoc.selectFirst(".ar-reset").hasAttr("hidden")).isTrue();
         org.assertj.core.api.Assertions.assertThat(baseDoc.select(".ar-stat-filter")).isEmpty();
-        org.assertj.core.api.Assertions.assertThat(baseDoc.select("#archiveStats .ar-stat")).hasSize(3);
-        for (String[] filter : new String[][] {{"q", "심장"}, {"members", "윤서연"},
+        org.assertj.core.api.Assertions.assertThat(baseDoc.select("#archiveStats")).isEmpty();
+        for (String[] filter : new String[][] {{"q", "심장"},
                 {"from", "2026-11-17"}, {"to", "2026-11-17"}, {"on", "2026-11-17"}, {"source", "cosmo_room"}}) {
             var html = mvc.perform(get("/archive").param("folder", "s").param(filter[0], filter[1]))
                     .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
@@ -594,10 +668,43 @@ class ArchiveControllerTest {
         }
     }
 
+    @Test void memberAndUnitFoldersHideMemberFilterAndMemberOnlyReset() throws Exception {
+        when(artistSnapshot.findAll()).thenReturn(List.of());
+        stubFolder(MediaType.IMAGE);
+        String solo = mvc.perform(get("/archive").param("folder", "s").param("members", "이지우"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        var soloDoc = org.jsoup.Jsoup.parse(solo);
+        org.assertj.core.api.Assertions.assertThat(soloDoc.select(".ar-member-filter")).isEmpty();
+        org.assertj.core.api.Assertions.assertThat(soloDoc.selectFirst(".ar-reset").hasAttr("hidden")).isTrue();
+
+        String filtered = mvc.perform(get("/archive").param("folder", "s").param("members", "이지우").param("q", "심장"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        var filteredDoc = org.jsoup.Jsoup.parse(filtered);
+        org.assertj.core.api.Assertions.assertThat(filteredDoc.select(".ar-member-filter")).isEmpty();
+        org.assertj.core.api.Assertions.assertThat(filteredDoc.selectFirst(".ar-reset").hasAttr("hidden")).isFalse();
+        org.assertj.core.api.Assertions.assertThat(filteredDoc.selectFirst(".ar-reset").attr("href"))
+                .isEqualTo("/archive?folder=s&members=%EC%9D%B4%EC%A7%80%EC%9A%B0");
+
+        String group = mvc.perform(get("/archive").param("folder", "s"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        org.assertj.core.api.Assertions.assertThat(org.jsoup.Jsoup.parse(group).select(".ar-member-filter")).isNotEmpty();
+    }
+
+    @Test void singleMemberFolderTitleUsesSoloMarkup() throws Exception {
+        when(artistSnapshot.findAll()).thenReturn(List.of());
+        stubFolder(MediaType.IMAGE, photo());
+        String html = mvc.perform(get("/archive").param("folder", "s").param("members", "윤서연"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder-title is-solo");
+        org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder-num\">S1</span>");
+        org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder-name\">윤서연</span>");
+    }
+
     @Test void photoCardShowsDateBesideMembers() throws Exception {
         Archive shot = photo();
         shot.setRegisteredOn(java.time.LocalDate.of(2026, 11, 16));
-        shot.setSource(ArchiveSource.COSMO_ROOM);
+        shot.setSource("COSMO_ROOM");
         when(artistSnapshot.findAll()).thenReturn(List.of());
         stubFolder(MediaType.IMAGE, shot);
         String html = mvc.perform(get("/archive").param("folder", "s")).andExpect(status().isOk())
@@ -666,7 +773,7 @@ class ArchiveControllerTest {
 
         mvc.perform(multipart("/archive/7").file(file).param("description", "새 설명").param("artistNames", "서연").param("registeredOn", "2026-10-01").param("source", "COSMO_ROOM"))
                 .andExpect(status().isOk());
-        verify(archiveService).update(eq(7L), eq(""), anyList(), eq("서연"), isNull(), eq(false), eq(java.time.LocalDate.of(2026, 10, 1)), eq(ArchiveSource.COSMO_ROOM), eq("새 설명"), isNull(), isNull(), isNull());
+        verify(archiveService).update(eq(7L), eq(""), anyList(), eq("서연"), isNull(), eq(false), eq(java.time.LocalDate.of(2026, 10, 1)), eq("COSMO_ROOM"), eq("새 설명"), isNull(), isNull(), isNull());
         verify(aboutAdminAuth).requireAdmin(any(), any());
 
         mvc.perform(delete("/archive/7")).andExpect(status().isOk());
@@ -679,7 +786,7 @@ class ArchiveControllerTest {
         mvc.perform(multipart("/archive/upload/video").file(video).file(thumbnail)
                         .param("title", "영상").param("artistNames", "서연").param("registeredOn", "2026-10-02").param("source", "COSMO_ROOM"))
                 .andExpect(redirectedUrl("/archive?type=video&folder=s&members=%EC%9C%A4%EC%84%9C%EC%97%B0"));
-        verify(archiveService).uploadVideoOnly(any(), eq("영상"), eq(MediaType.VIDEO), eq("서연"), any(), eq(java.time.LocalDate.of(2026, 10, 2)), eq(ArchiveSource.COSMO_ROOM));
+        verify(archiveService).uploadVideoOnly(any(), eq("영상"), eq(MediaType.VIDEO), eq("서연"), any(), eq(java.time.LocalDate.of(2026, 10, 2)), eq("COSMO_ROOM"));
         verify(aboutAdminAuth).requireAdmin(any(), any());
     }
 
@@ -709,7 +816,7 @@ class ArchiveControllerTest {
         when(artistSnapshot.findAll()).thenReturn(List.of());
         when(archiveService.browseFolder(eq(MediaType.IMAGE), anyInt(), anyInt(), nullable(String.class), any(),
                 nullable(java.time.LocalDate.class), nullable(java.time.LocalDate.class),
-                nullable(ArchiveSource.class), anyBoolean(), any(), any(), any(), any()))
+                nullable(String.class), anyBoolean(), any(), any(), any(), any()))
                 .thenReturn(new ArchiveService.FolderBrowse(
                         new PageImpl<>(List.of(photo()), PageRequest.of(1, 9), 20), java.util.Set.of()));
         mvc.perform(get("/archive").param("page", "1").param("folder", "s"))
@@ -818,7 +925,7 @@ class ArchiveControllerTest {
         mvc.perform(multipart("/archive/upload/image").file(file)
                         .param("description", "현장 컷").param("artistNames", "서연").param("registeredOn", "2026-10-03").param("source", "COSMO_ROOM"))
                 .andExpect(redirectedUrl("/archive?folder=s&members=%EC%9C%A4%EC%84%9C%EC%97%B0"));
-        verify(archiveService).uploadImages(any(), eq(""), eq("서연"), eq(java.time.LocalDate.of(2026, 10, 3)), eq(ArchiveSource.COSMO_ROOM), eq("현장 컷"), eq(0));
+        verify(archiveService).uploadImages(any(), eq(""), eq("서연"), eq(java.time.LocalDate.of(2026, 10, 3)), eq("COSMO_ROOM"), eq("현장 컷"), eq(0));
         verify(aboutAdminAuth).requireAdmin(any(), any());
     }
 
@@ -827,7 +934,7 @@ class ArchiveControllerTest {
         mvc.perform(multipart("/archive/upload/image").file(file)
                         .param("artistNames", "서연").param("registeredOn", "2026-10-03").param("source", "COSMO_ROOM"))
                 .andExpect(redirectedUrl("/archive?folder=s&members=%EC%9C%A4%EC%84%9C%EC%97%B0"));
-        verify(archiveService).uploadImages(any(), eq(""), eq("서연"), eq(java.time.LocalDate.of(2026, 10, 3)), eq(ArchiveSource.COSMO_ROOM), isNull(), eq(0));
+        verify(archiveService).uploadImages(any(), eq(""), eq("서연"), eq(java.time.LocalDate.of(2026, 10, 3)), eq("COSMO_ROOM"), isNull(), eq(0));
         verify(aboutAdminAuth).requireAdmin(any(), any());
     }
 
@@ -838,7 +945,7 @@ class ArchiveControllerTest {
                         .param("description", "묶음").param("coverIndex", "1").param("artistNames", "서연").param("registeredOn", "2026-10-03").param("source", "COSMO_ROOM"))
                 .andExpect(redirectedUrl("/archive?folder=s&members=%EC%9C%A4%EC%84%9C%EC%97%B0"));
         verify(archiveService, times(1)).uploadImages(any(), eq(""), eq("서연"),
-                eq(java.time.LocalDate.of(2026, 10, 3)), eq(ArchiveSource.COSMO_ROOM), eq("묶음"), eq(1));
+                eq(java.time.LocalDate.of(2026, 10, 3)), eq("COSMO_ROOM"), eq("묶음"), eq(1));
         verify(aboutAdminAuth).requireAdmin(any(), any());
     }
 
@@ -846,7 +953,7 @@ class ArchiveControllerTest {
         MockMultipartFile file = new MockMultipartFile("file", "a.jpg", "image/jpeg", new byte[]{1, 2});
         org.mockito.Mockito.doThrow(new IllegalArgumentException("같은 날짜·출처·설명의 게시글이 이미 있습니다."))
                 .when(archiveService).uploadImages(any(), eq(""), eq("서연"),
-                        eq(java.time.LocalDate.of(2026, 10, 3)), eq(ArchiveSource.COSMO_ROOM), eq("현장 컷"), eq(0));
+                        eq(java.time.LocalDate.of(2026, 10, 3)), eq("COSMO_ROOM"), eq("현장 컷"), eq(0));
         mvc.perform(multipart("/archive/upload/image").file(file)
                         .param("description", "현장 컷").param("artistNames", "서연").param("registeredOn", "2026-10-03").param("source", "COSMO_ROOM"))
                 .andExpect(status().isBadRequest())
@@ -891,7 +998,7 @@ class ArchiveControllerTest {
                         .param("clearThumbnail", "false"))
                 .andExpect(status().isOk());
         verify(archiveService).update(eq(7L), eq(""), nullable(List.class), eq("서연"), isNull(), eq(false),
-                eq(java.time.LocalDate.of(2026, 10, 1)), eq(ArchiveSource.COSMO_ROOM),
+                eq(java.time.LocalDate.of(2026, 10, 1)), eq("COSMO_ROOM"),
                 eq("새 설명"), eq("[\"/uploads/a.jpg\"]"), eq("[\"/uploads/a.jpg\"]"), eq(0));
     }
 
@@ -904,7 +1011,7 @@ class ArchiveControllerTest {
         Archive archive = new Archive();
         archive.setId(7L);
         archive.setTitle("포토");
-        archive.setSource(ArchiveSource.COSMO_ROOM);
+        archive.setSource("COSMO_ROOM");
         archive.setArtistNames("서연");
         archive.setFile(SavedMeta.builder().url("/uploads/a.jpg").mediaType(MediaType.IMAGE).build());
         archive.setImagesJson("[\"/uploads/a.jpg\"]");

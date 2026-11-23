@@ -5,9 +5,11 @@ import com.example.triplesweb.entity.ArchiveSource;
 import com.example.triplesweb.entity.MediaType;
 import com.example.triplesweb.entity.Unit;
 import com.example.triplesweb.entity.UnitMember;
+import com.example.triplesweb.dto.ArchiveSourceDto;
 import com.example.triplesweb.dto.ChemistryDto;
 import com.example.triplesweb.dto.ChemistryGroupDto;
 import com.example.triplesweb.service.ArchiveService;
+import com.example.triplesweb.service.ArchiveSourceService;
 import com.example.triplesweb.service.AboutAdminAuth;
 import com.example.triplesweb.service.ArtistSnapshotService;
 import com.example.triplesweb.service.ChemistryGroupService;
@@ -57,6 +59,7 @@ public class ArchiveController {
     private static final List<Integer> ARCHIVE_SIZE_OPTIONS = List.of(10, 20, 30, 40, 50);
 
     private final ArchiveService archiveService;
+    private final ArchiveSourceService archiveSourceService;
     private final AboutAdminAuth aboutAdminAuth;
     private final ArtistSnapshotService artistSnapshot;
     private final UnitService unitService;
@@ -247,9 +250,10 @@ public class ArchiveController {
             fromDate = toDate;
             toDate = swap;
         }
-        ArchiveSource source = parseSourceFilter(sourceSlug);
-        String sourceKey = source == null ? sourceSlug : source.getSlug();
-        boolean externalView = source == ArchiveSource.EXTERNAL;
+        ArchiveSource sourceEntity = parseSourceFilter(sourceSlug);
+        String source = sourceEntity == null ? null : sourceEntity.getCode();
+        String sourceKey = sourceEntity == null ? sourceSlug : sourceEntity.getSlug();
+        boolean externalView = sourceEntity != null && "external".equalsIgnoreCase(sourceEntity.getSlug());
         int safeSize = normalizeArchiveSize(size);
         ArchiveSort sort = ArchiveSort.from(sortRaw);
         if (sort == ArchiveSort.TITLE && type != MediaType.VIDEO) sort = ArchiveSort.NEWEST;
@@ -291,7 +295,13 @@ public class ArchiveController {
         model.addAttribute("archiveFolderView", !browse);
         model.addAttribute("hasArchiveBack", !browse);
         model.addAttribute("archiveBackHref", folderBackHref(folderKey, selectedMembers, allVisibleUnits));
-        model.addAttribute("showMemberFilter", browse || !isSoloFolder(folderKey));
+        // 솔로·유닛·콤보 폴더는 이미 멤버가 고정되어 있어 멤버 필터가 필요 없다.
+        boolean lockedFolderMembers = memberSuperset
+                || isSoloFolder(folderKey)
+                || isUnitFolder(folderKey)
+                || isComboFolder(folderKey);
+        boolean showMemberFilter = browse || !lockedFolderMembers;
+        model.addAttribute("showMemberFilter", showMemberFilter);
         model.addAttribute("showChemistryFilter", false);
         model.addAttribute("chemistryOptions", List.of());
         model.addAttribute("hasChemistryOptions", false);
@@ -306,16 +316,39 @@ public class ArchiveController {
         model.addAttribute("folderTitle", baseTitle);
         model.addAttribute("hasFolderTitle", baseTitle != null && !baseTitle.isBlank());
         model.addAttribute("folderAccent", folderAccent(folderKey, selectedMembers, allVisibleUnits, artists));
+        String soloNumber = "";
+        String soloName = "";
         boolean soloFolder = isSoloFolder(folderKey);
-        model.addAttribute("folderIsSolo", soloFolder);
         if (soloFolder) {
             int index = Integer.parseInt(folderKey.substring(1)) - 1;
-            model.addAttribute("folderTitleNumber", "S" + (index + 1));
-            model.addAttribute("folderTitleName", MemberPortraitOptions.koreanOrder().get(index));
-        } else {
-            model.addAttribute("folderTitleNumber", "");
-            model.addAttribute("folderTitleName", "");
+            soloNumber = "S" + (index + 1);
+            soloName = MemberPortraitOptions.koreanOrder().get(index);
+        } else if (folderKey != null && folderKey.equalsIgnoreCase("s")
+                && selectedMembers != null && selectedMembers.size() == 1) {
+            ArchiveFolderClassifier.Match match = ArchiveFolderClassifier.classify(
+                    String.join(",", selectedMembers), units);
+            if (match.kind() == ArchiveFolderClassifier.Kind.SOLO) {
+                soloFolder = true;
+                String name = selectedMembers.get(0);
+                List<String> order = MemberPortraitOptions.koreanOrder();
+                int index = -1;
+                for (int i = 0; i < order.size(); i++) {
+                    if (order.get(i).equalsIgnoreCase(name)) {
+                        index = i;
+                        break;
+                    }
+                }
+                if (index >= 0) {
+                    soloNumber = "S" + (index + 1);
+                    soloName = order.get(index);
+                } else {
+                    soloName = name;
+                }
+            }
         }
+        model.addAttribute("folderIsSolo", soloFolder);
+        model.addAttribute("folderTitleNumber", soloNumber);
+        model.addAttribute("folderTitleName", soloName);
         String onText = onDate == null ? "" : onDate.toString();
         String fromText = onDate != null ? "" : (fromDate == null ? "" : fromDate.toString());
         String toText = onDate != null ? "" : (toDate == null ? "" : toDate.toString());
@@ -334,9 +367,10 @@ public class ArchiveController {
         model.addAttribute("sourceKey", sourceKey == null ? "" : sourceKey.trim());
         model.addAttribute("hasSourceFilter", sourceSlug != null && !sourceSlug.isBlank());
         model.addAttribute("chemQuery", "");
-        model.addAttribute("archiveSources", sourceOptions(source));
+        model.addAttribute("archiveSources", sourceOptions(sourceEntity));
         model.addAttribute("hasActiveArchiveFilters", (q != null && !q.isBlank())
-                || !selectedMembers.isEmpty() || fromDate != null || toDate != null
+                || (showMemberFilter && !selectedMembers.isEmpty())
+                || fromDate != null || toDate != null || onDate != null
                 || (sourceSlug != null && !sourceSlug.isBlank()));
         String sizeQuery = archiveSizeQuery(safeSize);
         String sortQuery = archiveSortQuery(sort);
@@ -347,10 +381,17 @@ public class ArchiveController {
         model.addAttribute("sortTitle", sort == ArchiveSort.TITLE);
         model.addAttribute("sortFirstMember", sort == ArchiveSort.FIRST_MEMBER);
         model.addAttribute("sortLastMember", sort == ArchiveSort.LAST_MEMBER);
-        addArchivePage(model, archives, type, q, memberQuery(selectedMembers), dateQuery, browse,
+        String membersQuery = memberQuery(selectedMembers);
+        addArchivePage(model, archives, type, q, membersQuery, dateQuery, browse,
                 folderQuery(folderKey, ""), sourceQuery, sourceKey, "", safeSize, sizeQuery, sortQuery);
+        // 고정 멤버 폴더에서 검색·날짜·출처만 초기화해도 같은 폴더에 남긴다.
+        if (!browse && lockedFolderMembers && !selectedMembers.isEmpty()) {
+            String typeQuery = type == MediaType.VIDEO ? "&type=video" : "";
+            model.addAttribute("archiveHomePath",
+                    joinHref("/archive", folderQuery(folderKey, "") + membersQuery + typeQuery));
+        }
         // 출처 탭: 폴더는 한 번 스캔한 결과, 전체 보기는 source 컬럼만 distinct 조회.
-        Set<ArchiveSource> availableSources = browse
+        Set<String> availableSources = browse
                 ? archiveService.availableSources(type, q, selectedMembers, fromDate, toDate)
                 : folderBrowse.availableSources();
         String keptFilters = (type == MediaType.VIDEO ? "&type=video" : "") + folderQuery(folderKey, "")
@@ -466,10 +507,8 @@ public class ArchiveController {
         return registeredOn;
     }
 
-    private static ArchiveSource requireSource(String source) {
-        ArchiveSource parsed = ArchiveSource.parse(source);
-        if (parsed == null) throw new IllegalArgumentException("출처를 선택하세요.");
-        return parsed;
+    private String requireSource(String source) {
+        return archiveSourceService.requireVisible(source).getCode();
     }
 
     private static String memberQuery(List<String> selected) {
@@ -482,6 +521,7 @@ public class ArchiveController {
     }
 
     private List<Map<String, Object>> archiveCards(Page<Archive> archives, List<Artist> artists, List<Unit> units, List<String> selectedMembers) {
+        Map<String, ArchiveSource> sourceCatalog = archiveSourceService.byCode();
         Map<String, String> colors = new LinkedHashMap<>();
         for (Artist artist : artists) {
             String color = artist.getColor();
@@ -541,9 +581,15 @@ public class ArchiveController {
             card.put("file", archive.getFile());
             String imagesJson = ArchiveImages.write(imageUrls, objectMapper);
             String viewJson = ArchiveImages.write(viewUrls, objectMapper);
-            String previewSource = viewUrls.isEmpty()
-                    ? (archive.getFile() == null || archive.getFile().getUrl() == null ? "" : archive.getFile().getUrl())
-                    : viewUrls.get(0);
+            // 멤버 필터로 가려진 대표 사진은 쓰지 않고, 보이는 장 중 첫 장을 표지로 쓴다.
+            String coverUrl = archive.getFile() == null || archive.getFile().getUrl() == null
+                    ? ""
+                    : archive.getFile().getUrl().trim();
+            boolean coverVisible = !coverUrl.isEmpty() && viewUrls.stream()
+                    .anyMatch(url -> url != null && coverUrl.equals(url.trim()));
+            String previewSource = coverVisible
+                    ? coverUrl
+                    : (viewUrls.isEmpty() ? "" : viewUrls.get(0));
             card.put("imageUrls", imageUrls);
             card.put("imageUrlsJson", imagesJson == null ? "[]" : imagesJson);
             card.put("viewUrlsJson", viewJson == null ? "[]" : viewJson);
@@ -569,17 +615,28 @@ public class ArchiveController {
             card.put("registeredOn", registered);
             card.put("registeredOnDisplay", registered.replace('-', '/'));
             card.put("hasRegisteredOn", !registered.isBlank());
-            ArchiveSource source = archive.getSource();
-            card.put("sourceValue", source == null ? "" : source.name());
-            card.put("sourceLabel", source == null ? "" : source.getLabel());
-            card.put("hasSource", source != null);
+            String sourceCode = archive.getSource();
+            ArchiveSource sourceMeta = sourceCode == null || sourceCode.isBlank()
+                    ? null : sourceCatalog.get(sourceCode.toUpperCase(Locale.ROOT));
+            if (sourceMeta == null && sourceCode != null && !sourceCode.isBlank()) {
+                sourceMeta = archiveSourceService.find(sourceCode);
+            }
+            card.put("sourceValue", sourceMeta == null ? (sourceCode == null ? "" : sourceCode) : sourceMeta.getCode());
+            card.put("sourceLabel", sourceMeta == null
+                    ? (sourceCode == null ? "" : sourceCode)
+                    : sourceMeta.getLabel());
+            card.put("sourceColor", sourceMeta == null || sourceMeta.getColor() == null
+                    ? "#00f5d4"
+                    : sourceMeta.getColor());
+            card.put("hasSource", sourceCode != null && !sourceCode.isBlank());
             Long storedUnitId = archive.getUnitId();
             card.put("unitId", storedUnitId == null ? "" : String.valueOf(storedUnitId));
             ArchiveFolderClassifier.UnitMembers storedUnit = storedUnitId == null ? null : unitMembers.stream()
                     .filter(unit -> unit != null && storedUnitId.equals(unit.unitId()))
                     .findFirst()
                     .orElse(null);
-            ArchiveFolderClassifier.Match match = ArchiveFolderClassifier.classify(archive.getArtistNames(), unitMembers);
+            ArchiveFolderClassifier.Match match = ArchiveFolderClassifier.classify(
+                    archive.getArtistNames(), unitMembers, archive.getRegisteredOn());
             boolean unitBadge = storedUnit != null
                     || (match != null && match.kind() == ArchiveFolderClassifier.Kind.UNIT && match.unitId() != null);
             card.put("hasUnitBadge", unitBadge);
@@ -598,7 +655,7 @@ public class ArchiveController {
                 card.put("unitBadgeColor", "");
                 card.put("unitBadgeKey", "");
             }
-            card.put("hasBadgeRow", source != null || unitBadge);
+            card.put("hasBadgeRow", (sourceCode != null && !sourceCode.isBlank()) || unitBadge);
             cards.add(card);
         }
         return cards;
@@ -745,19 +802,19 @@ public class ArchiveController {
         model.addAttribute("dateExactLabel", "이날");
     }
 
-    private static ArchiveSource parseSourceFilter(String sourceSlug) {
+    private ArchiveSource parseSourceFilter(String sourceSlug) {
         if (sourceSlug == null || sourceSlug.isBlank()) {
             return null;
         }
-        try {
-            return ArchiveSource.parse(sourceSlug);
-        } catch (IllegalArgumentException ignored) {
-            return null;
-        }
+        return archiveSourceService.find(sourceSlug);
     }
 
     private static boolean isSoloFolder(String folder) {
         return folder != null && folder.matches("(?i)s([1-9]|1[0-9]|2[0-4])");
+    }
+
+    private static boolean isUnitFolder(String folder) {
+        return folder != null && folder.toLowerCase(Locale.ROOT).startsWith("unit-");
     }
 
     private static boolean isComboFolder(String folder) {
@@ -897,28 +954,47 @@ public class ArchiveController {
         return "&chem=" + URLEncoder.encode(chem.trim(), StandardCharsets.UTF_8);
     }
 
-    private static List<Map<String, Object>> sourceOptions(ArchiveSource selected) {
+    private List<Map<String, Object>> sourceOptions(ArchiveSource selected) {
         List<Map<String, Object>> options = new ArrayList<>();
-        for (ArchiveSource source : ArchiveSource.values()) {
-            Map<String, Object> option = new LinkedHashMap<>();
-            option.put("value", source.name());
-            option.put("slug", source.getSlug());
-            option.put("label", source.getLabel());
-            option.put("selected", source == selected);
-            options.add(option);
+        String selectedCode = selected == null ? null : selected.getCode();
+        Set<String> seen = new LinkedHashSet<>();
+        for (var dto : archiveSourceService.listVisible()) {
+            options.add(sourceOption(dto, selectedCode, false));
+            seen.add(dto.code().toUpperCase(Locale.ROOT));
+        }
+        // 숨긴 출처도 편집 폼에서 기존 값을 고를 수 있게 남긴다(업로드는 requireVisible로 거절).
+        for (var dto : archiveSourceService.listAll()) {
+            if (seen.contains(dto.code().toUpperCase(Locale.ROOT))) continue;
+            options.add(sourceOption(dto, selectedCode, true));
         }
         return options;
     }
 
-    private static List<Map<String, Object>> sourceTabs(String path, String extraQuery, String sourceSlug, Set<ArchiveSource> availableSources) {
+    private static Map<String, Object> sourceOption(ArchiveSourceDto dto, String selectedCode, boolean hidden) {
+        Map<String, Object> option = new LinkedHashMap<>();
+        option.put("value", dto.code());
+        option.put("slug", dto.slug());
+        option.put("label", hidden ? dto.label() + " (숨김)" : dto.label());
+        option.put("color", dto.color());
+        option.put("selected", selectedCode != null && selectedCode.equalsIgnoreCase(dto.code()));
+        return option;
+    }
+
+    private List<Map<String, Object>> sourceTabs(String path, String extraQuery, String sourceSlug, Set<String> availableSources) {
         List<Map<String, Object>> tabs = new ArrayList<>();
         String current = sourceSlug == null ? "" : sourceSlug.trim();
         tabs.add(sourceTab("전체", joinHref(path, extraQuery), current.isBlank()));
-        for (ArchiveSource source : ArchiveSource.values()) {
-            if (!availableSources.contains(source)) continue;
-            tabs.add(sourceTab(source.getLabel(),
-                    joinHref(path, extraQuery + "&source=" + source.getSlug()),
-                    current.equalsIgnoreCase(source.getSlug()) || current.equalsIgnoreCase(source.name())));
+        Set<String> available = new LinkedHashSet<>();
+        if (availableSources != null) {
+            for (String code : availableSources) {
+                if (code != null && !code.isBlank()) available.add(code.toUpperCase(Locale.ROOT));
+            }
+        }
+        for (var dto : archiveSourceService.listVisible()) {
+            if (!available.contains(dto.code().toUpperCase(Locale.ROOT))) continue;
+            tabs.add(sourceTab(dto.label(),
+                    joinHref(path, extraQuery + "&source=" + dto.slug()),
+                    current.equalsIgnoreCase(dto.slug()) || current.equalsIgnoreCase(dto.code())));
         }
         return tabs;
     }
@@ -943,7 +1019,12 @@ public class ArchiveController {
                     members.addAll(ArchiveFolderClassifier.membersOf(membership.getArtist().getName()));
                 }
             }
-            out.add(new ArchiveFolderClassifier.UnitMembers(unit.getUnitId(), unit.getUnitName(), members));
+            String formation = unit.getFormationDate();
+            out.add(new ArchiveFolderClassifier.UnitMembers(
+                    unit.getUnitId(),
+                    unit.getUnitName(),
+                    members,
+                    formation == null || formation.isBlank() ? null : formation.trim()));
         }
         return out;
     }
@@ -1046,7 +1127,8 @@ public class ArchiveController {
         Map<String, String> previews = new LinkedHashMap<>();
         for (Archive archive : archives) {
             counts.merge("s", 1, Integer::sum);
-            ArchiveFolderClassifier.Match match = ArchiveFolderClassifier.classify(archive.getArtistNames(), unitMembers);
+            ArchiveFolderClassifier.Match match = ArchiveFolderClassifier.classify(
+                    archive.getArtistNames(), unitMembers, archive.getRegisteredOn());
             if (match.kind() == ArchiveFolderClassifier.Kind.OTHER) continue;
             List<String> cast = match.members();
             for (String name : cast) {
@@ -1056,8 +1138,11 @@ public class ArchiveController {
             if (unitMembers == null) continue;
             Set<String> present = new LinkedHashSet<>(cast);
             String preview = archivePreview(archive);
+            Long storedUnitId = archive.getUnitId();
             for (ArchiveFolderClassifier.UnitMembers unit : unitMembers) {
                 if (unit.members() == null || unit.members().isEmpty() || !present.containsAll(unit.members())) continue;
+                boolean manual = storedUnitId != null && storedUnitId.equals(unit.unitId());
+                if (!manual && !ArchiveFolderClassifier.isFormedBy(unit, archive.getRegisteredOn())) continue;
                 String key = "unit-" + unit.unitId();
                 counts.merge(key, 1, Integer::sum);
                 if (!preview.isBlank()) previews.putIfAbsent(key, preview);
@@ -1143,12 +1228,16 @@ public class ArchiveController {
     }
 
     private static String unitColor(Unit unit, List<Artist> artists) {
-        if (unit.getUnitMembers() != null) {
-            for (UnitMember membership : unit.getUnitMembers()) {
-                if (membership.getArtist() != null) return safeColor(membership.getArtist().getColor());
+        if (unit != null) {
+            String folderColor = ArchiveFolderArt.unitColor(unit.getUnitName());
+            if (!folderColor.isBlank()) return folderColor;
+            if (unit.getUnitMembers() != null) {
+                for (UnitMember membership : unit.getUnitMembers()) {
+                    if (membership.getArtist() != null) return safeColor(membership.getArtist().getColor());
+                }
             }
         }
-        return artists.isEmpty() ? "#a78bfa" : safeColor(artists.get(0).getColor());
+        return artists == null || artists.isEmpty() ? "#a78bfa" : safeColor(artists.get(0).getColor());
     }
 
     private static String firstNonBlank(String first, String second) {
@@ -1472,7 +1561,7 @@ public class ArchiveController {
         try {
             String names = artistNames == null ? "" : String.join(",", artistNames);
             LocalDate date = requireDate(registeredOn);
-            ArchiveSource archiveSource = requireSource(source);
+            String archiveSource = requireSource(source);
             String safeTitle = title == null ? "" : title;
             List<MultipartFile> uploads = files == null ? List.of() : files.stream()
                     .filter(file -> file != null && !file.isEmpty())
@@ -1545,10 +1634,13 @@ public class ArchiveController {
         aboutAdminAuth.requireAdmin(request, session);
         try {
             String castNames = unionArtistNames(artistNames, imageArtistsJson);
+            String sourceCode = source == null || source.isBlank()
+                    ? null
+                    : archiveSourceService.requireExisting(source).getCode();
             if (imageArtistsJson == null || imageArtistsJson.isBlank()) {
                 archiveService.update(id, title == null ? "" : title, files, castNames, thumbnail, clearThumbnail,
                         requireDate(registeredOn),
-                        source == null || source.isBlank() ? null : ArchiveSource.parse(source),
+                        sourceCode,
                         description,
                         keepImageUrlsJson,
                         imageOrderJson,
@@ -1556,7 +1648,7 @@ public class ArchiveController {
             } else {
                 archiveService.update(id, title == null ? "" : title, files, castNames, thumbnail, clearThumbnail,
                         requireDate(registeredOn),
-                        source == null || source.isBlank() ? null : ArchiveSource.parse(source),
+                        sourceCode,
                         description,
                         keepImageUrlsJson,
                         imageOrderJson,

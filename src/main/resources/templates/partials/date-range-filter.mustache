@@ -1,7 +1,8 @@
-<div class="ar-date-filter" data-date-filter>
-    <button type="button" class="ar-date-toggle" data-date-toggle aria-expanded="false" aria-haspopup="dialog">
-        <span class="material-symbols-outlined" aria-hidden="true">calendar_month</span>
-        <span>{{#hasDateFilter}}{{#hasExactDate}}{{on}}{{/hasExactDate}}{{^hasExactDate}}{{from}} ~ {{to}}{{/hasExactDate}}{{/hasDateFilter}}{{^hasDateFilter}}{{#dateFilterLabel}}{{dateFilterLabel}}{{/dateFilterLabel}}{{^dateFilterLabel}}날짜{{/dateFilterLabel}}{{/hasDateFilter}}</span>
+<div class="objekt-filter ar-date-filter relative{{#hasDateFilter}} is-filtered{{/hasDateFilter}}" data-date-filter>
+    <span class="objekt-filter-label">날짜</span>
+    <button type="button" class="ar-date-toggle objekt-filter-control" data-date-toggle aria-expanded="false" aria-haspopup="dialog">
+        <span class="truncate">{{#hasDateFilter}}{{#hasExactDate}}{{on}}{{/hasExactDate}}{{^hasExactDate}}{{from}} ~ {{to}}{{/hasExactDate}}{{/hasDateFilter}}{{^hasDateFilter}}전체{{/hasDateFilter}}</span>
+        <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
     </button>
     <div class="ar-date-popover" data-date-popover hidden role="dialog" aria-label="{{#dateFilterLabel}}{{dateFilterLabel}}{{/dateFilterLabel}}{{^dateFilterLabel}}날짜 선택{{/dateFilterLabel}}">
         <div class="ar-date-fields">
@@ -23,7 +24,7 @@
         {{#dateFilterHint}}<p class="ar-field-hint ar-date-hint">{{dateFilterHint}}</p>{{/dateFilterHint}}
         <div class="ar-date-actions">
             <button type="button" class="site-btn site-btn--reset site-btn--sm" data-date-clear>초기화</button>
-            <button type="submit" class="ar-submit ar-date-apply">적용</button>
+            <button type="submit" class="site-btn site-btn--primary site-btn--sm ar-date-apply">적용</button>
         </div>
     </div>
 </div>

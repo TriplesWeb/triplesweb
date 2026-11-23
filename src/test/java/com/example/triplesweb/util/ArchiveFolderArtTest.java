@@ -22,6 +22,14 @@ class ArchiveFolderArtTest {
         assertThat(art.urlFor(ArchiveFolderClassifier.Kind.UNIT, "unit-x", "Unknown Unit")).isEmpty();
     }
 
+    @Test void unitBadgeColorsMatchFolderArtwork() {
+        assertThat(ArchiveFolderArt.unitColor("Glow")).isEqualTo("#e682c8");
+        assertThat(ArchiveFolderArt.unitColor("ACID ANGEL OF ASIA")).isEqualTo("#c699d4");
+        assertThat(ArchiveFolderArt.unitColor("msnz zenith")).isEqualTo("#82dc14");
+        assertThat(ArchiveFolderArt.unitColor("Acid Eyes")).isEqualTo("#ff00bd");
+        assertThat(ArchiveFolderArt.unitColor("Unknown Unit")).isEmpty();
+    }
+
     @Test void prefersExactThenPrefixedKoreanFileName() throws Exception {
         Path dir = uploads.resolve(ArchiveFolderArt.DIR_NAME);
         Files.createDirectories(dir);

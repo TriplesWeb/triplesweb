@@ -6,6 +6,7 @@
     <link rel="stylesheet" href="{{#asset}}/css/unit-checks.css{{/asset}}">
     <link rel="stylesheet" href="{{#asset}}/css/member-portrait-picker.css{{/asset}}">
     {{^archiveFolderHome}}
+    <link rel="stylesheet" href="{{#asset}}/css/objekt-filter.css{{/asset}}">
     <link rel="stylesheet" href="{{#asset}}/css/chemistry.css{{/asset}}">
     {{/archiveFolderHome}}
     {{#_csrf}}
@@ -18,34 +19,54 @@
 <main class="archive-page{{#archiveBrowse}} is-browse{{/archiveBrowse}}{{#archiveFolderHome}} is-folder-home{{/archiveFolderHome}}{{#archiveFolderIndex}} is-folder-index{{/archiveFolderIndex}}{{#archiveFolderView}} is-folder-view{{/archiveFolderView}}" data-archive-kind="{{#imageArchive}}image{{/imageArchive}}{{#videoArchive}}video{{/videoArchive}}" data-date-label="{{mediaDateLabel}}" data-default-artists="{{defaultUploadArtists}}">
     <section class="ar-hero{{#archiveBrowse}} ar-hero-browse{{/archiveBrowse}}">
         <div class="ar-panel ar-headline{{#archiveFolderView}} is-member-space{{/archiveFolderView}}{{#archiveFolderIndex}} is-member-space{{/archiveFolderIndex}}"{{#folderAccent}} style="--folder-color: {{folderAccent}}"{{/folderAccent}}>
-            <button type="button" class="ar-stats-toggle" data-stats-toggle aria-expanded="true" aria-controls="archiveStats" aria-label="통계 접기">
-                <span data-stats-icon aria-hidden="true">−</span>
-            </button>
-            {{#hasArchiveBack}}<a class="site-back-link ar-back-folders" href="{{archiveBackHref}}">← 목록으로</a>{{/hasArchiveBack}}
-            <div class="ar-headline-copy">
-                <div class="ar-kicker"><span class="material-symbols-outlined">{{#archiveFolderHome}}folder{{/archiveFolderHome}}{{^archiveFolderHome}}{{#imageArchive}}photo_library{{/imageArchive}}{{#videoArchive}}play_circle{{/videoArchive}}{{/archiveFolderHome}}</span> Archive</div>
-                <h1>아카이브</h1>
-                {{#archiveBrowse}}<p>사진 전체</p>{{/archiveBrowse}}
-                {{#archiveFolderView}}{{#hasFolderTitle}}<p class="ar-folder-title{{#folderIsSolo}} is-solo{{/folderIsSolo}}" data-base-title="{{folderBaseTitle}}">{{#folderIsSolo}}<span class="ar-folder-num">{{folderTitleNumber}}</span> <span class="ar-folder-name">{{folderTitleName}}</span>{{/folderIsSolo}}{{^folderIsSolo}}{{folderTitle}}{{/folderIsSolo}}</p>{{/hasFolderTitle}}{{/archiveFolderView}}
-                {{#archiveFolderIndex}}<p class="ar-folder-title">{{folderTitle}}</p>{{/archiveFolderIndex}}
-            </div>
-            <button type="button" class="ar-submit ar-home-upload" data-admin-only onclick="showAddModal()">{{#imageArchive}}사진 추가{{/imageArchive}}{{^imageArchive}}영상 추가{{/imageArchive}}</button>
-            <div class="ar-stats" id="archiveStats">
-                {{#archiveFolderHome}}
-                <article class="ar-stat"><div class="ar-stat-label"><span>등록된 사진</span><span class="material-symbols-outlined">image</span></div><strong>{{archiveTotal}}<em>장</em></strong></article>
-                <article class="ar-stat"><div class="ar-stat-label"><span>등록된 영상</span><span class="material-symbols-outlined">movie</span></div><strong>{{archiveVideoTotal}}<em>개</em></strong></article>
-                <article class="ar-stat"><div class="ar-stat-label"><span>폴더</span><span class="material-symbols-outlined">folder</span></div><strong>{{archiveFolderCount}}<em>개</em></strong></article>
-                {{/archiveFolderHome}}
+            {{#hasArchiveBack}}
+            <div class="ar-headline-toolbar">
+                <a class="site-back-link site-back-link--chip ar-back-folders" href="{{archiveBackHref}}">← 목록으로</a>
                 {{^archiveFolderHome}}
-                <article class="ar-stat"><div class="ar-stat-label"><span>{{#imageArchive}}등록된 사진{{/imageArchive}}{{#videoArchive}}등록된 영상{{/videoArchive}}</span><span class="material-symbols-outlined">{{#imageArchive}}image{{/imageArchive}}{{#videoArchive}}movie{{/videoArchive}}</span></div><strong>{{archiveTotal}}<em>{{#imageArchive}}장{{/imageArchive}}{{#videoArchive}}개{{/videoArchive}}</em></strong></article>
-                <article class="ar-stat ar-stat-date"><div class="ar-stat-label"><span>날짜</span><span class="material-symbols-outlined">calendar_month</span></div><strong>{{#hasDateStat}}{{dateStatLabel}}{{/hasDateStat}}{{^hasDateStat}}전체{{/hasDateStat}}</strong></article>
-                <article class="ar-stat"><div class="ar-stat-label"><span>페이지</span><span class="material-symbols-outlined">layers</span></div><strong>{{archivePageDisplay}}<em>/ {{archiveTotalPages}}</em></strong></article>
+                <div class="ar-headline-actions">
+                    <button type="button" class="site-btn site-btn--primary site-btn--sm ar-submit ar-home-upload" data-admin-only onclick="showAddModal()">{{#imageArchive}}사진 추가{{/imageArchive}}{{^imageArchive}}영상 추가{{/imageArchive}}</button>
+                </div>
+                {{/archiveFolderHome}}
+            </div>
+            {{/hasArchiveBack}}
+            {{^hasArchiveBack}}{{^archiveFolderHome}}
+            <div class="ar-headline-toolbar">
+                <div class="ar-headline-actions">
+                    <button type="button" class="site-btn site-btn--primary site-btn--sm ar-submit ar-home-upload" data-admin-only onclick="showAddModal()">{{#imageArchive}}사진 추가{{/imageArchive}}{{^imageArchive}}영상 추가{{/imageArchive}}</button>
+                </div>
+            </div>
+            {{/archiveFolderHome}}{{/hasArchiveBack}}
+            <div class="ar-headline-body{{^archiveFolderHome}} is-copy-only{{/archiveFolderHome}}">
+                <div class="ar-headline-copy">
+                    <div class="ar-kicker"><span class="material-symbols-outlined">{{#archiveFolderHome}}folder{{/archiveFolderHome}}{{^archiveFolderHome}}{{#imageArchive}}photo_library{{/imageArchive}}{{#videoArchive}}play_circle{{/videoArchive}}{{/archiveFolderHome}}</span> Archive</div>
+                    {{#archiveFolderView}}{{#hasFolderTitle}}
+                    <h1 class="ar-folder-title{{#folderIsSolo}} is-solo{{/folderIsSolo}}" data-base-title="{{folderBaseTitle}}">{{#folderIsSolo}}<span class="ar-folder-num">{{folderTitleNumber}}</span> <span class="ar-folder-name">{{folderTitleName}}</span>{{/folderIsSolo}}{{^folderIsSolo}}{{folderTitle}}{{/folderIsSolo}}</h1>
+                    {{/hasFolderTitle}}{{^hasFolderTitle}}
+                    <h1>아카이브</h1>
+                    {{/hasFolderTitle}}{{/archiveFolderView}}
+                    {{#archiveFolderIndex}}
+                    <h1 class="ar-folder-title">{{folderTitle}}</h1>
+                    {{/archiveFolderIndex}}
+                    {{^archiveFolderView}}{{^archiveFolderIndex}}
+                    <h1>아카이브</h1>
+                    {{#archiveBrowse}}<p>사진 전체</p>{{/archiveBrowse}}
+                    {{/archiveFolderIndex}}{{/archiveFolderView}}
+                </div>
+                {{#archiveFolderHome}}
+                <div class="ar-stats" id="archiveStats">
+                    <article class="ar-stat"><div class="ar-stat-label"><span>등록된 사진</span><span class="material-symbols-outlined">image</span></div><strong>{{archiveTotal}}<em>장</em></strong></article>
+                    <article class="ar-stat"><div class="ar-stat-label"><span>등록된 영상</span><span class="material-symbols-outlined">movie</span></div><strong>{{archiveVideoTotal}}<em>개</em></strong></article>
+                    <article class="ar-stat"><div class="ar-stat-label"><span>폴더</span><span class="material-symbols-outlined">folder</span></div><strong>{{archiveFolderCount}}<em>개</em></strong></article>
+                </div>
                 {{/archiveFolderHome}}
             </div>
         </div>
     </section>
 
     {{#archiveFolderHome}}
+    <div class="ar-folders-head">
+        <button type="button" class="site-btn site-btn--primary site-btn--sm ar-submit ar-home-upload" data-admin-only onclick="showAddModal()">{{#imageArchive}}사진 추가{{/imageArchive}}{{^imageArchive}}영상 추가{{/imageArchive}}</button>
+    </div>
     {{>partials/archive-folder-grid}}
     {{/archiveFolderHome}}
 
@@ -71,7 +92,7 @@
         {{>partials/archive-photo-card}}
         {{/imageArchive}}
         {{#videoArchive}}
-        <article class="ar-panel ar-card" data-id="{{id}}" data-title="{{title}}" data-artists="{{artistNames}}" data-member-order="{{memberOrder}}" data-registered="{{registeredOn}}" data-url="{{file.url}}" data-source="{{sourceValue}}" data-source-label="{{sourceLabel}}" data-unit-id="{{unitId}}" data-unit-label="{{unitBadgeLabel}}" data-unit-color="{{unitBadgeColor}}" data-thumbnail-url="{{thumbnailUrl}}">
+        <article class="ar-panel ar-card" data-id="{{id}}" data-title="{{title}}" data-artists="{{artistNames}}" data-member-order="{{memberOrder}}" data-registered="{{registeredOn}}" data-url="{{file.url}}" data-source="{{sourceValue}}" data-source-label="{{sourceLabel}}" data-source-color="{{sourceColor}}" data-unit-id="{{unitId}}" data-unit-label="{{unitBadgeLabel}}" data-unit-color="{{unitBadgeColor}}" data-thumbnail-url="{{thumbnailUrl}}">
             <a class="ar-photo-link ar-video-thumb" href="{{file.url}}" data-archive-video data-poster="{{thumbnailUrl}}" aria-label="{{#title}}{{title}}{{/title}}{{^title}}영상{{/title}} 자세히 보기">
                 <span class="ar-video-placeholder" aria-hidden="true"></span>
                 {{#thumbnailUrl}}<img src="{{thumbnailUrl}}" alt="" loading="lazy" decoding="async">{{/thumbnailUrl}}
@@ -147,6 +168,8 @@
                             <svg class="ar-edit-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M2.5 12a.75.75 0 0 1 .75-.75h17.5a.75.75 0 0 1 0 1.5H3.25A.75.75 0 0 1 2.5 12Zm4.05-2.2L12 3.6l5.45 6.2H6.55Zm0 4.4h10.9L12 20.4l-5.45-6.2Z"/></svg>
                         </button>
                     </div>
+                    <div><p>원본</p><div class="ar-preview-full"></div></div>
+                    <div><p>목록에서 보이는 모습</p><div class="ar-preview-card"></div></div>
                     <p class="ar-preview-error" data-preview-error role="alert" hidden></p>
                 </div>
             </div>
@@ -164,7 +187,6 @@
         <form id="archiveEditForm" enctype="multipart/form-data" novalidate>
             <div class="ar-dialog-head">
                 <h2 id="editModalLabel">사진 수정</h2>
-                <button type="button" class="ar-close" data-ar-close aria-label="닫기">&times;</button>
             </div>
             <div class="ar-dialog-body">
                 {{>partials/archive-date-field}}
@@ -207,11 +229,13 @@
                             <svg class="ar-edit-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M2.5 12a.75.75 0 0 1 .75-.75h17.5a.75.75 0 0 1 0 1.5H3.25A.75.75 0 0 1 2.5 12Zm4.05-2.2L12 3.6l5.45 6.2H6.55Zm0 4.4h10.9L12 20.4l-5.45-6.2Z"/></svg>
                         </button>
                     </div>
+                    <div><p>현재 사진</p><div class="ar-preview-full"></div></div>
+                    <div><p>목록에서 보이는 모습</p><div class="ar-preview-card"></div></div>
                     <p class="ar-preview-error" data-preview-error role="alert" hidden></p>
                 </div>
             </div>
             <div class="ar-dialog-foot">
-                <button type="button" class="ar-text-btn" data-ar-close>취소</button>
+                <button type="button" class="ar-text-btn" data-ar-close>닫기</button>
                 <button type="submit" class="ar-submit">저장</button>
             </div>
         </form>
@@ -280,7 +304,6 @@
         <form id="archiveEditForm" enctype="multipart/form-data" novalidate>
             <div class="ar-dialog-head">
                 <h2 id="editModalLabel">영상 수정</h2>
-                <button type="button" class="ar-close" data-ar-close aria-label="닫기">&times;</button>
             </div>
             <div class="ar-dialog-body">
                 <label class="ar-field">제목
@@ -313,7 +336,7 @@
                 </div>
             </div>
             <div class="ar-dialog-foot">
-                <button type="button" class="ar-text-btn" data-ar-close>취소</button>
+                <button type="button" class="ar-text-btn" data-ar-close>닫기</button>
                 <button type="submit" class="ar-submit">저장</button>
             </div>
         </form>
@@ -352,6 +375,7 @@
 </dialog>
 {{/videoArchive}}
 
+{{>partials/archive-source-admin-modal}}
 {{#chemistryNamesJson}}
 <script type="application/json" id="archiveChemistryNames">{{{chemistryNamesJson}}}</script>
 {{/chemistryNamesJson}}
@@ -361,6 +385,7 @@
 <script src="{{#asset}}/js/member-portrait-picker.js{{/asset}}"></script>
 <script src="{{#asset}}/js/unit-checkbox-group.js{{/asset}}"></script>
 <script src="{{#asset}}/js/archive-manage.js{{/asset}}"></script>
+<script src="{{#asset}}/js/archive-source-admin.js{{/asset}}"></script>
 <script src="{{#asset}}/js/date-range-filter.js{{/asset}}"></script>
 <script src="{{#asset}}/js/archive-browse.js{{/asset}}"></script>
 {{^archiveFolderHome}}

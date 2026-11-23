@@ -297,7 +297,8 @@ public final class MemberPortraitOptions {
         return false;
     }
 
-    static Set<String> memberAliases(String selectedMember) {
+    /** 필터·SQL 토큰 매칭용. 한글 풀네임·짧은 이름·영문·S번호. */
+    public static Set<String> memberAliases(String selectedMember) {
         Set<String> selectedTokens = tokens(selectedMember);
         int selectedIndex = memberIndex(selectedMember);
         Set<String> aliases = new LinkedHashSet<>();

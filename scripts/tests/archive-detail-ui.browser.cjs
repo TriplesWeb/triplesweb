@@ -45,12 +45,22 @@ ${site}${css}${siteUi}${chemCss}
         <button type="button" class="mpp-item is-active" data-value="주빈">주빈</button>
         <button type="button" class="mpp-item is-active" data-value="마유">마유</button>
         <button type="button" class="mpp-item" data-value="지연" data-name="지연" data-keep-option="true"><span class="artist-tab-avatar"><img class="artist-tab-photo" src="/missing-profile.jpg"></span><span>지연</span></button>
+        <button type="button" class="mpp-item" data-value="윤서연">윤서연</button>
+        <button type="button" class="mpp-item" data-value="정혜린">정혜린</button>
       </div>
     </div>
   </section>
+  <div class="unit-checks" hidden>
+    <label class="unit-chip"><input type="checkbox" value="42" data-members="윤서연,정혜린"><span>Aura</span></label>
+  </div>
   <section class="ar-hero">
     <div class="ar-panel ar-headline">
-      <div class="ar-stats" id="archiveStats">
+      <div class="ar-headline-toolbar"></div>
+      <div class="ar-headline-body is-copy-only">
+        <div class="ar-headline-copy">
+          <div class="ar-kicker">Archive</div>
+          <h1>아카이브</h1>
+        </div>
       </div>
     </div>
   </section>
@@ -218,7 +228,8 @@ ${chemistryModals}
     fs.mkdirSync(artifactDir, { recursive: true });
 
     await page.locator('#archiveMemberPanel .artist-tab-fallback').waitFor({ state: 'attached' });
-    assert.equal(await page.locator('#archiveMemberPanel .mpp-item').count(), 3, '프로필 오류로 멤버 선택이 사라졌다');
+    // 픽스처 5명(주빈·마유·지연·윤서연·정혜린). 지연만 깨진 프로필이어도 keep-option으로 남는다.
+    assert.equal(await page.locator('#archiveMemberPanel .mpp-item').count(), 5, '프로필 오류로 멤버 선택이 사라졌다');
     const layout = await page.evaluate(() => {
       const meta = document.querySelector('.ar-meta');
       const date = document.querySelector('.ar-card-date');
@@ -255,20 +266,25 @@ ${chemistryModals}
       };
     });
     assert.equal(toggle.selected, '주빈,마유');
-    assert.equal(toggle.text, '심장마빈즈', '케미명이 있는 멤버 조합이 인원 수로 보인다: ' + toggle.text);
+    assert.equal(toggle.text, '2명', '케미명이 토글에 보이면 안 된다: ' + toggle.text);
     assert.equal(toggle.count, '2');
     assert.equal(toggle.countHidden, false);
     const pick = (name) => page.evaluate((value) => {
       document.querySelector(`#archive-member-picker .mpp-item[data-value="${value}"]`).click();
     }, name);
     await pick('지연');
-    assert.equal(await page.locator('[data-member-toggle-label]').innerText(), '셋');
+    assert.equal(await page.locator('[data-member-toggle-label]').innerText(), '3명', '케미명이 토글에 보이면 안 된다');
     await pick('주빈');
     assert.equal(await page.locator('[data-member-toggle-label]').innerText(), '2명', '케미명이 없는 조합이 인원 수를 유지하지 않는다');
     await pick('지연');
     assert.equal(await page.locator('[data-member-toggle-label]').innerText(), '마유', '멤버 한 명일 때 이름이 보이지 않는다');
     await pick('주빈');
-    assert.equal(await page.locator('[data-member-toggle-label]').innerText(), '심장마빈즈');
+    assert.equal(await page.locator('[data-member-toggle-label]').innerText(), '2명', '케미명이 토글에 다시 보이면 안 된다');
+    await pick('마유');
+    await pick('주빈');
+    await pick('윤서연');
+    await pick('정혜린');
+    assert.equal(await page.locator('[data-member-toggle-label]').innerText(), 'Aura', '유닛 조합은 유닛명이 보여야 한다');
     const toggleBox = await page.locator('#archiveMemberToggle').boundingBox();
     await page.screenshot({
       path: path.join(artifactDir, 'archive-member-toggle-chemistry.png'),
@@ -323,7 +339,8 @@ ${chemistryModals}
     assert.equal(detail.dateText, '2026-11-16');
     assert.equal(detail.metaHidden, false);
     assert.equal(detail.castHidden, false);
-    assert.ok(detail.radius.includes('999') || parseFloat(detail.radius) >= 12, '출처가 버튼처럼 보이지 않는다: ' + detail.radius);
+    // 출처는 유닛 필(999)과 겹치지 않는 각진 칩(0.45rem ≈ 7.2px).
+    assert.ok(!detail.radius.includes('999') && parseFloat(detail.radius) > 4 && parseFloat(detail.radius) < 12, '출처가 유닛 필처럼 보인다: ' + detail.radius);
     assert.equal(await page.locator('#archiveDetail .ar-detail-chem').count(), 0, '케미명이 없는 멤버에도 케미 라벨이 있다');
     assert.equal(detail.hasTitle, false, '불필요한 사진 제목이 남아 있다');
     assert.equal(detail.description, '지연');

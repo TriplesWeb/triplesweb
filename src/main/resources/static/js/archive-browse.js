@@ -1,21 +1,4 @@
 (function () {
-    const headline = document.querySelector('.ar-headline');
-    const statsToggle = document.querySelector('[data-stats-toggle]');
-    const stats = document.getElementById('archiveStats');
-    function setStatsOpen(open) {
-        headline?.classList.toggle('is-stats-collapsed', !open);
-        if (stats) stats.hidden = !open;
-        if (!statsToggle) return;
-        statsToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-        statsToggle.setAttribute('aria-label', open ? '통계 접기' : '통계 펼치기');
-        const icon = statsToggle.querySelector('[data-stats-icon]');
-        if (icon) icon.textContent = open ? '−' : '+';
-    }
-    statsToggle?.addEventListener('click', () => {
-        window.closeArchiveOverlays?.(statsToggle);
-        setStatsOpen(statsToggle.getAttribute('aria-expanded') !== 'true');
-    });
-
     const backLink = document.querySelector('a.ar-back-folders');
     if (backLink?.href) {
         const backUrl = backLink.href;
@@ -337,6 +320,20 @@
         return matchingChems(selected).find((entry) => sameMemberSet(entry.members, selected) && entry.name) || null;
     }
 
+    function unitEntries() {
+        return [...document.querySelectorAll('.unit-checks input[data-members], .unit-chip input[data-members]')]
+            .map((input) => ({
+                name: (input.closest('label')?.querySelector('span')?.textContent || '').trim(),
+                members: String(input.dataset.members || '').split(',').map((name) => name.trim()).filter(Boolean)
+            }))
+            .filter((entry) => entry.name && entry.members.length >= 2);
+    }
+
+    function exactUnit(selected) {
+        if (!selected.length) return null;
+        return unitEntries().find((entry) => sameMemberSet(entry.members, selected)) || null;
+    }
+
     function memberNamesFrom(root) {
         return [...root.querySelectorAll('.unit-member-chip')].map((chip) => {
             return (chip.querySelector('span')?.textContent || chip.getAttribute('title') || '').trim();
@@ -442,17 +439,22 @@
             memberCount.textContent = String(count);
         }
         if (memberLabel) {
+            const unit = count > 1 ? exactUnit(selected) : null;
             memberLabel.title = selected.join(', ') || defaultMemberLabel;
             memberLabel.textContent = count === 1
                 ? selected[0]
-                : (exact ? exact.name : (count ? count + '명' : defaultMemberLabel));
+                : (unit ? unit.name : (count ? count + '명' : defaultMemberLabel));
         }
         const folderTitle = folderTitleEl();
-        if (chem && folderTitle && !folderTitle.classList.contains('is-solo') && (exact || Array.isArray(values) || !chem.value)) {
-            folderTitle.textContent = exact ? exact.name : baseFolderTitleText();
+        if (folderTitle && !folderTitle.classList.contains('is-solo') && Array.isArray(values)) {
+            const unit = exactUnit(selected);
+            // 토글·제목에는 케미명 대신 유닛명만 노출. 케미는 매치 칩/상세에서 다룬다.
+            folderTitle.textContent = unit ? unit.name : baseFolderTitleText();
         }
         memberToggle?.classList.toggle('has-selection', count > 0);
         memberToggle?.classList.toggle('is-open', Boolean(panel && !panel.hidden));
+        memberToggle?.closest('.ar-member-filter')?.classList.toggle('is-filtered', count > 0);
+        memberToggle?.closest('.ar-member-filter')?.classList.toggle('is-open', Boolean(panel && !panel.hidden));
         renderChemMatches(selected);
         syncMemberSortOptions();
     }
@@ -627,19 +629,10 @@
                 const next = doc.querySelector(selector);
                 if (current && next) current.replaceWith(document.importNode(next, true));
             }
+            const currentStats = document.getElementById('archiveStats');
             const nextStats = doc.getElementById('archiveStats');
-            if (nextStats && stats) {
-                const open = !stats.hidden;
-                const dateNode = nextStats.querySelector('.ar-stat-date strong');
-                const currentDate = stats.querySelector('.ar-stat-date strong');
-                const countNode = nextStats.querySelector('.ar-stat strong');
-                const currentCount = stats.querySelector('.ar-stat strong');
-                if (dateNode && currentDate && currentDate.textContent !== dateNode.textContent) currentDate.textContent = dateNode.textContent;
-                if (countNode && currentCount && currentCount.innerHTML !== countNode.innerHTML) currentCount.innerHTML = countNode.innerHTML;
-                const pageNode = nextStats.querySelectorAll('.ar-stat strong')[2];
-                const currentPage = stats.querySelectorAll('.ar-stat strong')[2];
-                if (pageNode && currentPage && currentPage.innerHTML !== pageNode.innerHTML) currentPage.innerHTML = pageNode.innerHTML;
-                stats.hidden = !open;
+            if (currentStats && nextStats) {
+                currentStats.replaceChildren(...[...nextStats.children].map((node) => document.importNode(node, true)));
             }
             updateResetButton();
             const nextUrl = new URL(url, location.href);

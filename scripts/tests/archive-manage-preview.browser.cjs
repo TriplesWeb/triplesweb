@@ -94,6 +94,8 @@ ${site}${css}${siteUi}
           <span class="ar-preview-tools-label">사진 편집</span>
           <button type="button" class="ar-edit-tool" data-image-edit="rotate-cw">cw</button>
         </div>
+        <div><p>현재 사진</p><div class="ar-preview-full"></div></div>
+        <div><p>목록에서 보이는 모습</p><div class="ar-preview-card"></div></div>
         <p class="ar-preview-error" data-preview-error hidden></p>
       </div>
       <button type="submit" class="ar-submit">저장</button>
@@ -180,6 +182,8 @@ ${site}${css}${siteUi}
           <span class="ar-preview-tools-label">사진 편집</span>
           <button type="button" class="ar-edit-tool" data-image-edit="rotate-cw">cw</button>
         </div>
+        <div><p>현재 사진</p><div class="ar-preview-full"></div></div>
+        <div><p>목록에서 보이는 모습</p><div class="ar-preview-card"></div></div>
         <p class="ar-preview-error" data-preview-error hidden></p>
       </div>
       <button type="submit" class="ar-submit">저장</button>
@@ -196,12 +200,14 @@ function pageHtml(kind) {
   const isVideo = kind === 'video';
   const noun = isVideo ? '영상' : '사진';
   const previewLabel = '목록에서 보이는 모습';
-  const imagePreviewShell = `<div class="ar-preview" id="__ID__" hidden>
+  const imagePreviewShell = (id, heading) => `<div class="ar-preview" id="${id}" hidden>
         <p class="ar-preview-info" data-preview-file></p>
         <div class="ar-preview-tools" data-image-edit-tools hidden>
           <span class="ar-preview-tools-label">사진 편집</span>
           <button type="button" class="ar-edit-tool" data-image-edit="rotate-cw">cw</button>
         </div>
+        <div><p>${heading}</p><div class="ar-preview-full"></div></div>
+        <div><p>${previewLabel}</p><div class="ar-preview-card"></div></div>
         <p class="ar-preview-error" data-preview-error hidden></p>
       </div>`;
   const videoPreviewShell = (id, heading) => `<div class="ar-preview" id="${id}" hidden>
@@ -258,7 +264,7 @@ ${site}${css}${siteUi}
         <span class="ar-file-name" data-file-name>선택된 파일 없음</span>
       </span>
       ${isVideo ? '<input type="file" name="thumbnail" accept="image/*"><div class="ar-thumbnail-preview" data-thumbnail-preview hidden><img alt=""><p data-thumbnail-info></p></div>' : ''}
-      ${isVideo ? videoPreviewShell('uploadPreview', '원본') : imagePreviewShell.replace('__ID__', 'uploadPreview')}
+      ${isVideo ? videoPreviewShell('uploadPreview', '원본') : imagePreviewShell('uploadPreview', '원본')}
     </form>
   </div>
 </div>
@@ -282,7 +288,7 @@ ${site}${css}${siteUi}
         <span class="ar-file-name" data-file-name>선택된 파일 없음</span>
       </span>
       ${isVideo ? '<input type="file" name="thumbnail" accept="image/*"><input type="hidden" name="clearThumbnail" value="false"><div class="ar-thumbnail-preview" data-thumbnail-preview hidden><img alt=""><p data-thumbnail-info></p></div>' : ''}
-      ${isVideo ? videoPreviewShell('editPreview', '현재 ' + noun) : imagePreviewShell.replace('__ID__', 'editPreview')}
+      ${isVideo ? videoPreviewShell('editPreview', '현재 ' + noun) : imagePreviewShell('editPreview', '현재 사진')}
     </form>
   </div>
 </div>
@@ -364,10 +370,18 @@ async function withPage(html, run) {
       const keptTiles = Array.from(document.querySelectorAll('#archiveEditForm [data-file-name] .ar-file-tile img'))
         .map((img) => img.getAttribute('src') || '');
       const tools = box?.querySelector('[data-image-edit-tools]');
+      const card = box?.querySelector('.ar-preview-photo-card');
+      const sourceOnCard = card?.querySelector('[data-preview-source]');
+      const orphanBadges = box
+        ? Array.from(box.children).some((child) => child.classList?.contains('ar-card-badges'))
+        : false;
       return {
         hidden: box?.hidden ?? true,
         hasCardPreview: Boolean(box?.querySelector('.ar-preview-card, .ar-preview-full, .ar-preview-photo-card')),
         toolsVisible: tools ? !tools.hidden : false,
+        sourceOnCard: sourceOnCard?.textContent?.trim() || '',
+        orphanBadges,
+        fullSrc: box?.querySelector('.ar-preview-full img')?.getAttribute('src') || '',
         keptTiles,
         description: document.querySelector('#archiveEditForm [name="description"]')?.value || '',
         registeredOn: document.querySelector('#archiveEditForm [name="registeredOn"]')?.value || ''
@@ -375,8 +389,11 @@ async function withPage(html, run) {
     });
 
     assert.equal(preview.hidden, false, '수정 미리보기가 열리지 않는다');
-    assert.equal(preview.hasCardPreview, false, '사진 수정에 목록 카드 미리보기가 남아 있다');
+    assert.equal(preview.hasCardPreview, true, '사진 수정에 목록 카드 미리보기가 없다');
     assert.equal(preview.toolsVisible, true, '기존 사진 편집 툴이 없다');
+    assert.equal(preview.orphanBadges, false, '출처 배지가 목록 카드 밖에 떠 있다');
+    assert.equal(preview.sourceOnCard, '코스모룸', '목록 카드에 출처 배지가 없다');
+    assert.equal(preview.fullSrc, '/portrait.svg', '원본 사진 미리보기가 없다');
     assert.deepEqual(preview.keptTiles, ['/portrait.svg', '/poster.svg'], '수정 모달에 기존 사진 타일이 없다');
     assert.equal(preview.description, '지서연');
     assert.equal(preview.registeredOn, '2026-10-25');

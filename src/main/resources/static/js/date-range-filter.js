@@ -44,6 +44,7 @@
     document.querySelectorAll("[data-date-toggle]").forEach((toggle) => {
       if (keepRoot && keepRoot.contains(toggle)) return;
       toggle.setAttribute("aria-expanded", "false");
+      toggle.closest("[data-date-filter]")?.classList.remove("is-open");
     });
     document.querySelectorAll(".ar-sort-menu").forEach((menu) => {
       if (keepRoot && keepRoot.contains(menu)) return;
@@ -61,6 +62,7 @@
       panel.hidden = true;
       memberToggle?.setAttribute("aria-expanded", "false");
       memberToggle?.classList.remove("is-open");
+      memberToggle?.closest(".ar-member-filter")?.classList.remove("is-open");
     });
   };
   window.closeArchiveOverlays = closeArchiveOverlays;
@@ -461,6 +463,7 @@
       closeArchiveOverlays(toggle);
       pop.hidden = !willOpen;
       toggle.setAttribute("aria-expanded", willOpen ? "true" : "false");
+      root.classList.toggle("is-open", willOpen);
       if (!willOpen) pop.dispatchEvent(new CustomEvent("archive-date-close", { bubbles: true }));
     });
     exact?.addEventListener("change", () => {

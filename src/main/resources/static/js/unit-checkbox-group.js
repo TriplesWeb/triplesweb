@@ -4,7 +4,7 @@
  * - bindMemberHelper: 아카이브 — 유닛은 출연진 프리셋(1개).
  *   유닛 먼저 → 출연진을 그 구성으로 채움.
  *   멤버 먼저 → 유닛만 체크(출연진 유지, 수동 선택 유지).
- *   멤버 완전 일치 → 유닛 자동 체크. 유닛 해제 → 유닛만 끄고 멤버는 유지.
+ *   멤버 완전 일치 → 유닛 자동 체크(결성일 이후만). 유닛 해제 → 유닛만 끄고 멤버는 유지.
  */
 (function () {
   function rootEl(root) {
@@ -28,6 +28,14 @@
   function sameMemberSet(members, selected) {
     if (!members.length || members.length !== selected.size) return false;
     return members.every((name) => selected.has(name));
+  }
+
+  /** 사진일(registeredOn)이 결성일 이전이면 자동 매칭하지 않는다. 날짜가 없으면 허용. */
+  function formedByRegisteredOn(cb, registeredOn) {
+    const formation = String(cb?.dataset?.formationDate || "").trim();
+    const date = String(registeredOn || "").trim();
+    if (!formation || !date) return true;
+    return date >= formation;
   }
 
   function membersKey(names) {
@@ -79,14 +87,20 @@
 
   /**
    * 출연 멤버와 구성이 완전히 같은 유닛을 체크.
-   * 수동으로 고른 유닛이 있으면 멤버 불일치여도 그 선택을 유지한다.
+   * 결성일 이전(registeredOn &lt; formationDate)이면 자동 체크하지 않는다.
+   * 수동으로 고른 유닛이 있으면 멤버·결성일 불일치여도 그 선택을 유지한다.
+   * @param {Element|string} root
+   * @param {string[]} memberNames
+   * @param {{ registeredOn?: string }} [options]
    */
-  function syncFromMembers(root, memberNames) {
+  function syncFromMembers(root, memberNames, options) {
     const el = rootEl(root);
     const selected = new Set((memberNames || []).map(String));
+    const registeredOn = options && options.registeredOn != null ? String(options.registeredOn) : "";
     const key = membersKey(selected);
     if (el) {
       // 멤버 구성이 바뀌면 수동 해제 억제를 풀고, 수동 유닛도 멤버 변경에 맞춰 재평가한다.
+      // 사진일만 바뀐 경우에는 수동 선택을 유지한다.
       if (el._unitCheckMembersKey !== key) {
         el._unitCheckSuppressed = new Set();
         el._unitCheckMembersKey = key;
@@ -101,7 +115,7 @@
         cb.checked = true;
         return;
       }
-      const match = sameMemberSet(parseMembers(cb), selected);
+      const match = sameMemberSet(parseMembers(cb), selected) && formedByRegisteredOn(cb, registeredOn);
       cb.checked = match && !suppressed.has(id);
     });
   }
@@ -158,6 +172,7 @@
     selectedIds,
     syncFromMembers,
     bindMemberHelper,
-    parseMembers
+    parseMembers,
+    formedByRegisteredOn
   };
 })();

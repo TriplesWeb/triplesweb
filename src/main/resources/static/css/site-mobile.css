@@ -153,7 +153,8 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   .tr-search{width:100%}
   .objekt-filter,.collection-filter{min-height:44px;border-radius:.75rem;border-color:rgba(58,74,70,.6);background:rgba(13,14,18,.7)}
   .objekt-filter-control{min-height:44px;border-radius:.75rem}
-  .ar-dialog-foot .ar-submit,.ar-date-actions .ar-submit,.ar-date-actions .ar-text-btn{width:auto;min-width:5.5rem}
+  .ar-dialog-foot .ar-submit,.ar-date-actions .ar-text-btn{width:auto;min-width:5.5rem;min-height:2.75rem;height:auto}
+  .ar-date-actions .site-btn,.ar-date-actions .ar-submit{width:auto;min-width:4.25rem;min-height:2rem;height:2rem}
   .ar-dialog-foot{flex-wrap:wrap}
   .ar-dialog-foot .ar-submit{flex:1 1 auto}
 

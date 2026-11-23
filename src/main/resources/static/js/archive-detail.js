@@ -65,8 +65,10 @@
         }
         if (source) {
             const label = (card.dataset.sourceLabel || '').trim();
+            const color = (card.dataset.sourceColor || '').trim() || '#00f5d4';
             source.hidden = !label;
             source.dataset.source = (card.dataset.source || '').toLowerCase();
+            source.style.setProperty('--source-color', color);
             source.textContent = label;
         }
         if (unit) {
@@ -236,15 +238,25 @@
             dots.classList.toggle('is-compact', urls.length > 10);
             dots.replaceChildren();
             if (multi) {
+                let activeDot = null;
                 urls.forEach((_, i) => {
                     const dot = document.createElement('button');
                     dot.type = 'button';
-                    dot.className = 'ar-detail-dot' + (i === index ? ' is-active' : '');
+                    const active = i === index;
+                    dot.className = 'ar-detail-dot' + (active ? ' is-active' : '');
                     dot.setAttribute('aria-label', (i + 1) + '번째 사진');
-                    if (i === index) dot.setAttribute('aria-current', 'true');
+                    if (active) {
+                        dot.setAttribute('aria-current', 'true');
+                        activeDot = dot;
+                    }
                     dot.addEventListener('click', () => goTo(i));
                     dots.appendChild(dot);
                 });
+                if (activeDot) {
+                    queueMicrotask(() => {
+                        activeDot.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+                    });
+                }
             }
         }
         detail.classList.toggle('has-detail-nav', multi);
@@ -260,7 +272,9 @@
     function open(card) {
         activeCard = card;
         urls = parseImages(card);
-        index = 0;
+        const cover = (card.dataset.url || '').trim();
+        const coverIndex = cover ? urls.indexOf(cover) : -1;
+        index = coverIndex >= 0 ? coverIndex : 0;
         fillMeta(card);
         showImage();
         paintNav();

@@ -1,5 +1,7 @@
 package com.example.triplesweb.util;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -11,6 +13,7 @@ import java.util.regex.Pattern;
  * 아카이브 출연자 문자열을 전체 멤버 / 유닛 / 2·3·4명 케미 / 5명 이상 / 솔로로 나눈다.
  * 전체 멤버 폴더({@code s})는 멤버를 고르지 않으면 등록된 자료를 모두 포함한다.
  * 고른 멤버가 어떤 유닛 구성과 같으면 출연진이 완전히 같은 자료만, 아니면 그 멤버가 모두 나온 자료를 포함한다.
+ * 유닛 자동 분류는 사진일({@code registeredOn})이 결성일 이전인 경우 적용하지 않는다.
  */
 public final class ArchiveFolderClassifier {
     public enum Kind { GROUP, UNIT, COMBO, SOLO, OTHER }
@@ -18,7 +21,11 @@ public final class ArchiveFolderClassifier {
     public static final int[] COMBO_FOLDERS = {2, 3, 4, 5};
     private static final Pattern COMBO_FOLDER = Pattern.compile("(?i)combo-(\\d+)");
 
-    public record UnitMembers(long unitId, String unitName, Set<String> members) {}
+    public record UnitMembers(long unitId, String unitName, Set<String> members, String formationDate) {
+        public UnitMembers(long unitId, String unitName, Set<String> members) {
+            this(unitId, unitName, members, null);
+        }
+    }
 
     public record Match(Kind kind, String key, List<String> members, Long unitId, String label) {}
 
@@ -30,6 +37,13 @@ public final class ArchiveFolderClassifier {
     }
 
     public static Match classify(String artistNames, List<UnitMembers> units) {
+        return classify(artistNames, units, null);
+    }
+
+    /**
+     * @param registeredOn 사진이 실제로 올라온 날짜. null이면 결성일 필터를 건너뛴다(폴더 제목 등).
+     */
+    public static Match classify(String artistNames, List<UnitMembers> units, LocalDate registeredOn) {
         List<String> members = membersOf(artistNames);
         Set<String> unique = new LinkedHashSet<>(members);
         if (unique.size() == 24 && unique.containsAll(MemberPortraitOptions.koreanOrder())) {
@@ -46,10 +60,10 @@ public final class ArchiveFolderClassifier {
         if (units != null && unique.size() >= 2) {
             for (UnitMembers unit : units) {
                 if (unit == null || unit.members() == null || unit.members().isEmpty()) continue;
-                if (unit.members().equals(unique)) {
-                    String name = unit.unitName() == null || unit.unitName().isBlank() ? "유닛" : unit.unitName();
-                    return new Match(Kind.UNIT, "unit-" + unit.unitId(), List.copyOf(unique), unit.unitId(), name);
-                }
+                if (!unit.members().equals(unique)) continue;
+                if (!isFormedBy(unit, registeredOn)) continue;
+                String name = unit.unitName() == null || unit.unitName().isBlank() ? "유닛" : unit.unitName();
+                return new Match(Kind.UNIT, "unit-" + unit.unitId(), List.copyOf(unique), unit.unitId(), name);
             }
         }
         if (unique.size() >= 2) {
@@ -57,6 +71,23 @@ public final class ArchiveFolderClassifier {
             return new Match(Kind.COMBO, "combo-" + min, List.copyOf(unique), null, comboLabel(min));
         }
         return new Match(Kind.OTHER, "other", List.copyOf(unique), null, "기타");
+    }
+
+    /** 사진일이 결성일 당일 이후면 true. 날짜가 없으면(미지정) 허용. */
+    public static boolean isFormedBy(UnitMembers unit, LocalDate registeredOn) {
+        if (unit == null || registeredOn == null) return true;
+        LocalDate formed = parseFormationDate(unit.formationDate());
+        if (formed == null) return true;
+        return !registeredOn.isBefore(formed);
+    }
+
+    static LocalDate parseFormationDate(String raw) {
+        if (raw == null || raw.isBlank()) return null;
+        try {
+            return LocalDate.parse(raw.trim());
+        } catch (DateTimeParseException ignored) {
+            return null;
+        }
     }
 
     public static String comboLabel(int min) {
@@ -98,6 +129,11 @@ public final class ArchiveFolderClassifier {
     }
 
     public static boolean matches(Match actual, String folder, List<String> comboMembers, List<UnitMembers> units) {
+        return matches(actual, folder, comboMembers, units, null);
+    }
+
+    public static boolean matches(Match actual, String folder, List<String> comboMembers, List<UnitMembers> units,
+                                  LocalDate registeredOn) {
         if (actual == null || folder == null || folder.isBlank()) return false;
         String key = folder.trim().toLowerCase(Locale.ROOT);
         if (key.equals("s")) {
@@ -105,9 +141,11 @@ public final class ArchiveFolderClassifier {
             if (wanted.isEmpty()) return true;
             Set<String> wantedSet = new LinkedHashSet<>(wanted);
             Set<String> actualSet = new LinkedHashSet<>(actual.members());
-            // 유닛 폴더(선택 멤버 = 유닛 구성): 슈퍼셋이 아니라 완전 일치만
+            // 유닛 폴더(선택 멤버 = 유닛 구성): 슈퍼셋이 아니라 완전 일치만.
+            // 결성 전이면 유닛으로 취급하지 않아 이 필터에서도 제외한다.
             if (isExactUnitMemberSet(wantedSet, units)) {
-                return actualSet.equals(wantedSet);
+                if (!actualSet.equals(wantedSet)) return false;
+                return isExactUnitFormedBy(wantedSet, units, registeredOn);
             }
             return actualSet.containsAll(wantedSet);
         }
@@ -127,6 +165,16 @@ public final class ArchiveFolderClassifier {
             if (unit.members().equals(members)) return true;
         }
         return false;
+    }
+
+    private static boolean isExactUnitFormedBy(Set<String> members, List<UnitMembers> units, LocalDate registeredOn) {
+        if (registeredOn == null || units == null) return true;
+        for (UnitMembers unit : units) {
+            if (unit == null || unit.members() == null || unit.members().isEmpty()) continue;
+            if (!unit.members().equals(members)) continue;
+            return isFormedBy(unit, registeredOn);
+        }
+        return true;
     }
 
     private static boolean matchesCombo(Match actual, String key, List<String> comboMembers) {

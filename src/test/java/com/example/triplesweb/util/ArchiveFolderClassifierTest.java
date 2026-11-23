@@ -2,6 +2,7 @@ package com.example.triplesweb.util;
 
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
 
@@ -10,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ArchiveFolderClassifierTest {
     ArchiveFolderClassifier.UnitMembers aaa() {
         return new ArchiveFolderClassifier.UnitMembers(1L, "Acid Angel from Asia",
-                Set.of("윤서연", "김유연", "김나경", "공유빈"));
+                Set.of("윤서연", "김유연", "김나경", "공유빈"), "2022-09-25");
     }
 
     @Test void twentyFourMembersAreTheGroupFolder() {
@@ -34,6 +35,23 @@ class ArchiveFolderClassifierTest {
         assertThat(ArchiveFolderClassifier.matches(match, "combo", List.of("윤서연", "김유연", "김나경", "공유빈"))).isFalse();
     }
 
+    @Test void exactUnitSetBeforeFormationIsChemistryNotUnit() {
+        var before = ArchiveFolderClassifier.classify(
+                "윤서연,김유연,김나경,공유빈", List.of(aaa()), LocalDate.of(2022, 9, 24));
+        assertThat(before.kind()).isEqualTo(ArchiveFolderClassifier.Kind.COMBO);
+        assertThat(before.key()).isEqualTo("combo-4");
+        assertThat(ArchiveFolderClassifier.matches(
+                before, "s", List.of("윤서연", "김유연", "김나경", "공유빈"), List.of(aaa()),
+                LocalDate.of(2022, 9, 24))).isFalse();
+
+        var onFormation = ArchiveFolderClassifier.classify(
+                "윤서연,김유연,김나경,공유빈", List.of(aaa()), LocalDate.of(2022, 9, 25));
+        assertThat(onFormation.kind()).isEqualTo(ArchiveFolderClassifier.Kind.UNIT);
+        assertThat(ArchiveFolderClassifier.matches(
+                onFormation, "s", List.of("윤서연", "김유연", "김나경", "공유빈"), List.of(aaa()),
+                LocalDate.of(2022, 9, 25))).isTrue();
+    }
+
     @Test void unitMemberFolderRequiresExactCastNotSuperset() {
         var kre = new ArchiveFolderClassifier.UnitMembers(2L, "+(KR)ystal Eyes",
                 Set.of("윤서연", "이지우", "김채연", "김수민"));
@@ -49,6 +67,14 @@ class ArchiveFolderClassifierTest {
         assertThat(ArchiveFolderClassifier.matches(acidEyesCast, "s", kreMembers, units)).isFalse();
         // 유닛이 아닌 임의 멤버 선택은 기존처럼 포함(슈퍼셋) 매칭
         assertThat(ArchiveFolderClassifier.matches(acidEyesCast, "s", List.of("윤서연", "정혜린"), units)).isTrue();
+    }
+
+    @Test void folderSMemberFilterUsesExactUnitGateForBrowsePaging() {
+        // 솔로·비유닛은 DB requireAllMembers 페이징, 유닛 구성과 같으면 후보 축소 후 정확 매칭.
+        assertThat(ArchiveFolderClassifier.isExactUnitMemberSet(Set.of("이지우"), List.of(aaa()))).isFalse();
+        assertThat(ArchiveFolderClassifier.isExactUnitMemberSet(Set.of("윤서연", "정혜린"), List.of(aaa()))).isFalse();
+        assertThat(ArchiveFolderClassifier.isExactUnitMemberSet(
+                Set.of("윤서연", "김유연", "김나경", "공유빈"), List.of(aaa()))).isTrue();
     }
 
     @Test void twoMembersWithoutAMatchingUnitAreThePairChemistryFolder() {

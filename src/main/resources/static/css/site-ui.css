@@ -163,6 +163,40 @@ body.site-modal-open { overflow: hidden; }
     font-size: 0.75rem;
 }
 
+/* 원형 아이콘 — site-btn과 같은 테두리·배경 토큰 */
+.site-btn--icon {
+    width: 2.15rem;
+    height: 2.15rem;
+    min-height: 2.15rem;
+    padding: 0;
+    border-radius: 999px;
+    border-color: rgba(58, 74, 70, 0.75);
+    background: rgba(13, 14, 18, 0.55);
+    color: var(--site-ui-muted);
+    box-shadow: none;
+}
+.site-btn--icon:hover {
+    background: rgba(0, 245, 212, 0.08);
+    border-color: rgba(0, 245, 212, 0.45);
+    color: var(--site-ui-accent);
+}
+.gv-icon-btn.site-btn--icon,
+.gv-icon-btn {
+    width: 2.15rem;
+    height: 2.15rem;
+    min-height: 2.15rem;
+    padding: 0;
+    border-radius: 999px;
+    border: 1px solid rgba(58, 74, 70, 0.75);
+    background: rgba(13, 14, 18, 0.55);
+    color: var(--site-ui-muted);
+}
+.gv-icon-btn:hover {
+    background: rgba(0, 245, 212, 0.08);
+    border-color: rgba(0, 245, 212, 0.45);
+    color: var(--site-ui-accent);
+}
+
 /* 전역 파일 선택: 버튼과 파일명이 구분되게 */
 input[type="file"] {
     display: block;
@@ -365,7 +399,7 @@ input[type="file"]:disabled::-webkit-file-upload-button {
 
 .site-modal-panel{display:flex;flex-direction:column;min-height:0;}
 
-/* 공통 뒤로가기 — 전역 텍스트 링크 (글래스/필 버튼 금지) */
+/* 공통 뒤로가기 — 기본은 앨범·상세용 텍스트 링크 */
 .site-back {
     margin: 0 0 1.25rem;
 }
@@ -384,9 +418,12 @@ a.site-back-link {
     backdrop-filter: none;
     color: var(--site-ui-muted, #b9cac4);
     text-decoration: none;
+    font: inherit;
     font-size: 0.875rem;
     font-weight: 500;
     line-height: 1.4;
+    letter-spacing: normal;
+    white-space: nowrap;
     cursor: pointer;
     transition: color 0.15s ease;
 }
@@ -402,11 +439,19 @@ a.site-back-link:focus-visible {
     outline: none;
 }
 
-/* 카드 상단 전체 너비 바 (앨범 상세 등) */
+a.site-back-link:focus-visible,
+.site-back a:focus-visible {
+    outline: 2px solid var(--site-ui-accent);
+    outline-offset: 3px;
+}
+
+/* 카드 상단 전체 너비 바 (앨범·이벤트 상세) — 텍스트 링크만 */
 .site-back--bar {
+    display: flex;
+    align-items: center;
     margin: 0;
     padding: 0.9rem 1.5rem;
-    border-bottom: 1px solid rgba(58, 74, 70, 0.55);
+    border-bottom: 1px solid var(--site-ui-border);
     background: #12141a;
 }
 
@@ -426,6 +471,53 @@ html[data-theme="light"] .site-back a:focus-visible,
 html[data-theme="light"] a.site-back-link:hover,
 html[data-theme="light"] a.site-back-link:focus-visible {
     color: var(--site-ui-accent, #0a8f7c);
+}
+
+/*
+ * 툴바 칩 — 아카이브 헤드라인 등 조작 줄.
+ * site-btn / site-btn--reset 과 같은 크롬. 기본은 muted, 호버에만 accent.
+ */
+a.site-back-link--chip,
+.ar-headline-toolbar a.site-back-link {
+    box-sizing: border-box;
+    justify-content: center;
+    height: 2.15rem;
+    min-height: 2.15rem;
+    padding: 0 0.9rem;
+    border: 1px solid rgba(58, 74, 70, 0.75);
+    border-radius: 999px;
+    background: rgba(13, 14, 18, 0.55);
+    color: var(--site-ui-muted);
+    font-size: 0.82rem;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.01em;
+    transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+
+a.site-back-link--chip:hover,
+a.site-back-link--chip:focus-visible,
+.ar-headline-toolbar a.site-back-link:hover,
+.ar-headline-toolbar a.site-back-link:focus-visible {
+    background: rgba(0, 245, 212, 0.08);
+    border-color: rgba(0, 245, 212, 0.45);
+    color: var(--site-ui-accent);
+}
+
+html[data-theme="light"] a.site-back-link--chip,
+html[data-theme="light"] .ar-headline-toolbar a.site-back-link {
+    background: rgba(13, 14, 18, 0.55);
+    border-color: rgba(58, 74, 70, 0.75);
+    color: var(--site-ui-muted);
+}
+
+html[data-theme="light"] a.site-back-link--chip:hover,
+html[data-theme="light"] a.site-back-link--chip:focus-visible,
+html[data-theme="light"] .ar-headline-toolbar a.site-back-link:hover,
+html[data-theme="light"] .ar-headline-toolbar a.site-back-link:focus-visible {
+    background: rgba(0, 245, 212, 0.08);
+    border-color: rgba(0, 245, 212, 0.45);
+    color: var(--site-ui-accent);
 }
 
 /* 공통 section underline 탭 (앨범/공연/굿즈/교환·거래) */
