@@ -51,6 +51,12 @@ ${siteMobile}
       </div>
     </div>
   </section>
+  <div class="ar-folder-tabs">
+    <nav class="site-section-tabs ar-type-tabs" aria-label="아카이브 종류">
+      <a class="site-section-tab" href="/archive" aria-current="page">사진</a>
+      <a class="site-section-tab" href="/archive?type=video">영상</a>
+    </nav>
+  </div>
   <section class="ar-panel ar-toolbar">
     <form class="ar-filters" id="archiveFilterForm">
       <div class="ar-filter-tools objekt-filter-bar">
