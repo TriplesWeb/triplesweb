@@ -40,6 +40,8 @@ public class FileStorageServiceImpl implements FileStorageService {
     private final UploadContentStore uploadContentStore;
     private final UploadImageResizeService imageResizeService;
     private final Executor dbCopyExecutor;
+    /** 카드 JPEG 미리 생성 전용. DB 복사 대기열과 분리한다. */
+    private final Executor cardWarmExecutor;
 
     @Autowired
     public FileStorageServiceImpl(
@@ -48,7 +50,8 @@ public class FileStorageServiceImpl implements FileStorageService {
             UploadContentStore uploadContentStore,
             UploadImageResizeService imageResizeService
     ) {
-        this(uploadRoot, uploadSyncService, uploadContentStore, imageResizeService, defaultDbCopyExecutor());
+        this(uploadRoot, uploadSyncService, uploadContentStore, imageResizeService,
+                defaultDbCopyExecutor(), defaultCardWarmExecutor());
     }
 
     /** 테스트에서 DB 복사를 동기화할 때 쓰는 생성자. */
@@ -58,7 +61,7 @@ public class FileStorageServiceImpl implements FileStorageService {
             UploadContentStore uploadContentStore,
             Executor dbCopyExecutor
     ) {
-        this(uploadRoot, uploadSyncService, uploadContentStore, null, dbCopyExecutor);
+        this(uploadRoot, uploadSyncService, uploadContentStore, null, dbCopyExecutor, Runnable::run);
     }
 
     FileStorageServiceImpl(
@@ -66,13 +69,15 @@ public class FileStorageServiceImpl implements FileStorageService {
             UploadSyncService uploadSyncService,
             UploadContentStore uploadContentStore,
             UploadImageResizeService imageResizeService,
-            Executor dbCopyExecutor
+            Executor dbCopyExecutor,
+            Executor cardWarmExecutor
     ) {
         this.uploadRoot = uploadRoot;
         this.uploadSyncService = uploadSyncService;
         this.uploadContentStore = uploadContentStore;
         this.imageResizeService = imageResizeService;
         this.dbCopyExecutor = dbCopyExecutor;
+        this.cardWarmExecutor = cardWarmExecutor;
     }
 
     private static Executor defaultDbCopyExecutor() {
@@ -84,9 +89,19 @@ public class FileStorageServiceImpl implements FileStorageService {
                 .warn("업로드 DB 복사 대기열이 가득 찼거나 종료됨: 디스크 원본 유지"));
     }
 
+    private static Executor defaultCardWarmExecutor() {
+        return new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(64), r -> {
+            Thread t = new Thread(r, "upload-card-warm");
+            t.setDaemon(true);
+            return t;
+        }, (task, executor) -> org.slf4j.LoggerFactory.getLogger(FileStorageServiceImpl.class)
+                .warn("카드 JPEG 미리 생성 대기열이 가득 찼거나 종료됨: 요청 시 생성으로 미룸"));
+    }
+
     @PreDestroy
-    void shutdownDbCopyExecutor() {
+    void shutdownBackgroundExecutors() {
         if (dbCopyExecutor instanceof ExecutorService service) service.shutdown();
+        if (cardWarmExecutor instanceof ExecutorService service) service.shutdown();
     }
 
     private static final Set<String> IMAGE_EXT = Set.of("jpg","jpeg","jfif","png","gif","webp","bmp");
@@ -200,8 +215,8 @@ public class FileStorageServiceImpl implements FileStorageService {
     }
 
     private void warmCardVariant(Path localFile, boolean isImage) {
-        if (!isImage || imageResizeService == null || localFile == null) return;
-        dbCopyExecutor.execute(() -> {
+        if (!isImage || imageResizeService == null || localFile == null || cardWarmExecutor == null) return;
+        cardWarmExecutor.execute(() -> {
             try {
                 imageResizeService.ensureJpegVariant(localFile, UploadImageResizeService.CARD_WIDTH);
             } catch (Exception e) {
