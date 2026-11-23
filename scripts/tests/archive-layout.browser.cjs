@@ -57,6 +57,7 @@ ${siteMobile}
       </nav>
       <div class="ar-source-tools">
         <button type="button" class="site-btn site-btn--ghost site-btn--sm ar-source-manage" data-admin-only id="archiveSourceManageBtn">출처 관리</button>
+        <button type="button" class="site-btn site-btn--ghost site-btn--sm ar-source-bulk" data-admin-only id="archiveSourceBulkBtn" aria-pressed="false">출처 바꾸기</button>
         <button type="button" class="site-btn site-btn--primary site-btn--sm ar-submit ar-home-upload" data-admin-only>사진 추가</button>
         <label class="ar-density">
           <select id="archivePageSize" name="size" aria-label="페이지당 개수"><option value="10" selected>10개</option></select>
