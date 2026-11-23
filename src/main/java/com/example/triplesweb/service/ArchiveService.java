@@ -1091,6 +1091,35 @@ public class ArchiveService {
     }
 
     /**
+     * 선택한 자료의 출처만 일괄 갱신한다. {@code sourceCode}는 호출 측에서 카탈로그 검증을 마친 코드다.
+     * 없는 id는 건너뛰고, 실제 갱신된 건수를 반환한다.
+     */
+    @Transactional
+    public int bulkUpdateSource(List<Long> ids, String sourceCode) {
+        if (ids == null || ids.isEmpty()) {
+            throw new IllegalArgumentException("자료를 선택해 주세요.");
+        }
+        if (sourceCode == null || sourceCode.isBlank()) {
+            throw new IllegalArgumentException("출처를 선택하세요.");
+        }
+        LinkedHashSet<Long> unique = new LinkedHashSet<>();
+        for (Long id : ids) {
+            if (id != null && id > 0) unique.add(id);
+        }
+        if (unique.isEmpty()) {
+            throw new IllegalArgumentException("자료를 선택해 주세요.");
+        }
+        List<Archive> archives = archiveRepository.findAllById(unique);
+        if (archives.isEmpty()) return 0;
+        for (Archive archive : archives) {
+            archive.setSource(sourceCode);
+        }
+        archiveRepository.saveAll(archives);
+        invalidateIndexCache();
+        return archives.size();
+    }
+
+    /**
      * unit_id 가 비어 있고 출연진이 유닛 구성과 완전 일치(결성일 이후)인 글에 unit_id 를 채운다.
      * 예전 출연진 자동 분류 → 저장 unitId 전환 시 뱃지·유닛 폴더가 비는 것을 한 번 복구한다.
      * 이미 해제(null)한 뒤 다시 돌리면 동일 조건으로 다시 채워지므로 일회성 runner 에서만 호출한다.

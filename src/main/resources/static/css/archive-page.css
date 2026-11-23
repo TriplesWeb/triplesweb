@@ -207,7 +207,7 @@ body.site-page > main.archive-page.is-folder-view {
     gap: 0.45rem 0.55rem;
     padding-bottom: 0.35rem;
 }
-/* 출처 관리·추가·개수 — 같은 줄·같은 높이 */
+/* 출처 관리·바꾸기·추가·개수 — 같은 줄·같은 높이 */
 .ar-source-tools {
     display: inline-flex;
     align-items: center;
@@ -218,6 +218,7 @@ body.site-page > main.archive-page.is-folder-view {
     margin: 0 0 0.35rem;
 }
 .ar-source-tools .ar-source-manage,
+.ar-source-tools .ar-source-bulk,
 .ar-source-tools .ar-home-upload,
 .ar-source-tools .ar-density {
     margin: 0;
@@ -226,13 +227,134 @@ body.site-page > main.archive-page.is-folder-view {
     box-sizing: border-box;
 }
 .ar-source-tools .ar-source-manage,
+.ar-source-tools .ar-source-bulk,
 .ar-source-tools .ar-home-upload {
     padding: 0 0.75rem;
     font-size: 0.78rem;
     line-height: 1;
 }
+.ar-source-tools .ar-source-bulk[aria-pressed="true"] {
+    border-color: color-mix(in srgb, var(--site-accent, #7dd3fc) 55%, transparent);
+    color: var(--site-accent, #7dd3fc);
+}
 .ar-source-tools .ar-density {
     padding: 0 0.55rem 0 0.7rem;
+}
+.ar-source-bulk-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.55rem 0.75rem;
+    margin: 0 0 0.85rem;
+    padding: 0.55rem 0.8rem;
+    border: 1px solid color-mix(in srgb, #fff 12%, transparent);
+    border-radius: 0.75rem;
+    background: color-mix(in srgb, #0b1220 88%, #1e293b);
+}
+.ar-source-bulk-bar[hidden] {
+    display: none !important;
+}
+.ar-source-bulk-count {
+    margin: 0;
+    flex: 0 0 auto;
+    white-space: nowrap;
+    font-size: 0.82rem;
+    font-weight: 650;
+    line-height: 2rem;
+    color: color-mix(in srgb, #fff 78%, transparent);
+}
+.ar-source-bulk-controls {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.45rem;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+.ar-source-bulk-field {
+    flex: 0 0 auto;
+    margin: 0;
+    white-space: nowrap;
+    font-size: 0.82rem;
+    font-weight: 650;
+    line-height: 2rem;
+    color: color-mix(in srgb, #fff 78%, transparent);
+}
+.ar-source-bulk-controls select {
+    flex: 1 1 12rem;
+    box-sizing: border-box;
+    width: auto;
+    min-width: 10rem;
+    max-width: 16rem;
+    height: 2rem;
+    min-height: 2rem;
+    margin: 0;
+    padding: 0 0.7rem;
+    border: 1px solid color-mix(in srgb, #fff 14%, transparent);
+    border-radius: 0.55rem;
+    background: color-mix(in srgb, #020617 70%, #0f172a);
+    color: inherit;
+    font-size: 0.82rem;
+    line-height: 1.2;
+}
+.ar-source-bulk-controls .site-btn {
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 3rem;
+    height: 2rem;
+    min-height: 2rem;
+    margin: 0;
+    padding: 0 0.75rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    line-height: 1;
+}
+#archiveGrid.is-source-edit .ar-card {
+    position: relative;
+    cursor: pointer;
+}
+#archiveGrid.is-source-edit .ar-card.is-bulk-selected {
+    outline: 2px solid color-mix(in srgb, var(--site-accent, #7dd3fc) 80%, #fff);
+    outline-offset: 2px;
+}
+#archiveGrid.is-source-edit .ar-card::before {
+    content: "";
+    position: absolute;
+    z-index: 3;
+    top: 0.55rem;
+    left: 0.55rem;
+    width: 1.15rem;
+    height: 1.15rem;
+    border: 1.5px solid color-mix(in srgb, #fff 70%, transparent);
+    border-radius: 0.3rem;
+    background: color-mix(in srgb, #020617 55%, transparent);
+    box-shadow: 0 1px 4px color-mix(in srgb, #000 45%, transparent);
+    pointer-events: none;
+}
+#archiveGrid.is-source-edit .ar-card.is-bulk-selected::before {
+    border-color: var(--site-accent, #7dd3fc);
+    background: var(--site-accent, #7dd3fc);
+}
+#archiveGrid.is-source-edit .ar-card.is-bulk-selected::after {
+    content: "";
+    position: absolute;
+    z-index: 4;
+    top: 0.72rem;
+    left: 0.78rem;
+    width: 0.38rem;
+    height: 0.62rem;
+    border-right: 2px solid #fff;
+    border-bottom: 2px solid #fff;
+    transform: rotate(40deg);
+    pointer-events: none;
+}
+#archiveGrid.is-source-edit .ar-photo-link,
+#archiveGrid.is-source-edit .ar-video-thumb {
+    pointer-events: none;
 }
 .ar-source-admin-panel {
     max-width: min(42rem, 94vw);
