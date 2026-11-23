@@ -777,11 +777,12 @@ body.site-page > main.archive-page.is-folder-view {
     padding: 0 1.4rem 0 0;
     border: 0;
     background: transparent;
-    color: inherit;
+    /* option과 동일 토큰. inherit이면 계산값이 어긋나 브라우저 검사가 깨진다. */
+    color: #e8ebf2;
     font-family: inherit;
     font-size: 0.82rem;
     font-weight: 600;
-    line-height: 1;
+    line-height: 1.2;
     text-align: left;
     cursor: pointer;
 }

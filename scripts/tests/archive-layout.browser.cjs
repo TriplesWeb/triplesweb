@@ -283,7 +283,8 @@ ${siteMobile}
         sortMatch: Boolean(triggerStyle && optionStyle
           && triggerStyle.color === optionStyle.color
           && triggerStyle.fontSize === optionStyle.fontSize
-          && triggerStyle.fontWeight === optionStyle.fontWeight),
+          && String(parseInt(triggerStyle.fontWeight, 10) || triggerStyle.fontWeight)
+            === String(parseInt(optionStyle.fontWeight, 10) || optionStyle.fontWeight)),
         fieldTransparent: getComputedStyle(field).backgroundColor.includes('0, 0, 0, 0') || getComputedStyle(field).backgroundColor === 'transparent'
       };
     });

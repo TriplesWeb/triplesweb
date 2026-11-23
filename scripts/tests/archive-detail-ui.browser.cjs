@@ -228,7 +228,8 @@ ${chemistryModals}
     fs.mkdirSync(artifactDir, { recursive: true });
 
     await page.locator('#archiveMemberPanel .artist-tab-fallback').waitFor({ state: 'attached' });
-    assert.equal(await page.locator('#archiveMemberPanel .mpp-item').count(), 3, '프로필 오류로 멤버 선택이 사라졌다');
+    // 픽스처 5명(주빈·마유·지연·윤서연·정혜린). 지연만 깨진 프로필이어도 keep-option으로 남는다.
+    assert.equal(await page.locator('#archiveMemberPanel .mpp-item').count(), 5, '프로필 오류로 멤버 선택이 사라졌다');
     const layout = await page.evaluate(() => {
       const meta = document.querySelector('.ar-meta');
       const date = document.querySelector('.ar-card-date');
