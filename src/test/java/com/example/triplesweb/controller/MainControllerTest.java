@@ -3,7 +3,9 @@ package com.example.triplesweb.controller;
 import com.example.triplesweb.config.MustacheConfig;
 import com.example.triplesweb.dto.HomeAlbumHero;
 import com.example.triplesweb.entity.Album;
+import com.example.triplesweb.entity.Archive;
 import com.example.triplesweb.entity.MediaType;
+import com.example.triplesweb.entity.SavedMeta;
 import com.example.triplesweb.entity.Schedule;
 import com.example.triplesweb.repository.ScheduleRepository;
 import com.example.triplesweb.service.AlbumService;
@@ -45,7 +47,10 @@ class MainControllerTest {
         Schedule monthly = new Schedule("달력 일정", first, null);
         when(schedules.findOverlapping(first, first.plusMonths(1), null)).thenReturn(List.of(monthly));
         when(artists.findAll()).thenReturn(List.of());
-        when(archives.pageByType(eq(MediaType.IMAGE), eq(0), eq(4), isNull())).thenReturn(new PageImpl<>(List.of()));
+        Archive localPhoto = new Archive("최근 사진", SavedMeta.builder().url("/uploads/images/archive/photo.jpg").build());
+        Archive remotePhoto = new Archive("외부 사진", SavedMeta.builder().url("https://example.com/photo.jpg").build());
+        when(archives.pageByType(eq(MediaType.IMAGE), eq(0), eq(4), isNull()))
+                .thenReturn(new PageImpl<>(List.of(localPhoto, remotePhoto)));
         when(archives.pageByType(eq(MediaType.VIDEO), eq(0), eq(4), isNull())).thenReturn(new PageImpl<>(List.of()));
         Album album = new Album();
         album.setAlbumId(14L);
@@ -72,6 +77,9 @@ class MainControllerTest {
                 .andExpect(content().string(containsString("컴백")))
                 .andExpect(content().string(containsString("/uploads/images/album/cover.webp")))
                 .andExpect(content().string(containsString("아카이브")))
+                .andExpect(content().string(containsString("src=\"/uploads/images/archive/photo.jpg?w&#x3D;480\"")))
+                .andExpect(content().string(not(containsString("src=\"/uploads/images/archive/photo.jpg\""))))
+                .andExpect(content().string(containsString("src=\"https://example.com/photo.jpg\"")))
                 .andExpect(content().string(containsString("/archive?type=video")))
                 .andExpect(content().string(containsString("Who is tripleS?")))
                 .andExpect(content().string(containsString("href=\"/triples/artist\"")))

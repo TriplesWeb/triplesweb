@@ -168,7 +168,7 @@
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 {{#recentPhotos}}
                     <a href="/archive" class="main-archive-card group block rounded-xl overflow-hidden border border-outline-variant/30 bg-black/30 no-underline">
-                        <img src="{{file.url}}" alt="{{title}}" referrerpolicy="no-referrer" loading="lazy" class="aspect-[4/3] w-full object-cover transition-transform duration-300 group-hover:scale-105">
+                        <img src="{{previewUrl}}" alt="{{title}}" referrerpolicy="no-referrer" loading="lazy" decoding="async" class="aspect-[4/3] w-full object-cover transition-transform duration-300 group-hover:scale-105">
                         <span class="block truncate px-2.5 py-2 text-xs font-medium text-on-surface">{{title}}</span>
                     </a>
                 {{/recentPhotos}}
