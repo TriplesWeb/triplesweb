@@ -2,6 +2,7 @@
     const dialog = document.getElementById('archiveVideoPlayer');
     const video = document.getElementById('archiveVideoElement');
     if (!dialog || !video || typeof dialog.showModal !== 'function') return;
+    video.volume = 0.3; // HTMLMediaElement volume uses a 0–1 scale.
     const title = document.getElementById('archiveVideoTitle');
     const status = document.getElementById('archiveVideoStatus');
     const meta = document.getElementById('archiveVideoMeta');
