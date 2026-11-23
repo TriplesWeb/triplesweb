@@ -1,8 +1,8 @@
 (() => {
     const API = '/api/archive/sources';
-    const openBtn = document.getElementById('archiveSourceManageBtn');
     const modal = document.getElementById('archiveSourceManageModal');
-    if (!openBtn || !modal) return;
+    // 필터 갱신 시 .ar-source-tabs(버튼 포함)가 교체되므로 버튼은 위임으로 연다.
+    if (!modal) return;
 
     const listEl = document.getElementById('archiveSourceAdminList');
     const form = document.getElementById('archiveSourceAdminForm');
@@ -155,7 +155,9 @@
         window.location.reload();
     }
 
-    openBtn.addEventListener('click', () => {
+    document.addEventListener('click', (event) => {
+        const btn = event.target.closest('#archiveSourceManageBtn');
+        if (!btn) return;
         openModal().catch(err => showError(err.message || '열지 못했습니다.'));
     });
 

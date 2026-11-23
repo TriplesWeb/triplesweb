@@ -391,11 +391,9 @@ public class ArchiveService {
                 return cachedPagedBrowse(type, page, size, keyword, canonicalWanted, from, to, source, unclassifiedOnly, true, order);
             }
             Long unitId = unitIdForMembers(wantedSet, units);
-            Specification<Archive> narrowed = archiveSpec(type, keyword, canonicalWanted, from, to, null, false, true);
-            if (unitId != null) {
-                Long lockedUnitId = unitId;
-                narrowed = narrowed.or((root, query, cb) -> cb.equal(root.get("unitId"), lockedUnitId));
-            }
+            // 공통 필터(타입·검색·날짜)는 유지하고, 멤버 매칭 OR unitId만 대안 조건으로 둔다.
+            Specification<Archive> narrowed = archiveFiltersWithMembership(
+                    type, keyword, canonicalWanted, from, to, true, unitId);
             return browseMatchedRows(narrowed, page, size, source, unclassifiedOnly, folderKey, comboMembers, units, order);
         }
 
@@ -406,8 +404,8 @@ public class ArchiveService {
             if (unit != null && unit.members() != null && !unit.members().isEmpty()) {
                 List<String> unitMembers = List.copyOf(unit.members());
                 Long lockedUnitId = unit.unitId();
-                Specification<Archive> narrowed = archiveSpec(type, keyword, unitMembers, from, to, null, false, true)
-                        .or((root, query, cb) -> cb.equal(root.get("unitId"), lockedUnitId));
+                Specification<Archive> narrowed = archiveFiltersWithMembership(
+                        type, keyword, unitMembers, from, to, true, lockedUnitId);
                 return browseMatchedRows(narrowed, page, size, source, unclassifiedOnly, folderKey, comboMembers, units, order);
             }
         }
@@ -567,12 +565,15 @@ public class ArchiveService {
     private static Specification<Archive> archiveSpec(
             MediaType type, String keyword, List<String> members, LocalDate from, LocalDate to,
             String source, boolean unclassifiedOnly, boolean requireAllMembers) {
+        return commonArchiveFilters(type, keyword, from, to, source, unclassifiedOnly)
+                .and(memberArchiveFilters(members, requireAllMembers));
+    }
+
+    /** 타입·검색·날짜·출처. 멤버/유닛 소속 조건은 따로 AND 한다. */
+    private static Specification<Archive> commonArchiveFilters(
+            MediaType type, String keyword, LocalDate from, LocalDate to,
+            String source, boolean unclassifiedOnly) {
         String q = keyword == null ? "" : keyword.trim();
-        List<String> names = members == null ? List.of() : members.stream()
-                .filter(name -> name != null && !name.isBlank())
-                .map(name -> name.trim().toLowerCase(Locale.ROOT).replace(" ", ""))
-                .distinct()
-                .toList();
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.equal(root.get("file").get("mediaType"), type));
@@ -581,18 +582,6 @@ public class ArchiveService {
                 predicates.add(cb.or(
                         cb.like(cb.lower(root.get("title")), pattern),
                         cb.like(cb.lower(cb.coalesce(root.get("description"), "")), pattern)));
-            }
-            if (!names.isEmpty()) {
-                Expression<String> normalized = cb.lower(cb.function(
-                        "replace", String.class, cb.coalesce(root.get("artistNames"), ""), cb.literal(" "), cb.literal("")));
-                Expression<String> wrapped = cb.concat(",", cb.concat(normalized, ","));
-                List<Predicate> memberPredicates = new ArrayList<>();
-                for (String name : names) {
-                    memberPredicates.add(cb.like(wrapped, "%," + name + ",%"));
-                }
-                predicates.add(requireAllMembers
-                        ? cb.and(memberPredicates.toArray(Predicate[]::new))
-                        : cb.or(memberPredicates.toArray(Predicate[]::new)));
             }
             if (from != null) predicates.add(cb.greaterThanOrEqualTo(root.get("registeredOn"), from));
             if (to != null) predicates.add(cb.lessThanOrEqualTo(root.get("registeredOn"), to));
@@ -603,6 +592,57 @@ public class ArchiveService {
             }
             return cb.and(predicates.toArray(Predicate[]::new));
         };
+    }
+
+    /**
+     * artistNames 토큰 매칭. 한글 풀네임뿐 아니라 짧은 이름·S번호·영문 별칭도 포함한다.
+     * 멤버가 없으면 항상 참(공통 필터만 적용).
+     */
+    private static Specification<Archive> memberArchiveFilters(List<String> members, boolean requireAllMembers) {
+        List<String> names = members == null ? List.of() : members.stream()
+                .filter(name -> name != null && !name.isBlank())
+                .map(String::trim)
+                .distinct()
+                .toList();
+        if (names.isEmpty()) {
+            return (root, query, cb) -> cb.conjunction();
+        }
+        return (root, query, cb) -> {
+            Expression<String> normalized = cb.lower(cb.function(
+                    "replace", String.class, cb.coalesce(root.get("artistNames"), ""), cb.literal(" "), cb.literal("")));
+            Expression<String> wrapped = cb.concat(",", cb.concat(normalized, ","));
+            List<Predicate> memberPredicates = new ArrayList<>();
+            for (String name : names) {
+                Set<String> tokens = new LinkedHashSet<>();
+                tokens.add(name.toLowerCase(Locale.ROOT).replace(" ", ""));
+                for (String alias : MemberPortraitOptions.memberAliases(name)) {
+                    if (alias != null && !alias.isBlank()) {
+                        tokens.add(alias.toLowerCase(Locale.ROOT).replace(" ", ""));
+                    }
+                }
+                List<Predicate> aliasPredicates = new ArrayList<>();
+                for (String token : tokens) {
+                    aliasPredicates.add(cb.like(wrapped, "%," + token + ",%"));
+                }
+                memberPredicates.add(cb.or(aliasPredicates.toArray(Predicate[]::new)));
+            }
+            return requireAllMembers
+                    ? cb.and(memberPredicates.toArray(Predicate[]::new))
+                    : cb.or(memberPredicates.toArray(Predicate[]::new));
+        };
+    }
+
+    /** 공통 필터 AND (멤버 매칭 OR 수동 unitId). */
+    private static Specification<Archive> archiveFiltersWithMembership(
+            MediaType type, String keyword, List<String> members, LocalDate from, LocalDate to,
+            boolean requireAllMembers, Long unitId) {
+        Specification<Archive> common = commonArchiveFilters(type, keyword, from, to, null, false);
+        Specification<Archive> membership = memberArchiveFilters(members, requireAllMembers);
+        if (unitId != null) {
+            Long lockedUnitId = unitId;
+            membership = membership.or((root, query, cb) -> cb.equal(root.get("unitId"), lockedUnitId));
+        }
+        return common.and(membership);
     }
 
     @Transactional(readOnly = true)

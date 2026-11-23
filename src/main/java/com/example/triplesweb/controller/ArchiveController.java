@@ -5,6 +5,7 @@ import com.example.triplesweb.entity.ArchiveSource;
 import com.example.triplesweb.entity.MediaType;
 import com.example.triplesweb.entity.Unit;
 import com.example.triplesweb.entity.UnitMember;
+import com.example.triplesweb.dto.ArchiveSourceDto;
 import com.example.triplesweb.dto.ChemistryDto;
 import com.example.triplesweb.dto.ChemistryGroupDto;
 import com.example.triplesweb.service.ArchiveService;
@@ -580,11 +581,13 @@ public class ArchiveController {
             card.put("file", archive.getFile());
             String imagesJson = ArchiveImages.write(imageUrls, objectMapper);
             String viewJson = ArchiveImages.write(viewUrls, objectMapper);
-            // 목록 표지는 imagesJson 순서가 아니라 대표(file.url)를 쓴다.
+            // 멤버 필터로 가려진 대표 사진은 쓰지 않고, 보이는 장 중 첫 장을 표지로 쓴다.
             String coverUrl = archive.getFile() == null || archive.getFile().getUrl() == null
                     ? ""
                     : archive.getFile().getUrl().trim();
-            String previewSource = !coverUrl.isEmpty()
+            boolean coverVisible = !coverUrl.isEmpty() && viewUrls.stream()
+                    .anyMatch(url -> url != null && coverUrl.equals(url.trim()));
+            String previewSource = coverVisible
                     ? coverUrl
                     : (viewUrls.isEmpty() ? "" : viewUrls.get(0));
             card.put("imageUrls", imageUrls);
@@ -954,16 +957,27 @@ public class ArchiveController {
     private List<Map<String, Object>> sourceOptions(ArchiveSource selected) {
         List<Map<String, Object>> options = new ArrayList<>();
         String selectedCode = selected == null ? null : selected.getCode();
+        Set<String> seen = new LinkedHashSet<>();
         for (var dto : archiveSourceService.listVisible()) {
-            Map<String, Object> option = new LinkedHashMap<>();
-            option.put("value", dto.code());
-            option.put("slug", dto.slug());
-            option.put("label", dto.label());
-            option.put("color", dto.color());
-            option.put("selected", selectedCode != null && selectedCode.equalsIgnoreCase(dto.code()));
-            options.add(option);
+            options.add(sourceOption(dto, selectedCode, false));
+            seen.add(dto.code().toUpperCase(Locale.ROOT));
+        }
+        // 숨긴 출처도 편집 폼에서 기존 값을 고를 수 있게 남긴다(업로드는 requireVisible로 거절).
+        for (var dto : archiveSourceService.listAll()) {
+            if (seen.contains(dto.code().toUpperCase(Locale.ROOT))) continue;
+            options.add(sourceOption(dto, selectedCode, true));
         }
         return options;
+    }
+
+    private static Map<String, Object> sourceOption(ArchiveSourceDto dto, String selectedCode, boolean hidden) {
+        Map<String, Object> option = new LinkedHashMap<>();
+        option.put("value", dto.code());
+        option.put("slug", dto.slug());
+        option.put("label", hidden ? dto.label() + " (숨김)" : dto.label());
+        option.put("color", dto.color());
+        option.put("selected", selectedCode != null && selectedCode.equalsIgnoreCase(dto.code()));
+        return option;
     }
 
     private List<Map<String, Object>> sourceTabs(String path, String extraQuery, String sourceSlug, Set<String> availableSources) {
