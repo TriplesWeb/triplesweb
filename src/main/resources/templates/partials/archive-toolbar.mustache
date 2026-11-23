@@ -4,6 +4,9 @@
         {{#folderKey}}<input type="hidden" name="folder" value="{{folderKey}}">{{/folderKey}}
         {{#hasCombo}}<input type="hidden" name="combo" value="{{comboValue}}">{{/hasCombo}}
         {{#hasSourceFilter}}<input type="hidden" name="source" value="{{sourceKey}}">{{/hasSourceFilter}}
+        {{^showMemberFilter}}
+        {{#selectedMembers}}<input type="hidden" name="members" value="{{.}}">{{/selectedMembers}}
+        {{/showMemberFilter}}
         <input type="hidden" name="size" value="{{archiveSize}}" data-archive-filter-size>
         <div class="ar-filter-tools objekt-filter-bar">
             <div class="objekt-filter ar-sort relative">

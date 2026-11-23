@@ -17,16 +17,26 @@
 
     let rows = [];
 
-    function csrfHeaders() {
-        const token = document.querySelector('meta[name="_csrf"]')?.content
-            || document.cookie.match(/(?:^|; )XSRF-TOKEN=([^;]+)/)?.[1];
-        const header = document.querySelector('meta[name="_csrf_header"]')?.content || 'X-XSRF-TOKEN';
-        if (!token) return {};
-        try {
-            return { [header]: decodeURIComponent(token) };
-        } catch {
-            return { [header]: token };
+    /** CookieCsrfTokenRepository: 헤더에는 쿠키 raw 토큰을 보낸다(meta XOR 값은 거부됨). */
+    function csrfHeaders(extra) {
+        const base = extra && typeof extra === 'object' ? { ...extra } : {};
+        if (window.AboutAdminAuth && typeof window.AboutAdminAuth.applyAuthHeaders === 'function') {
+            const headers = window.AboutAdminAuth.applyAuthHeaders(base);
+            const out = {};
+            headers.forEach((value, key) => {
+                out[key] = value;
+            });
+            return out;
         }
+        const match = document.cookie.match(/(?:^|; )XSRF-TOKEN=([^;]+)/);
+        if (match) {
+            try {
+                base['X-XSRF-TOKEN'] = decodeURIComponent(match[1]);
+            } catch {
+                base['X-XSRF-TOKEN'] = match[1];
+            }
+        }
+        return base;
     }
 
     function showError(message) {
@@ -181,10 +191,7 @@
         const res = await fetch(id ? `${API}/${id}` : API, {
             method: id ? 'PUT' : 'POST',
             credentials: 'same-origin',
-            headers: {
-                'Content-Type': 'application/json',
-                ...csrfHeaders(),
-            },
+            headers: csrfHeaders({ 'Content-Type': 'application/json' }),
             body: JSON.stringify(payload),
         });
         if (!res.ok) {

@@ -88,4 +88,21 @@ class ArchiveSourceServiceTest {
         assertThat(service.find("teaser").getCode()).isEqualTo("TEASER_BEHIND");
         assertThat(service.resolveCode("TEASER_BEHIND")).isEqualTo("TEASER_BEHIND");
     }
+
+    @Test
+    void findPrefersExactTeaserCodeOverLegacyAlias() {
+        ArchiveSource custom = new ArchiveSource();
+        custom.setCode("TEASER");
+        custom.setLabel("티저");
+        custom.setVisible(true);
+        ArchiveSource behind = new ArchiveSource();
+        behind.setCode("TEASER_BEHIND");
+        behind.setLabel("티저/비하인드");
+        behind.setVisible(true);
+        when(archiveSourceRepository.findAllByOrderBySortOrderAscIdAsc()).thenReturn(List.of(custom, behind));
+
+        assertThat(service.find("TEASER").getCode()).isEqualTo("TEASER");
+        assertThat(service.find("teaser").getCode()).isEqualTo("TEASER");
+        assertThat(service.resolveCode("TEASER_BEHIND")).isEqualTo("TEASER_BEHIND");
+    }
 }

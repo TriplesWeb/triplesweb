@@ -137,7 +137,16 @@ public class ArchiveSourceService {
     private ArchiveSource resolve(String raw) {
         if (raw == null || raw.isBlank()) return null;
         String value = raw.trim();
-        if ("teaser".equalsIgnoreCase(value)) value = "TEASER_BEHIND";
+        ArchiveSource exact = findInCatalog(value);
+        if (exact != null) return exact;
+        // 레거시 URL·폼 값 teaser → TEASER_BEHIND. 카탈로그에 TEASER 코드가 있으면 위에서 먼저 맞춘다.
+        if ("teaser".equalsIgnoreCase(value)) {
+            return findInCatalog("TEASER_BEHIND");
+        }
+        return null;
+    }
+
+    private ArchiveSource findInCatalog(String value) {
         String upper = value.toUpperCase(Locale.ROOT).replace('-', '_');
         String lower = value.toLowerCase(Locale.ROOT);
         for (ArchiveSource source : loadAll()) {

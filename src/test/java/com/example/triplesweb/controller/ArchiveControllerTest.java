@@ -347,19 +347,52 @@ class ArchiveControllerTest {
     @Test void groupFolderWithMembersRequiresEverySelectedMember() throws Exception {
         when(artistSnapshot.findAll()).thenReturn(List.of());
         stubFolder(MediaType.IMAGE, photo());
-        mvc.perform(get("/archive").param("folder", "s").param("members", "윤서연").param("members", "정혜린"))
+        String html = mvc.perform(get("/archive").param("folder", "s").param("members", "윤서연").param("members", "정혜린"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(not(containsString("전체 사진"))))
                 .andExpect(content().string(not(containsString("ar-folder-title"))))
                 .andExpect(content().string(not(containsString("ar-folder-label\">tripleS</span>"))))
                 // 멤버가 고정된 폴더라 멤버 필터/피커는 숨긴다.
                 .andExpect(content().string(not(containsString("id=\"archive-member-picker\""))))
-                .andExpect(content().string(not(containsString("id=\"archiveChem\""))));
+                .andExpect(content().string(not(containsString("id=\"archiveChem\""))))
+                .andReturn().getResponse().getContentAsString();
+        // 정렬·검색 제출 때 members가 빠지지 않도록 숨은 필드로 남긴다.
+        org.assertj.core.api.Assertions.assertThat(html)
+                .contains("name=\"members\" value=\"윤서연\"")
+                .contains("name=\"members\" value=\"정혜린\"");
         verify(archiveService).browseFolder(eq(MediaType.IMAGE), anyInt(), org.mockito.AdditionalMatchers.lt(Integer.MAX_VALUE), nullable(String.class),
                 eq(List.of()),
                 nullable(java.time.LocalDate.class), nullable(java.time.LocalDate.class),
                 nullable(String.class), anyBoolean(), eq("s"),
                 eq(List.of("윤서연", "정혜린")), any(), any());
+    }
+
+    @Test void cardMemberBadgesFollowVisibleCoverImage() throws Exception {
+        Artist seoyeon = new Artist();
+        seoyeon.setName("윤서연");
+        seoyeon.setColor("#111111");
+        Artist hyerin = new Artist();
+        hyerin.setName("정혜린");
+        hyerin.setColor("#222222");
+        when(artistSnapshot.findAll()).thenReturn(List.of(seoyeon, hyerin));
+
+        Archive shot = photo();
+        shot.setFile(SavedMeta.builder().url("/uploads/cover-hyerin.jpg").mediaType(MediaType.IMAGE).build());
+        shot.setImagesJson("[\"/uploads/first-seoyeon.jpg\",\"/uploads/cover-hyerin.jpg\"]");
+        shot.setImageArtistsJson("[\"윤서연\",\"정혜린\"]");
+        shot.setArtistNames("윤서연,정혜린");
+        stubFolder(MediaType.IMAGE, shot);
+
+        String html = mvc.perform(get("/archive").param("folder", "s")).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        int meta = html.indexOf("class=\"ar-meta\"");
+        int casts = html.indexOf("ar-card-members");
+        org.assertj.core.api.Assertions.assertThat(meta).isGreaterThanOrEqualTo(0);
+        org.assertj.core.api.Assertions.assertThat(casts).isGreaterThan(meta);
+        String visibleBadges = html.substring(meta, casts);
+        org.assertj.core.api.Assertions.assertThat(visibleBadges).contains("정혜린");
+        org.assertj.core.api.Assertions.assertThat(visibleBadges).doesNotContain("윤서연");
+        org.assertj.core.api.Assertions.assertThat(html).contains("/uploads/cover-hyerin.jpg?w");
     }
 
     @Test void imageUploadOfTwoMembersOpensTheCountFolder() throws Exception {

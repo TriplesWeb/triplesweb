@@ -559,9 +559,6 @@ public class ArchiveController {
                 frame.put("memberBadges", memberBadges(castNamesAt(archive, artistRows, i), artists, colors));
                 imageCasts.add(frame);
             }
-            List<Map<String, Object>> badges = imageCasts.isEmpty()
-                    ? memberBadges(archive.getArtistNames(), artists, colors)
-                    : castBadges(imageCasts.get(0));
             Map<String, Object> card = new LinkedHashMap<>();
             String title = archive.getTitle() == null ? "" : archive.getTitle().trim();
             String description = archive.getDescription() == null ? "" : archive.getDescription().trim();
@@ -586,6 +583,10 @@ public class ArchiveController {
             String previewSource = coverVisible
                     ? coverUrl
                     : (viewUrls.isEmpty() ? "" : viewUrls.get(0));
+            // 표지에 보이는 장의 출연진으로 배지를 맞춘다.
+            List<Map<String, Object>> badges = imageCasts.isEmpty()
+                    ? memberBadges(archive.getArtistNames(), artists, colors)
+                    : castBadges(imageCasts.get(previewCastIndex(viewUrls, previewSource, imageCasts.size())));
             card.put("imageUrls", imageUrls);
             card.put("imageUrlsJson", imagesJson == null ? "[]" : imagesJson);
             card.put("viewUrlsJson", viewJson == null ? "[]" : viewJson);
@@ -896,6 +897,20 @@ public class ArchiveController {
     private static List<Map<String, Object>> castBadges(Map<String, Object> frame) {
         Object badges = frame.get("memberBadges");
         return badges instanceof List<?> list ? (List<Map<String, Object>>) list : List.of();
+    }
+
+    /** viewUrls 안에서 표지 URL과 같은 장의 인덱스. 없으면 0. */
+    private static int previewCastIndex(List<String> viewUrls, String previewSource, int castCount) {
+        if (castCount <= 0) return 0;
+        if (previewSource == null || previewSource.isBlank() || viewUrls == null || viewUrls.isEmpty()) {
+            return 0;
+        }
+        String wanted = previewSource.trim();
+        for (int i = 0; i < viewUrls.size() && i < castCount; i++) {
+            String url = viewUrls.get(i);
+            if (url != null && wanted.equals(url.trim())) return i;
+        }
+        return 0;
     }
 
     private static List<Map<String, Object>> memberBadges(String names, List<Artist> artists, Map<String, String> colors) {
