@@ -251,6 +251,7 @@ body.site-page > main.archive-page.is-folder-view {
     border-radius: 0.75rem;
     background: color-mix(in srgb, #0b1220 88%, #1e293b);
 }
+/* data-admin-only 없이 hidden만으로 열고 닫는다(관리자 display:revert와 충돌 방지). */
 .ar-source-bulk-bar[hidden] {
     display: none !important;
 }

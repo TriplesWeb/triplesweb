@@ -164,7 +164,7 @@
         }
     });
 
-    document.addEventListener('archive:updated', () => {
+    function onArchiveUpdated() {
         if (!active) return;
         const root = grid();
         if (!root) {
@@ -180,5 +180,8 @@
             if (!present.has(id)) selected.delete(id);
         }
         syncSelectionUi();
-    });
+    }
+
+    // archive-browse는 그리드에 bubble:false로 디스패치하므로 그리드에서 직접 듣는다.
+    grid()?.addEventListener('archive:updated', onArchiveUpdated);
 })();
