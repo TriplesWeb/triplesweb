@@ -20,6 +20,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.*;
@@ -71,6 +73,40 @@ class CosmoTokenProviderTest {
         assertPrivateFile(file);
         assertThat(provider(RestClient.create(), "", "", key).accessToken()).isEqualTo(freshAccess);
         server.verify();
+    }
+
+    @Test void configurationCheckDoesNotWaitForActiveRefresh() throws Exception {
+        var builder = RestClient.builder();
+        var server = MockRestServiceServer.bindTo(builder).build();
+        var refreshStarted = new CountDownLatch(1);
+        var releaseRefresh = new CountDownLatch(1);
+        String freshAccess = jwt(3600);
+        String reply = mapper.writeValueAsString(Map.of("credentials", Map.of(
+                "accessToken", freshAccess, "refreshToken", jwt(7200))));
+        server.expect(requestTo("https://cosmo.test/bff/v3/users/refresh-access-token")).andRespond(request -> {
+            refreshStarted.countDown();
+            try {
+                assertThat(releaseRefresh.await(5, TimeUnit.SECONDS)).isTrue();
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
+                throw new AssertionError(ex);
+            }
+            return withSuccess(reply, MediaType.APPLICATION_JSON).createResponse(request);
+        });
+        var provider = provider(builder.build(), jwt(-1), jwt(7200), key);
+        var pool = Executors.newFixedThreadPool(2);
+        try {
+            var refresh = pool.submit(provider::accessToken);
+            assertThat(refreshStarted.await(5, TimeUnit.SECONDS)).isTrue();
+            assertThat(pool.submit(provider::isConfigured).get(1, TimeUnit.SECONDS)).isTrue();
+            assertThat(refresh.isDone()).isFalse();
+            releaseRefresh.countDown();
+            assertThat(refresh.get(5, TimeUnit.SECONDS)).isEqualTo(freshAccess);
+            server.verify();
+        } finally {
+            releaseRefresh.countDown();
+            pool.shutdownNow();
+        }
     }
 
     @Test void firstLoginEncryptsPrivyTokenAndStoresAccountTokens() throws Exception {

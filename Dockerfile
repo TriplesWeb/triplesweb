@@ -41,4 +41,4 @@ ENV SERVER_PORT=8080 \
     FILE_UPLOAD_DIR=/app/uploads
 
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "/app/app.war"]
+ENTRYPOINT ["java", "-XX:MaxRAMPercentage=50", "-XX:InitialRAMPercentage=5", "-XX:+ExitOnOutOfMemoryError", "-XX:+UseStringDeduplication", "-jar", "/app/app.war"]

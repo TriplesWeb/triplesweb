@@ -3,7 +3,10 @@ package com.example.triplesweb.service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PreDestroy;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -11,14 +14,20 @@ import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.util.UriUtils;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Service
@@ -26,12 +35,15 @@ public class GravityService {
     private static final TypeReference<Map<String, Object>> MAP_TYPE =
             new TypeReference<>() {};
     private static final long LIST_TTL_MS = 60_000L;
+    private static final long LIST_RETRY_MS = 30_000L;
+    private static final long PAGE_WAIT_MS = 700L;
     private static final long DETAIL_TTL_MS = 30_000L;
 
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
     private final String cosmoApiBaseUrl;
     private final CosmoTokenProvider tokens;
+    private final Clock clock;
     private final ConcurrentHashMap<String, CachedList> listCache = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Long, CachedDetail> detailCache = new ConcurrentHashMap<>();
     private final ExecutorService refreshExecutor = Executors.newFixedThreadPool(2, r -> {
@@ -52,48 +64,102 @@ public class GravityService {
     }
 
     GravityService(RestClient client, ObjectMapper objectMapper, String cosmoApiBaseUrl, CosmoTokenProvider tokens) {
+        this(client, objectMapper, cosmoApiBaseUrl, tokens, Clock.systemUTC());
+    }
+
+    GravityService(RestClient client, ObjectMapper objectMapper, String cosmoApiBaseUrl, CosmoTokenProvider tokens,
+                   Clock clock) {
         this.restClient = client;
         this.objectMapper = objectMapper;
         this.cosmoApiBaseUrl = trimTrailingSlash(cosmoApiBaseUrl);
         this.tokens = tokens;
+        this.clock = clock;
     }
 
     public boolean hasCosmoToken() {
         return tokens.isConfigured();
     }
 
-    /**
-     * Loads Gravity metadata from COSMO. Requires a valid, authorized access token.
-     * The API response has upcoming, ongoing and past arrays.
-     * Fresh for {@link #LIST_TTL_MS}; after expiry returns stale while refreshing in background.
-     */
+    @EventListener(ApplicationReadyEvent.class)
+    public void warmTripleSList() {
+        try {
+            if (hasCosmoToken()) listResult("tripleS");
+        } catch (IllegalStateException ignored) {
+            // Leave credential errors to the existing page/API error handling.
+        }
+    }
+
+    @PreDestroy
+    void shutDownRefreshExecutor() {
+        refreshExecutor.shutdown();
+    }
+
     public List<Map<String, Object>> fetchGravityList(String artistId) {
         requireCosmoToken();
-        String key = artistId == null ? "" : artistId;
-        long now = System.currentTimeMillis();
-        CachedList cached = listCache.get(key);
-        if (cached != null) {
-            if (cached.expiresAt > now) {
-                return copyList(cached.value);
-            }
-            // stale-while-revalidate
-            if (cached.refreshing.compareAndSet(false, true)) {
-                CompletableFuture.runAsync(() -> {
-                    try {
-                        listCache.put(key, new CachedList(loadGravityList(key), System.currentTimeMillis() + LIST_TTL_MS));
-                    } catch (RuntimeException ignored) {
-                        // keep stale
-                    } finally {
-                        CachedList current = listCache.get(key);
-                        if (current != null) current.refreshing.set(false);
-                    }
-                }, refreshExecutor);
-            }
-            return copyList(cached.value);
+        try {
+            return copyList(listResult(artistId).join());
+        } catch (CompletionException ex) {
+            throw listLoadFailure(ex.getCause());
         }
-        CachedList fresh = new CachedList(loadGravityList(key), now + LIST_TTL_MS);
-        listCache.put(key, fresh);
-        return copyList(fresh.value);
+    }
+
+    /** Waits up to 700 ms on a cold cache; an empty Optional means the shared load is still running. */
+    public Optional<List<Map<String, Object>>> fetchGravityListForPage(String artistId) {
+        requireCosmoToken();
+        try {
+            return Optional.of(copyList(listResult(artistId).get(PAGE_WAIT_MS, TimeUnit.MILLISECONDS)));
+        } catch (TimeoutException ignored) {
+            return Optional.empty();
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("그래비티 목록 준비가 중단되었습니다.", ex);
+        } catch (ExecutionException ex) {
+            throw listLoadFailure(ex.getCause());
+        }
+    }
+
+    private CompletableFuture<List<Map<String, Object>>> listResult(String artistId) {
+        String key = artistId == null ? "" : artistId;
+        CachedList entry = listCache.computeIfAbsent(key, ignored -> new CachedList());
+        synchronized (entry) {
+            if (entry.validUntil <= clock.millis() && entry.pending == null) {
+                var pending = new CompletableFuture<List<Map<String, Object>>>();
+                entry.pending = pending;
+                refreshExecutor.execute(() -> refreshList(key, entry, pending));
+            }
+            if (entry.value != null) return CompletableFuture.completedFuture(entry.value);
+            if (entry.pending != null) return entry.pending;
+            return CompletableFuture.failedFuture(entry.failure);
+        }
+    }
+
+    private void refreshList(String key, CachedList entry, CompletableFuture<List<Map<String, Object>>> pending) {
+        List<Map<String, Object>> updated;
+        try {
+            updated = loadGravityList(key);
+        } catch (RuntimeException | Error failure) {
+            synchronized (entry) {
+                entry.failure = failure;
+                entry.validUntil = clock.millis() + LIST_RETRY_MS;
+                entry.pending = null;
+            }
+            pending.completeExceptionally(failure);
+            return;
+        }
+
+        synchronized (entry) {
+            entry.value = updated;
+            entry.failure = null;
+            entry.validUntil = clock.millis() + LIST_TTL_MS;
+            entry.pending = null;
+        }
+        pending.complete(updated);
+    }
+
+    private static RuntimeException listLoadFailure(Throwable cause) {
+        if (cause instanceof RuntimeException failure) return failure;
+        if (cause instanceof Error error) throw error;
+        return new IllegalStateException(cause);
     }
 
     private List<Map<String, Object>> loadGravityList(String artistId) {
@@ -287,14 +353,10 @@ public class GravityService {
     }
 
     private static final class CachedList {
-        final List<Map<String, Object>> value;
-        final long expiresAt;
-        final AtomicBoolean refreshing = new AtomicBoolean(false);
-
-        CachedList(List<Map<String, Object>> value, long expiresAt) {
-            this.value = value;
-            this.expiresAt = expiresAt;
-        }
+        List<Map<String, Object>> value;
+        long validUntil = Long.MIN_VALUE;
+        CompletableFuture<List<Map<String, Object>>> pending;
+        Throwable failure;
     }
 
     private static final class CachedDetail {

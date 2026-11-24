@@ -2,6 +2,7 @@ package com.example.triplesweb.repository;
 
 import com.example.triplesweb.dto.AlbumListCard;
 import com.example.triplesweb.entity.Album;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -16,6 +17,10 @@ import java.util.Optional;
  */
 public interface AlbumRepository extends JpaRepository<Album, Long> {
     Optional<Album> findByAlbumName(String albumName);
+
+    @EntityGraph(attributePaths = {"unit", "tracks", "section"})
+    @Query("select a from Album a where a.albumId = :id")
+    Optional<Album> findByIdWithTracks(@Param("id") long id);
 
     List<Album> findByUnit_UnitId(Long unitId);
 
