@@ -441,13 +441,13 @@
     function updateResetButton() {
         const reset = form?.querySelector('.ar-reset');
         if (!reset) return;
-        const selected = window.MemberPortraitPicker && panel
-            ? MemberPortraitPicker.selectedValues(panel)
-            : [...(form?.querySelectorAll('input[name="members"]') || [])].map(input => input.value);
+        // 멤버 선택 패널이 없는 폴더의 숨은 members 값은 폴더 자체를 유지한다.
+        const hasSelectedMembers = panel && window.MemberPortraitPicker
+            && MemberPortraitPicker.selectedValues(panel).length > 0;
         const query = form.querySelector('.ar-search')?.value.trim();
         const dates = [...form.querySelectorAll('[data-date-filter] input[type="date"]')].some(input => input.value);
         const source = form.querySelector('input[name="source"]')?.value.trim();
-        reset.hidden = !(query || selected.length || dates || source);
+        reset.hidden = !(query || hasSelectedMembers || dates || source);
     }
 
     memberToggle?.addEventListener('click', () => {
