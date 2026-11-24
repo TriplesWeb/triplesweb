@@ -109,6 +109,7 @@ class ObjektChainMintServiceTest {
 
             when(market.fetchExternalMintCounts()).thenReturn(Map.of("atom01-member-101z", 4L));
             collector.audit();
+            verify(catalog).enrichChainBackImages(List.of(external));
             assertThat(jdbc.queryForObject("SELECT baseline_count FROM objekt_mint_total WHERE slug = 'atom01-member-101z'",
                     Long.class)).isEqualTo(7);
 

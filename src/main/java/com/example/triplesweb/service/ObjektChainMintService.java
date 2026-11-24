@@ -117,11 +117,13 @@ public class ObjektChainMintService {
     void audit() {
         if (!loaded) return;
         try {
+            List<ObjektCatalog> externalCatalog = catalog.fetchExternalCatalog();
+            catalog.enrichChainBackImages(externalCatalog);
             Map<String, Long> external = market.fetchExternalMintCounts();
             int missing = 0;
             int different = 0;
             List<String> examples = new ArrayList<>();
-            for (ObjektCatalog row : catalog.fetchExternalCatalog()) {
+            for (ObjektCatalog row : externalCatalog) {
                 String slug = row.getSlug();
                 Long local = market.mintCount(slug);
                 Long observed = external.get(slug);

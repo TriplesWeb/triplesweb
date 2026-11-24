@@ -213,6 +213,25 @@ public class ObjektService {
         return List.copyOf(rows.values());
     }
 
+    void enrichChainBackImages(List<ObjektCatalog> externalCatalog) {
+        List<ObjektCatalog> missing = new ArrayList<>();
+        for (ObjektCatalog row : externalCatalog) {
+            String image = row.getBackImage();
+            if (image == null || image.isBlank()) continue;
+            Map<String, Object> existing = findByKey(row.getCollectionId());
+            // Newly discovered chain rows use the generated slug as their temporary external ID.
+            if (existing != null && row.getCollectionId().equals(existing.get("collectionId"))
+                    && string(existing, "slug").equals(existing.get("id"))
+                    && string(existing, "backImage").isBlank()) {
+                missing.add(row);
+            }
+        }
+        if (!missing.isEmpty()) {
+            catalogStore.fillMissingChainBackImages(missing);
+            reloadStoredCatalog();
+        }
+    }
+
     synchronized void reloadStoredCatalog() {
         install(loadFromDatabase("triples"));
         lastSuccessfulRefreshMillis = System.currentTimeMillis();
