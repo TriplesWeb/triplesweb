@@ -2645,6 +2645,13 @@ body.site-page > main.archive-page.is-folder-view {
 .archive-page.is-browse .ar-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
 }
+/* 모바일은 2열. 3열은 375px에서 출처 배지가 잘리고, 4열은 날짜 줄이 카드 밖으로 넘친다. */
+@media (max-width: 639px) {
+    .archive-page .ar-grid,
+    .archive-page.is-browse .ar-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
 .archive-page.is-browse .ar-card { max-width: none; min-height: 0; overflow: visible; }
 .archive-page.is-browse .ar-card .ar-meta { flex-wrap: wrap; }
 .ar-gallery-bar { justify-content: flex-end; }
