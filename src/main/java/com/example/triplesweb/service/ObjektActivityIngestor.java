@@ -1,6 +1,7 @@
 package com.example.triplesweb.service;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +16,8 @@ public class ObjektActivityIngestor {
     private static final long START_LOOKBACK_MS = 300_000;
     private final ObjektActivityClient client;
     private final ObjektIngestStore store;
+    @Value("${objekt.mints.chain-enabled:false}")
+    private boolean chainMints;
 
     public ObjektActivityIngestor(ObjektActivityClient client, ObjektIngestStore store) {
         this.client = client; this.store = store;
@@ -22,6 +25,7 @@ public class ObjektActivityIngestor {
 
     @Scheduled(fixedDelayString = "${objekt.ingest.poll-ms:5000}", scheduler = "objektIngestScheduler")
     public void poll() {
+        if (chainMints) return;
         scan("live", 3);
         scan("backfill", 1);
     }

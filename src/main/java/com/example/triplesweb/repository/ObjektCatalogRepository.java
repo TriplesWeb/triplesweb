@@ -11,6 +11,14 @@ import java.util.List;
 public interface ObjektCatalogRepository extends JpaRepository<ObjektCatalog, Long> {
     List<ObjektCatalog> findByArtistIgnoreCaseOrderByNumberValueAsc(String artist);
 
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            update ObjektCatalog c set c.backImage = :backImage
+            where c.collectionId = :collectionId and c.externalId = c.slug
+                and (c.backImage is null or c.backImage = '')
+            """)
+    int fillMissingChainBackImage(@Param("collectionId") String collectionId, @Param("backImage") String backImage);
+
     void deleteByArtistIgnoreCase(String artist);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)

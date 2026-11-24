@@ -8,6 +8,8 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest(properties = "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect")
@@ -36,6 +38,37 @@ class ObjektCatalogStoreTest {
         assertThat(repository.findAll()).extracting(ObjektCatalog::getCollectionId)
                 .containsExactly("Cream02 HaYeon 367Z");
         assertThat(repository.findAll()).extracting(ObjektCatalog::getArtist).containsExactly("triples");
+    }
+
+    @Test void dailyEnrichmentFillsOnlyMissingBackImagesForChainCollections() {
+        ObjektCatalog chain = row("chain", "Chain collection", "triples");
+        chain.setExternalId("chain");
+        repository.save(chain);
+        ObjektCatalog existing = row("existing", "Existing collection", "triples");
+        existing.setExternalId("existing");
+        existing.setBackImage("/existing.jpg");
+        repository.save(existing);
+        repository.save(row("legacy", "Legacy collection", "triples"));
+
+        var external = List.of(chain, existing, row("legacy", "Legacy collection", "triples")).stream()
+                .map(item -> {
+                    ObjektCatalog update = row("external-" + item.getSlug(), item.getCollectionId(), "triples");
+                    update.setBackImage("/from-catalog.jpg");
+                    return update;
+                }).toList();
+
+        var catalog = new ObjektService("http://localhost", 3000, store, null);
+        catalog.reloadStoredCatalog();
+        catalog.enrichChainBackImages(external);
+
+        assertThat(catalog.findByKey("chain")).containsEntry("backImage", "/from-catalog.jpg");
+        assertThat(store.fillMissingChainBackImages(external)).isZero();
+        assertThat(repository.findAll()).filteredOn(item -> item.getSlug().equals("chain"))
+                .extracting(ObjektCatalog::getBackImage).containsExactly("/from-catalog.jpg");
+        assertThat(repository.findAll()).filteredOn(item -> item.getSlug().equals("existing"))
+                .extracting(ObjektCatalog::getBackImage).containsExactly("/existing.jpg");
+        assertThat(repository.findAll()).filteredOn(item -> item.getSlug().equals("legacy"))
+                .extracting(ObjektCatalog::getBackImage).containsExactly((String) null);
     }
 
     private static ObjektCatalog row(String slug, String collectionId, String artist) {

@@ -45,6 +45,22 @@ class ObjektIngestStoreTest {
         assertThat(jdbc.queryForObject("SELECT indexed_owner FROM objekt_observed_token WHERE token_id='123'", String.class)).isEqualTo(A);
     }
 
+    @Test void overlappingPagesCanEnrichTheSerialWithoutReplacingTheLatestOwner() {
+        var page = new ObjektActivityClient.Page(List.of(event("b", 20, B, null), event("a", 10, A, null)), null);
+        assertThat(store.commit(store.state("live"), page, 100, 100, 0, true)).isTrue();
+
+        var overlap = new ObjektActivityClient.Page(List.of(event("b", 20, A, 9L), event("a", 10, A, null)), null);
+        assertThat(store.commit(store.state("live"), overlap, 110, 110, 0, true)).isTrue();
+
+        var olderObservation = new ObjektActivityClient.Page(List.of(event("a", 10, A, 6L)), null);
+        assertThat(store.commit(store.state("backfill"), olderObservation, 105, 105, 0, true)).isTrue();
+
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM objekt_observed_transfer", Integer.class)).isEqualTo(2);
+        assertThat(jdbc.queryForObject("SELECT indexed_owner FROM objekt_observed_token", String.class)).isEqualTo(B);
+        assertThat(jdbc.queryForObject("SELECT reported_serial FROM objekt_observed_token", Long.class)).isEqualTo(9L);
+        assertThat(jdbc.queryForObject("SELECT serial_observed_at_ms FROM objekt_observed_token", Long.class)).isEqualTo(110L);
+    }
+
     @Test void pageFailureRollsBackRowsAndCursor() {
         var state = store.state("live");
         var bad = new ObjektActivityClient.Event("bad", "x".repeat(90), A, B, H, 10, "slug", "C1", "triples", 7L);

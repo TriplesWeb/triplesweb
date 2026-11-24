@@ -93,6 +93,15 @@ public class ObjektCatalogStore {
         target.setNumberValue(source.getNumberValue());
     }
 
+    @Transactional
+    public int fillMissingChainBackImages(List<ObjektCatalog> rows) {
+        int updated = 0;
+        for (ObjektCatalog row : rows) {
+            updated += repository.fillMissingChainBackImage(row.getCollectionId(), row.getBackImage());
+        }
+        return updated;
+    }
+
     @Transactional(readOnly = true)
     public List<ObjektCatalog> load(String artist) {
         return repository.findByArtistIgnoreCaseOrderByNumberValueAsc(keptArtist(artist));

@@ -8,14 +8,6 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 @Configuration
 @ConditionalOnProperty(name = "objekt.ingest.enabled", havingValue = "true", matchIfMissing = true)
 public class ObjektIngestSchedulingConfig {
-    @Bean("taskScheduler")
-    ThreadPoolTaskScheduler taskScheduler() {
-        ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
-        scheduler.setPoolSize(1);
-        scheduler.setThreadNamePrefix("scheduled-");
-        return scheduler;
-    }
-
     @Bean("objektIngestScheduler")
     ThreadPoolTaskScheduler objektIngestScheduler() {
         ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
