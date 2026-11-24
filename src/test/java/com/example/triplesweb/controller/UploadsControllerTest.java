@@ -85,7 +85,8 @@ class UploadsControllerTest {
     @ParameterizedTest
     @CsvSource({
             "images/artist/0123456789abcdef0123456789abcdef.jpg, 'public, max-age=31536000, immutable'",
-            "0123456789abcdef0123456789abcdef.card-1600.jpg, 'public, max-age=31536000, immutable'",
+            "0123456789abcdef0123456789abcdef.card-1600.jpg, 'public, max-age=604800'",
+            "0123456789abcdef0123456789abcdef.card2-1600.jpg, 'public, max-age=604800'",
             "banner1.jpg, 'public, max-age=86400'"
     })
     void validatesDiskCacheBeforeProcessingRange(String relativePath, String cacheControl) throws Exception {
@@ -114,6 +115,36 @@ class UploadsControllerTest {
                 .andExpect(status().isPartialContent())
                 .andExpect(header().string(HttpHeaders.CONTENT_RANGE, "bytes 1-2/3"))
                 .andExpect(content().bytes(new byte[]{2, 3}));
+    }
+
+    @Test void widthQueryUsesVariantCachePolicyAndVariantLastModified() throws Exception {
+        String stem = "0123456789abcdef0123456789abcdef";
+        Path original = temp.resolve(stem + ".jpg");
+        Path variant = temp.resolve(stem + ".card2-1600.jpg");
+        Files.write(original, new byte[]{1, 2, 3});
+        Files.write(variant, new byte[]{4, 5});
+        long originalModified = Instant.parse("2026-11-24T00:00:00Z").toEpochMilli();
+        long variantModified = originalModified + 1000;
+        Files.setLastModifiedTime(original, FileTime.fromMillis(originalModified));
+        Files.setLastModifiedTime(variant, FileTime.fromMillis(variantModified));
+        var mvc = MockMvcBuilders.standaloneSetup(
+                new UploadsController(temp.toString(), "", mock(UploadContentStore.class), resize)).build();
+        String url = "/uploads/" + original.getFileName();
+
+        var response = mvc.perform(get(url).param("w", "1600"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CACHE_CONTROL, "public, max-age=604800"))
+                .andExpect(header().dateValue(HttpHeaders.LAST_MODIFIED, variantModified))
+                .andExpect(content().bytes(new byte[]{4, 5}))
+                .andReturn().getResponse();
+        mvc.perform(get(url).param("w", "1600")
+                        .header(HttpHeaders.IF_MODIFIED_SINCE, response.getHeader(HttpHeaders.LAST_MODIFIED)))
+                .andExpect(status().isNotModified())
+                .andExpect(header().string(HttpHeaders.CACHE_CONTROL, "public, max-age=604800"));
+        mvc.perform(get(url))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CACHE_CONTROL, "public, max-age=31536000, immutable"))
+                .andExpect(header().dateValue(HttpHeaders.LAST_MODIFIED, originalModified));
     }
 
     @Test void servesImmutableDatabaseBytesWhenDiskCacheCannotBeWritten() throws Exception {

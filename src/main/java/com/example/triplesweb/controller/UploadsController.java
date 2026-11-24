@@ -37,7 +37,7 @@ import java.util.regex.Pattern;
 public class UploadsController {
 
     private static final Pattern UUID_FILENAME = Pattern.compile(
-            "[0-9a-f]{32}(?:\\.card-[0-9]+\\.jpg|\\.[^.]+)?", Pattern.CASE_INSENSITIVE);
+            "[0-9a-f]{32}(?:\\.[^.]+)?", Pattern.CASE_INSENSITIVE);
 
     private final Path uploadRoot;
     private final Path uploadRootReal;
@@ -111,7 +111,7 @@ public class UploadsController {
             }
             MediaType type = imageType(relative, mediaType(stored.getContentType()));
             return ResponseEntity.ok()
-                    .header(HttpHeaders.CACHE_CONTROL, cacheControl(local))
+                    .header(HttpHeaders.CACHE_CONTROL, cacheControl(local, request))
                     .header("X-Content-Type-Options", "nosniff")
                     .header(HttpHeaders.CONTENT_DISPOSITION, safeDisposition(type))
                     .contentType(type)
@@ -141,7 +141,7 @@ public class UploadsController {
     private ResponseEntity<Resource> fileResponse(Path preferred, Path fallback,
                                                   HttpServletRequest request, HttpServletResponse response) {
         Path local = preferred != null ? preferred : fallback;
-        String cacheControl = cacheControl(fallback);
+        String cacheControl = cacheControl(local, request);
         long lastModified;
         try {
             lastModified = Files.getLastModifiedTime(local).toMillis();
@@ -166,8 +166,12 @@ public class UploadsController {
                 .body(new FileSystemResource(local));
     }
 
-    private static String cacheControl(Path upload) {
-        return UUID_FILENAME.matcher(upload.getFileName().toString()).matches()
+    private static String cacheControl(Path upload, HttpServletRequest request) {
+        String filename = upload.getFileName().toString();
+        if (UploadImageResizeService.isVariantFilename(filename) || parseCardWidth(request.getParameter("w")) != null) {
+            return "public, max-age=604800";
+        }
+        return UUID_FILENAME.matcher(filename).matches()
                 ? "public, max-age=31536000, immutable"
                 : "public, max-age=86400";
     }

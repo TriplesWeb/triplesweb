@@ -206,6 +206,7 @@ public class FileStorageServiceImpl implements FileStorageService {
         try {
             Files.deleteIfExists(sidecar);
             boolean deleted = Files.deleteIfExists(target);
+            UploadImageResizeService.deleteJpegVariants(target);
             uploadSyncService.deleteRelative(relative);
             uploadContentStore.delete(relative);
             return deleted;
