@@ -67,13 +67,6 @@ body.site-page > main.archive-page.is-folder-view {
     align-items: center;
     margin: 0 0 0.35rem;
 }
-.ar-folders-head .ar-home-upload {
-    min-height: 2rem;
-    height: 2rem;
-    padding: 0 0.85rem;
-    font-size: 0.78rem;
-    line-height: 1;
-}
 .ar-headline-body {
     display: grid;
     grid-template-columns: 1fr;
@@ -207,37 +200,37 @@ body.site-page > main.archive-page.is-folder-view {
     gap: 0.45rem 0.55rem;
     padding-bottom: 0.35rem;
 }
+.ar-source-tabs .ar-source-tab-empty {
+    opacity: .58;
+}
+.ar-source-tabs .ar-source-tab-empty:is(:hover, :focus-visible, [aria-current="page"]) {
+    opacity: 1;
+}
 /* 출처 관리·바꾸기·추가·개수 — 같은 줄·같은 높이 */
 .ar-source-tools {
     display: inline-flex;
     align-items: center;
     flex: 0 0 auto;
+    max-width: 100%;
     flex-wrap: wrap;
     justify-content: flex-end;
     gap: 0.4rem;
     margin: 0 0 0.35rem;
 }
-.ar-source-tools .ar-source-manage,
-.ar-source-tools .ar-source-bulk,
-.ar-source-tools .ar-home-upload,
-.ar-source-tools .ar-density {
-    margin: 0;
-    min-height: 2rem;
-    height: 2rem;
-    box-sizing: border-box;
-}
-.ar-source-tools .ar-source-manage,
-.ar-source-tools .ar-source-bulk,
-.ar-source-tools .ar-home-upload {
-    padding: 0 0.75rem;
-    font-size: 0.78rem;
-    line-height: 1;
+@media (max-width: 600px) {
+    .ar-source-bar {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0.35rem;
+    }
 }
 .ar-source-tools .ar-source-bulk[aria-pressed="true"] {
     border-color: color-mix(in srgb, var(--site-accent, #7dd3fc) 55%, transparent);
     color: var(--site-accent, #7dd3fc);
 }
 .ar-source-tools .ar-density {
+    height: var(--tab-control-height);
+    margin: 0;
     padding: 0 0.55rem 0 0.7rem;
 }
 .ar-source-bulk-bar {
@@ -356,102 +349,6 @@ body.site-page > main.archive-page.is-folder-view {
 #archiveGrid.is-source-edit .ar-photo-link,
 #archiveGrid.is-source-edit .ar-video-thumb {
     pointer-events: none;
-}
-.ar-source-admin-panel {
-    max-width: min(42rem, 94vw);
-}
-.ar-source-admin-body {
-    display: grid;
-    gap: 1rem;
-    padding: 0 1.1rem 1.1rem;
-}
-.ar-source-admin-hint {
-    margin: 0;
-    color: #aeb8c7;
-    font-size: 0.86rem;
-    line-height: 1.45;
-}
-.ar-source-admin-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: grid;
-    gap: 0.45rem;
-    max-height: 14rem;
-    overflow: auto;
-}
-.ar-source-admin-item {
-    display: grid;
-    grid-template-columns: auto 1fr auto;
-    gap: 0.55rem;
-    align-items: center;
-    padding: 0.45rem 0.55rem;
-    border-radius: 0.7rem;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(16, 19, 25, 0.55);
-}
-.ar-source-admin-item.is-hidden {
-    opacity: 0.55;
-}
-.ar-source-admin-swatch {
-    width: 0.9rem;
-    height: 0.9rem;
-    border-radius: 999px;
-    background: var(--source-color, #00f5d4);
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18);
-}
-.ar-source-admin-pick {
-    display: grid;
-    gap: 0.1rem;
-    margin: 0;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: inherit;
-    text-align: left;
-    cursor: pointer;
-}
-.ar-source-admin-pick strong {
-    font-size: 0.9rem;
-}
-.ar-source-admin-pick span {
-    color: #93a0b3;
-    font-size: 0.75rem;
-}
-.ar-source-admin-form {
-    display: grid;
-    gap: 0.75rem;
-    padding-top: 0.35rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-}
-.ar-source-admin-fields {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.65rem;
-}
-.ar-source-admin-visible {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    margin-top: 1.55rem;
-}
-.ar-source-admin-error {
-    margin: 0;
-    color: #fda4af;
-    font-size: 0.84rem;
-}
-.ar-source-admin-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.5rem;
-}
-@media (max-width: 640px) {
-    .ar-source-admin-fields {
-        grid-template-columns: 1fr;
-    }
-    .ar-source-admin-visible {
-        margin-top: 0;
-    }
 }
 .ar-density {
     display: inline-flex;

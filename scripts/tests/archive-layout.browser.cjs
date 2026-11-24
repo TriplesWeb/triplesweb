@@ -10,6 +10,7 @@ const site = fs.readFileSync(path.join(staticRoot, 'css', 'site.css'), 'utf8');
 const siteChrome = fs.readFileSync(path.join(staticRoot, 'css', 'site-chrome.css'), 'utf8');
 const siteUi = fs.readFileSync(path.join(staticRoot, 'css', 'site-ui.css'), 'utf8');
 const siteMobile = fs.readFileSync(path.join(staticRoot, 'css', 'site-mobile.css'), 'utf8');
+const tabManager = fs.readFileSync(path.join(staticRoot, "css/site-tab-manager.css"), "utf8");
 const objektFilter = fs.readFileSync(path.join(staticRoot, 'css', 'objekt-filter.css'), 'utf8');
 const browseJs = fs.readFileSync(path.join(staticRoot, 'js', 'archive-browse.js'), 'utf8');
 const dateJs = fs.readFileSync(path.join(staticRoot, 'js', 'date-range-filter.js'), 'utf8');
@@ -32,6 +33,7 @@ ${css}
 ${objektFilter}
 ${siteUi}
 ${siteMobile}
+${tabManager}
 </style></head>
 <body class="site-page">
 <main class="archive-page is-browse" data-archive-kind="image" data-date-label="사진 날짜">
@@ -55,10 +57,10 @@ ${siteMobile}
       <nav class="site-section-tabs ar-source-tabs" aria-label="자료 출처">
         <a class="site-section-tab" href="/archive" aria-current="page">전체</a>
       </nav>
-      <div class="ar-source-tools">
+      <div class="ar-source-tools tab-manager-toolbar">
         <button type="button" class="site-btn site-btn--ghost site-btn--sm ar-source-manage" data-admin-only id="archiveSourceManageBtn">출처 관리</button>
         <button type="button" class="site-btn site-btn--ghost site-btn--sm ar-source-bulk" data-admin-only id="archiveSourceBulkBtn" aria-pressed="false">출처 바꾸기</button>
-        <button type="button" class="site-btn site-btn--primary site-btn--sm ar-submit ar-home-upload" data-admin-only>사진 추가</button>
+        <button type="button" class="site-btn site-btn--primary site-btn--sm ar-home-upload" data-admin-only>사진 추가</button>
         <label class="ar-density">
           <select id="archivePageSize" name="size" aria-label="페이지당 개수"><option value="10" selected>10개</option></select>
         </label>

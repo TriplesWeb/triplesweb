@@ -9,8 +9,7 @@ public record ArchiveSourceDto(
         String slug,
         String label,
         String color,
-        int sortOrder,
-        boolean visible
+        int sortOrder
 ) {
     public static ArchiveSourceDto from(ArchiveSource source) {
         return new ArchiveSourceDto(
@@ -19,7 +18,6 @@ public record ArchiveSourceDto(
                 source.getSlug(),
                 source.getLabel(),
                 source.getColor(),
-                source.getSortOrder(),
-                source.isVisible());
+                source.getSortOrder());
     }
 }

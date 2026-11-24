@@ -552,7 +552,7 @@
     });
     let filterSeq = 0;
     let pendingFilter;
-    async function loadArchiveFilter(url, push) {
+    async function loadArchiveFilter(url, push, navigateOnFailure = true) {
         const seq = ++filterSeq;
         pendingFilter?.abort();
         const controller = new AbortController();
@@ -622,7 +622,10 @@
             if (push !== false && !same) history.pushState({ archiveLive: true }, '', nextUrl.pathname + nextUrl.search);
             window.scrollTo(x, y);
         } catch (error) {
-            if (error.name !== "AbortError" && seq === filterSeq) window.location.assign(url);
+            if (error.name !== "AbortError" && seq === filterSeq) {
+                if (navigateOnFailure) window.location.assign(url);
+                else throw error;
+            }
         } finally {
             if (pendingFilter === controller) pendingFilter = undefined;
         }
@@ -646,5 +649,21 @@
         const target = url || (location.pathname + location.search);
         return loadArchiveFilter(target, false);
     };
+    window.refreshArchiveSourceTabs = function (sources) {
+        const url = new URL(location.href);
+        const activeLink = document.querySelector('.ar-source-tabs [aria-current="page"]');
+        const code = activeLink && new URL(activeLink.href).searchParams.get('source')?.toLowerCase();
+        if (code && !sources.some((source) => source.slug === code)) {
+            for (const key of ['source', 'page', 'go']) url.searchParams.delete(key);
+            history.replaceState(history.state, '', url.pathname + url.search);
+        }
+        return loadArchiveFilter(url.pathname + url.search, false, false);
+    };
+    document.addEventListener('site-admin:change', (event) => {
+        const tabs = document.querySelector('[data-source-tabs-admin]');
+        if (tabs && (tabs.dataset.sourceTabsAdmin === 'true') !== Boolean(event.detail?.admin)) {
+            loadArchiveFilter(location.pathname + location.search, false, false).catch(() => {});
+        }
+    });
     apply();
 })();

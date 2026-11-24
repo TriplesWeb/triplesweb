@@ -1,9 +1,11 @@
 package com.example.triplesweb.service;
 
+import com.example.triplesweb.dto.ArchiveSourceDto;
 import com.example.triplesweb.entity.Archive;
 import com.example.triplesweb.entity.MediaType;
 import com.example.triplesweb.entity.SavedMeta;
 import com.example.triplesweb.repository.ArchiveRepository;
+import com.example.triplesweb.repository.ArchiveSourceRepository;
 import com.example.triplesweb.util.ArchiveFolderClassifier;
 import com.example.triplesweb.util.ArchiveSort;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,21 +14,31 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.context.annotation.Import;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Set;
+import java.util.ArrayList;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 @DataJpaTest(properties = "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect")
 @ActiveProfiles("test")
+@Import(ArchiveSourceService.class)
 class ArchiveCastPagingTest {
     @Autowired ArchiveRepository archives;
     @Autowired EntityManager entityManager;
+    @Autowired ArchiveSourceService sourceService;
+    @Autowired ArchiveSourceRepository sources;
 
     @Test
-    void comboPagesUseExactCastAndPreserveSourceTabsAndVisibleUnitExclusion() {
+    void comboPagesUseExactCastAndPreserveSourceFilterAndVisibleUnitExclusion() {
         save("첫 쌍", "윤서연,카에데", "FIRST", null);
         save("둘째 쌍", "S1XS9", "SECOND", 42L);
         save("보이는 유닛", "SeoYeon,Kaede", "UNIT", 7L);
@@ -46,6 +58,43 @@ class ArchiveCastPagingTest {
         assertThat(second.page().getContent()).extracting(Archive::getTitle).containsExactly("첫 쌍");
         assertThat(source.page().getContent()).extracting(Archive::getTitle).containsExactly("첫 쌍");
         assertThat(source.availableSources()).containsExactlyInAnyOrder("FIRST", "SECOND");
+    }
+
+    @Test
+    void sourceExistenceIsDistinctAndScopedToMediaType() {
+        save("사진 하나", "S1", "first", null);
+        save("사진 둘", "S1", "FIRST", null);
+        save("출처 없는 사진", "S1", null, null);
+        var video = new Archive("영상", new SavedMeta("a.mp4", "a.mp4", "/uploads/a.mp4", 2L, "video/mp4", MediaType.VIDEO));
+        video.setSource("video_only");
+        archives.saveAndFlush(video);
+
+        assertThat(archives.findSourceCodesWithPosts(MediaType.IMAGE)).containsExactly("FIRST");
+        assertThat(archives.findSourceCodesWithPosts(MediaType.VIDEO)).containsExactly("VIDEO_ONLY");
+        var service = service();
+        assertThat(service.availableSources(MediaType.IMAGE, "사진 하나", List.of("윤서연"), null, null))
+                .containsExactly("first");
+        assertThat(service.availableSources(MediaType.IMAGE, "사진 하나", List.of("카에데"), null, null)).isEmpty();
+        assertThat(service.availableSources(MediaType.VIDEO, "사진 하나", List.of(), null, null)).isEmpty();
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void concurrentSourceCreationStoresUniqueCodes() throws Exception {
+        var pool = Executors.newFixedThreadPool(4);
+        List<ArchiveSourceDto> created = new ArrayList<>();
+        try {
+            Callable<ArchiveSourceDto> create = () -> sourceService.create("동시 생성", null, 10);
+            for (var result : pool.invokeAll(java.util.Collections.nCopies(8, create), 15, TimeUnit.SECONDS)) {
+                created.add(result.get());
+            }
+
+            assertThat(created).extracting(ArchiveSourceDto::code).hasSize(8).doesNotHaveDuplicates()
+                    .allMatch(code -> code.matches("^[A-Z][A-Z0-9_]{0,31}$"));
+        } finally {
+            pool.shutdownNow();
+            sources.deleteAllById(created.stream().map(ArchiveSourceDto::id).toList());
+        }
     }
 
     @Test

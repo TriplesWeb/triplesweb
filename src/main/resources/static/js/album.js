@@ -222,34 +222,6 @@
     if (secRes.ok) sectionOptions = await secRes.json();
   }
 
-  function renderSectionList() {
-    const list = document.getElementById("albumSectionList");
-    if (!list) return;
-    if (!sectionOptions.length) {
-      list.innerHTML = '<li class="text-sm text-[#b9cac4]/70 py-2">등록된 구분이 없습니다.</li>';
-      return;
-    }
-    list.innerHTML = sectionOptions.map((s, i) => `
-      <li class="flex flex-wrap items-center gap-2 border border-[#3a4a46]/40 rounded-lg p-2" data-section-id="${s.sectionId}">
-        <input type="text" class="section-name-input flex-1 min-w-[8rem] bg-[#0d0e12] border border-[#3a4a46]/50 rounded px-2 py-1 text-sm" value="${escapeAttr(s.name)}" maxlength="120" aria-label="구분명">
-        <button type="button" class="about-mode-btn section-rename" title="이름 저장">저장</button>
-        <button type="button" class="about-mode-btn section-up" ${i === 0 ? "disabled" : ""} title="위로">↑</button>
-        <button type="button" class="about-mode-btn section-down" ${i === sectionOptions.length - 1 ? "disabled" : ""} title="아래로">↓</button>
-        <button type="button" class="about-mode-btn about-btn-danger section-delete" title="삭제">삭제</button>
-      </li>`).join("");
-  }
-
-  async function openSectionModal() {
-    if (!isAdmin) { openLoginModal(); return; }
-    const err = document.getElementById("albumSectionError");
-    if (err) { err.hidden = true; err.textContent = ""; }
-    const nameInput = document.getElementById("albumSectionNewName");
-    if (nameInput) nameInput.value = "";
-    await loadOptions();
-    renderSectionList();
-    openModal("albumSectionModal");
-  }
-
   async function openEditModal(albumId) {
     if (!isAdmin) { openLoginModal(); return; }
     const err = document.getElementById("albumEditError");
@@ -318,25 +290,48 @@
     openModal("albumEditModal");
   }
 
-  function bindUi() {
-    document.querySelectorAll(".album-edit-close").forEach((el) => {
-      el.addEventListener("click", () => closeModal("albumEditModal"));
-    });
-    document.querySelectorAll(".album-section-close").forEach((el) => {
-      el.addEventListener("click", () => {
-        closeModal("albumSectionModal");
-        location.reload();
-      });
-    });
-
-    document.getElementById("albumAddBtn")?.addEventListener("click", () => openEditModal(null));
-    document.getElementById("albumSectionBtn")?.addEventListener("click", () => openSectionModal());
+  function bindEditButtons() {
     document.querySelectorAll("[data-album-edit]").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
         openEditModal(btn.getAttribute("data-album-edit"));
       });
+    });
+  }
+
+  function bindUi() {
+    document.querySelectorAll(".album-edit-close").forEach((el) => {
+      el.addEventListener("click", () => closeModal("albumEditModal"));
+    });
+    document.getElementById("albumAddBtn")?.addEventListener("click", () => openEditModal(null));
+    bindEditButtons();
+    const manager = window.SiteTabManager;
+    const sectionApi = API + "/sections";
+    const updateTabs = manager?.bindPageSections({
+      prefix: "album",
+      apiBase: sectionApi,
+      emptyText: "이 구분에 등록된 앨범이 없습니다.",
+      onRender: bindSectionTabs,
+      onCardsReplaced: () => {
+        bindEditButtons();
+        setAdminUi();
+      },
+    });
+    manager?.create({
+      id: "albumSectionModal",
+      trigger: "#albumSectionBtn",
+      apiBase: sectionApi,
+      title: "구분 관리",
+      placeholder: "예: 완전체, 유닛",
+      emptyText: "등록된 구분이 없습니다.",
+      deleteCopy: (name) => `「${name}」 구분을 삭제하시겠습니까? 소속 앨범은 「기타」로 이동합니다.`,
+      fetch: apiFetch,
+      onChange: (rows, detail) => {
+        sectionOptions = rows;
+        fillSectionSelect(document.getElementById("albumEditSectionId")?.value);
+        return updateTabs(rows, detail);
+      },
     });
 
     document.getElementById("albumAddTrackBtn")?.addEventListener("click", () => {
@@ -372,84 +367,6 @@
       if (typeSel.value !== "OTHER" && selectedArtistIds().length) {
         clearArtistChecks();
         syncParticipationUi();
-      }
-    });
-
-    document.getElementById("albumSectionAddForm")?.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const err = document.getElementById("albumSectionError");
-      const name = document.getElementById("albumSectionNewName")?.value?.trim();
-      if (!name) {
-        if (err) { err.hidden = false; err.textContent = "구분 이름을 입력해 주세요."; }
-        return;
-      }
-      if (!await window.SiteFeedback.confirm("이 구분을 추가하시겠습니까?")) return;
-      const doneBusy = window.SiteFeedback.beginBusy();
-      try {
-        const res = await apiFetch(API + "/sections", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name })
-        });
-        if (!res.ok) throw new Error(await readError(res, "추가 실패"));
-        document.getElementById("albumSectionNewName").value = "";
-        sectionOptions = await (await apiFetch(API + "/sections")).json();
-        renderSectionList();
-      } catch (ex) {
-        if (err) { err.hidden = false; err.textContent = ex.message || "추가 실패"; }
-      } finally {
-        doneBusy();
-      }
-    });
-
-    document.getElementById("albumSectionList")?.addEventListener("click", async (e) => {
-      const row = e.target.closest("[data-section-id]");
-      if (!row) return;
-      const id = row.getAttribute("data-section-id");
-      const err = document.getElementById("albumSectionError");
-      try {
-        if (e.target.closest(".section-rename")) {
-          const name = row.querySelector(".section-name-input")?.value?.trim();
-          if (!name) throw new Error("구분 이름을 입력해 주세요.");
-          if (!await window.SiteFeedback.confirm("이 구분 이름을 수정하시겠습니까?")) return;
-          const doneRename = window.SiteFeedback.beginBusy();
-          try {
-            const res = await apiFetch(API + "/sections/" + id, {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ name })
-            });
-            if (!res.ok) throw new Error(await readError(res, "저장 실패"));
-            sectionOptions = await (await apiFetch(API + "/sections")).json();
-            renderSectionList();
-          } finally {
-            doneRename();
-          }
-        } else if (e.target.closest(".section-up")) {
-          const res = await apiFetch(API + "/sections/" + id + "/move?direction=-1", { method: "POST" });
-          if (!res.ok) throw new Error(await readError(res, "순서 변경 실패"));
-          sectionOptions = await res.json();
-          renderSectionList();
-        } else if (e.target.closest(".section-down")) {
-          const res = await apiFetch(API + "/sections/" + id + "/move?direction=1", { method: "POST" });
-          if (!res.ok) throw new Error(await readError(res, "순서 변경 실패"));
-          sectionOptions = await res.json();
-          renderSectionList();
-        } else if (e.target.closest(".section-delete")) {
-          if (!await window.SiteFeedback.confirm("이 구분을 삭제하시겠습니까? 소속 앨범은 「기타」로 이동합니다.")) return;
-          const doneDelete = window.SiteFeedback.beginBusy();
-          try {
-            const res = await apiFetch(API + "/sections/" + id, { method: "DELETE" });
-            if (!res.ok) throw new Error(await readError(res, "삭제 실패"));
-            sectionOptions = await (await apiFetch(API + "/sections")).json();
-            renderSectionList();
-          } finally {
-            doneDelete();
-          }
-        }
-        if (err) { err.hidden = true; err.textContent = ""; }
-      } catch (ex) {
-        if (err) { err.hidden = false; err.textContent = ex.message || "요청 실패"; }
       }
     });
 

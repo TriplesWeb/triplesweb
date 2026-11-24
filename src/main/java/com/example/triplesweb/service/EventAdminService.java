@@ -54,10 +54,9 @@ public class EventAdminService {
     @Transactional
     public EventSectionDto createSection(String name) {
         String trimmed = requireText(name, "구분명은 필수입니다.");
-        eventSectionRepository.findByNameIgnoreCase(trimmed).ifPresent(other -> {
-            throw new IllegalArgumentException("이미 사용 중인 구분명입니다: " + trimmed);
-        });
-        int nextOrder = eventSectionRepository.findAll().stream()
+        List<EventSection> sections = eventSectionRepository.findAll();
+        validateSectionName(sections, trimmed, null);
+        int nextOrder = sections.stream()
                 .mapToInt(EventSection::getSortOrder)
                 .max()
                 .orElse(-1) + 1;
@@ -75,11 +74,7 @@ public class EventAdminService {
         String previousName = section.getName();
         if (StringUtils.hasText(name)) {
             String trimmed = name.trim();
-            eventSectionRepository.findByNameIgnoreCase(trimmed).ifPresent(other -> {
-                if (!Objects.equals(other.getSectionId(), sectionId)) {
-                    throw new IllegalArgumentException("이미 사용 중인 구분명입니다: " + trimmed);
-                }
-            });
+            validateSectionName(eventSectionRepository.findAll(), trimmed, sectionId);
             section.setName(trimmed);
         }
         if (sortOrder != null) {
@@ -92,6 +87,13 @@ public class EventAdminService {
         }
         shopAdminService.ensureEventSectionsMirrored();
         return dto;
+    }
+
+    private static void validateSectionName(List<EventSection> sections, String name, Long currentId) {
+        boolean duplicate = sections.stream()
+                .filter(other -> currentId == null || !currentId.equals(other.getSectionId()))
+                .anyMatch(other -> name.equalsIgnoreCase(other.getName().trim()));
+        if (duplicate) throw new IllegalArgumentException("이미 사용 중인 구분명입니다: " + name);
     }
 
     @Transactional

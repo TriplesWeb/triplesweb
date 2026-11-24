@@ -29,6 +29,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.mock.web.MockMultipartFile;
@@ -79,24 +80,24 @@ class ArchiveControllerTest {
                 .thenReturn(new ArchiveService.TypeTotals(0L, 0L));
         lenient().when(archiveService.countByType(MediaType.IMAGE)).thenReturn(0L);
         lenient().when(archiveService.countByType(MediaType.VIDEO)).thenReturn(0L);
-        lenient().when(archiveService.availableSources(any(), nullable(String.class), any(),
-                nullable(java.time.LocalDate.class), nullable(java.time.LocalDate.class)))
-                .thenReturn(java.util.Set.of());
         lenient().when(chemistryService.findAll()).thenReturn(List.of());
         lenient().when(chemistryGroupService.findAll()).thenReturn(List.of());
         lenient().when(idempotencyService.claimOrReplay(anyString(), nullable(String.class)))
                 .thenReturn(Optional.empty());
         List<ArchiveSourceDto> sourceDtos = defaultSourceDtos();
-        lenient().when(archiveSourceService.listVisible()).thenReturn(sourceDtos);
+        lenient().when(archiveSourceService.listTabs(org.mockito.ArgumentMatchers.<String>anyCollection(), anyBoolean()))
+                .thenAnswer(invocation -> {
+                    java.util.Collection<String> used = invocation.getArgument(0);
+                    boolean admin = invocation.getArgument(1);
+                    return sourceDtos.stream()
+                            .map(dto -> new ArchiveSourceService.SourceTab(dto, used.contains(dto.code())))
+                            .filter(tab -> admin || tab.hasPosts())
+                            .toList();
+                });
         lenient().when(archiveSourceService.listAll()).thenReturn(sourceDtos);
         lenient().when(archiveSourceService.byCode()).thenReturn(defaultSourceMap());
         lenient().when(archiveSourceService.find(nullable(String.class))).thenAnswer(invocation ->
                 resolveSource(invocation.getArgument(0)));
-        lenient().when(archiveSourceService.requireVisible(anyString())).thenAnswer(invocation -> {
-            ArchiveSource source = resolveSource(invocation.getArgument(0));
-            if (source == null) throw new IllegalArgumentException("출처를 선택하세요.");
-            return source;
-        });
         lenient().when(archiveSourceService.requireExisting(anyString())).thenAnswer(invocation -> {
             ArchiveSource source = resolveSource(invocation.getArgument(0));
             if (source == null) throw new IllegalArgumentException("출처를 선택하세요.");
@@ -152,10 +153,8 @@ class ArchiveControllerTest {
     }
 
     private void stubFolder(MediaType type, Archive... items) {
-        java.util.Set<String> sources = java.util.Arrays.stream(items)
-                .map(Archive::getSource)
-                .filter(java.util.Objects::nonNull)
-                .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new));
+        var sources = java.util.Arrays.stream(items).map(Archive::getSource)
+                .filter(java.util.Objects::nonNull).collect(java.util.stream.Collectors.toSet());
         when(archiveService.browseFolder(eq(type), anyInt(), anyInt(), nullable(String.class), any(),
                 nullable(java.time.LocalDate.class), nullable(java.time.LocalDate.class),
                 nullable(String.class), anyBoolean(), any(), any(), any(), any()))
@@ -553,6 +552,44 @@ class ArchiveControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("value=\"POLAROID\"")))
                 .andExpect(content().string(containsString("value=\"COSMO_ROOM\"")));
+    }
+
+    @Test void photoAndVideoTabsUseTheirOwnPostsAndShowEmptySourcesOnlyForAdmin() throws Exception {
+        when(archiveService.pageByType(any(), anyInt(), anyInt(), nullable(String.class), any(),
+                nullable(java.time.LocalDate.class), nullable(java.time.LocalDate.class), nullable(String.class),
+                anyBoolean(), anyBoolean(), any())).thenReturn(Page.empty());
+        var start = java.time.LocalDate.of(2026, 11, 22);
+        var end = start.plusDays(2);
+        when(archiveService.availableSources(eq(MediaType.IMAGE), eq("앨범"), eq(List.of("윤서연")), eq(start), eq(end)))
+                .thenReturn(java.util.Set.of("POLAROID"));
+        Archive video = photo();
+        video.setSource("OFFICIAL_SNS");
+        stubFolder(MediaType.VIDEO, video);
+
+        var photos = Jsoup.parse(mvc.perform(get("/archive/all").param("q", "앨범")
+                        .param("members", "윤서연").param("from", start.toString()).param("to", end.toString()))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        var videos = Jsoup.parse(mvc.perform(get("/archive").param("folder", "s").param("type", "video"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        org.assertj.core.api.Assertions.assertThat(photos.select(".ar-source-tabs a").eachText())
+                .containsExactly("전체", "폴라로이드");
+        org.assertj.core.api.Assertions.assertThat(videos.select(".ar-source-tabs a").eachText())
+                .containsExactly("전체", "공식 SNS");
+
+        when(aboutAdminAuth.isAdmin(any(), any())).thenReturn(true);
+        var admin = Jsoup.parse(mvc.perform(get("/archive").param("folder", "s").param("type", "video").header("X-Archive-Filter", "1"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        org.assertj.core.api.Assertions.assertThat(admin.select(".ar-source-tabs a.ar-source-tab-empty").eachText())
+                .contains("폴라로이드", "코스모룸").doesNotContain("공식 SNS");
+    }
+
+    @Test void allArchiveFiltersResultsBySelectedSource() throws Exception {
+        when(archiveService.pageByType(eq(MediaType.IMAGE), anyInt(), anyInt(), isNull(), any(), isNull(), isNull(),
+                eq("POLAROID"), anyBoolean(), anyBoolean(), any())).thenReturn(Page.empty());
+
+        mvc.perform(get("/archive/all").param("source", "polaroid")).andExpect(status().isOk());
+        verify(archiveService).pageByType(eq(MediaType.IMAGE), anyInt(), anyInt(), isNull(), any(), isNull(), isNull(),
+                eq("POLAROID"), anyBoolean(), anyBoolean(), any());
     }
 
     @Test void oldTeaserLinkSelectsTheTeaserBehindSource() throws Exception {

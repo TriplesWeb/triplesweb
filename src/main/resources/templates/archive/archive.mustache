@@ -1,6 +1,7 @@
 {{>layout/head-open}}
     <title>트리플에스 커뮤니티 - 아카이브</title>
 
+    <link rel="stylesheet" href="{{#asset}}/css/site-tab-manager.css{{/asset}}">
     <link rel="stylesheet" href="{{#asset}}/css/archive-page.css{{/asset}}">
     <link rel="stylesheet" href="{{#asset}}/css/archive-cover-picker.css{{/asset}}">
     <link rel="stylesheet" href="{{#asset}}/css/unit-checks.css{{/asset}}">
@@ -48,8 +49,8 @@
     </section>
 
     {{#archiveFolderHome}}
-    <div class="ar-folders-head">
-        <button type="button" class="site-btn site-btn--primary site-btn--sm ar-submit ar-home-upload" data-admin-only data-archive-add>{{#imageArchive}}사진 추가{{/imageArchive}}{{^imageArchive}}영상 추가{{/imageArchive}}</button>
+    <div class="ar-folders-head tab-manager-toolbar">
+        <button type="button" class="site-btn site-btn--primary site-btn--sm ar-home-upload" data-admin-only data-archive-add>{{#imageArchive}}사진 추가{{/imageArchive}}{{^imageArchive}}영상 추가{{/imageArchive}}</button>
     </div>
     {{>partials/archive-folder-grid}}
     {{/archiveFolderHome}}
@@ -60,10 +61,10 @@
         {{>partials/archive-type-tabs}}
         <div class="ar-source-bar">
             {{>partials/archive-source-tabs}}
-            <div class="ar-source-tools">
+            <div class="ar-source-tools tab-manager-toolbar">
                 <button type="button" class="site-btn site-btn--ghost site-btn--sm ar-source-manage" data-admin-only id="archiveSourceManageBtn">출처 관리</button>
                 <button type="button" class="site-btn site-btn--ghost site-btn--sm ar-source-bulk" data-admin-only id="archiveSourceBulkBtn" aria-pressed="false">출처 바꾸기</button>
-                <button type="button" class="site-btn site-btn--primary site-btn--sm ar-submit ar-home-upload" data-admin-only data-archive-add>{{#imageArchive}}사진 추가{{/imageArchive}}{{^imageArchive}}영상 추가{{/imageArchive}}</button>
+                <button type="button" class="site-btn site-btn--primary site-btn--sm ar-home-upload" data-admin-only data-archive-add>{{#imageArchive}}사진 추가{{/imageArchive}}{{^imageArchive}}영상 추가{{/imageArchive}}</button>
                 <label class="ar-density">
                     {{>partials/archive-page-size}}
                 </label>
@@ -133,6 +134,7 @@
 <div id="archiveAdminMount">
     <span data-admin-script="{{#asset}}/js/unit-checkbox-group.js{{/asset}}" hidden></span>
     <span data-admin-script="{{#asset}}/js/archive-manage.js{{/asset}}" hidden></span>
+    <span data-admin-script="{{#asset}}/js/site-tab-manager.js{{/asset}}" hidden></span>
     <span data-admin-script="{{#asset}}/js/archive-source-admin.js{{/asset}}" hidden></span>
     <span data-admin-script="{{#asset}}/js/archive-bulk-source.js{{/asset}}" hidden></span>
 </div>

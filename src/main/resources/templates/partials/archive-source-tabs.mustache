@@ -1,5 +1,5 @@
-<nav class="site-section-tabs ar-source-tabs" aria-label="자료 출처">
+<nav class="site-section-tabs ar-source-tabs" aria-label="자료 출처" data-source-tabs-admin="{{#isAdmin}}true{{/isAdmin}}{{^isAdmin}}false{{/isAdmin}}">
     {{#sourceTabs}}
-    <a class="site-section-tab{{#active}} is-active{{/active}}" href="{{href}}" {{#active}}aria-current="page"{{/active}}>{{label}}</a>
+    <a class="site-section-tab{{#empty}} ar-source-tab-empty{{/empty}}{{#active}} is-active{{/active}}" href="{{href}}" {{#active}}aria-current="page"{{/active}}>{{label}}</a>
     {{/sourceTabs}}
 </nav>
