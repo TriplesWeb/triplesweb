@@ -52,6 +52,18 @@ reject_match -Eiq 'bluegreen|app_blue|app_green|active_slot|project_container' s
 grep -Fq 'bash ./deploy-pi-app.sh' .github/workflows/deploy-main.yml
 grep -Fq '${APP_PORT:-8090}:8080' docker-compose.yml
 grep -Fq 'SPRING_JPA_HIBERNATE_DDL_AUTO: none' docker-compose.yml
+grep -Fq './logs:/app/logs' docker-compose.yml
+grep -Fq 'LOGGING_FILE_NAME: /app/logs/triplesweb.log' docker-compose.yml
+grep -Fq "LOGGING_LOGBACK_ROLLINGPOLICY_FILENAMEPATTERN: '/app/logs/triplesweb.log.%d{yyyy-MM-dd}.%i.gz'" docker-compose.yml
+grep -Fq 'LOGGING_LOGBACK_ROLLINGPOLICY_MAXHISTORY: "30"' docker-compose.yml
+grep -Fq 'LOGGING_LOGBACK_ROLLINGPOLICY_TOTALSIZECAP: 1GB' docker-compose.yml
+grep -Fq 'LOGGING_LOGBACK_ROLLINGPOLICY_MAXFILESIZE: 10MB' docker-compose.yml
+grep -Fq 'LOGGING_LOGBACK_ROLLINGPOLICY_CLEANHISTORYONSTART: "true"' docker-compose.yml
+grep -Fq 'driver: json-file' docker-compose.yml
+grep -Fq 'max-size: "10m"' docker-compose.yml
+grep -Fq 'max-file: "3"' docker-compose.yml
+grep -Fq 'mkdir -p -m 0750 logs' scripts/deploy-pi-app.sh
+grep -Fq 'scp docker-compose.yml "pi:${PI_DEPLOY_PATH}/docker-compose.yml"' .github/workflows/deploy-main.yml
 reject_match -Fq 'profiles: [legacy]' docker-compose.yml
 grep -Fq 'flock -w 900' scripts/deploy-pi-app.sh
 reject_match -Fq -- '--remove-orphans' scripts/deploy-pi-app.sh

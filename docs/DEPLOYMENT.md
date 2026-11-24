@@ -17,6 +17,8 @@ Flyway 마이그레이션이 바뀐 배포도 같은 순서로 실행합니다. 
 
 운영 앱 교체는 `Deploy to Raspberry Pi (prod)`의 자동 또는 수동 실행을 사용합니다. GitHub Actions 변수 `APP_MEMORY_LIMIT`, `APP_STOP_TIMEOUT_SECONDS`, `APP_READY_TIMEOUT_SECONDS`의 기본값은 각각 1800 MB, 600초, 360초입니다.
 
+운영 앱 로그는 Pi의 `$PI_DEPLOY_PATH/logs/triplesweb.log`에 저장되어 컨테이너를 교체해도 남습니다. 날짜가 바뀌거나 파일이 10MB에 도달하면 gzip으로 회전하며, 30일 이내라도 압축 이력이 1GB를 넘으면 오래된 파일부터 삭제합니다. 배포 디렉터리에서 현재 로그는 `tail -F logs/triplesweb.log`, 압축 이력은 `zcat logs/triplesweb.log.YYYY-MM-DD.0.gz`로 확인합니다.
+
 ## PR 변경 영역별 선택적 CI
 
 PR의 synthetic merge commit과 대상 `main`을 비교해 `scripts/ci-path-filter.py`가 경로를 판정합니다. 이름을 변경한 파일은 이전 경로·새 경로 모두 검증하고, 알 수 없는 앱 경로는 안전을 위해 양쪽 검사를 수행합니다.
