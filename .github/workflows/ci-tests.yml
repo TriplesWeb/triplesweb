@@ -220,6 +220,13 @@ jobs:
           upload-result: true
           push-fixes: 'none'
           results-dir: ${{ runner.temp }}/qodana/results
+      # A diff without JVM sources can leave no SARIF and the CLI at the base commit.
+      - name: Restore PR head before full scan
+        if: steps.scan.outcome == 'failure'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
       - name: Retry Qodana Scan
         id: scan_retry
         if: steps.scan.outcome == 'failure'
@@ -227,7 +234,7 @@ jobs:
         uses: JetBrains/qodana-action@v2026.2
         with:
           use-installed-cli: true
-          pr-mode: true
+          pr-mode: false
           use-caches: false
           post-pr-comment: false
           use-annotations: true
