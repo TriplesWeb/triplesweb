@@ -37,6 +37,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AlbumAdminService {
 
+    private static final int MAX_LYRICS_LENGTH = 20_000;
+
     private final AlbumRepository albumRepository;
     private final AlbumSectionRepository albumSectionRepository;
     private final UnitRepository unitRepository;
@@ -296,6 +298,7 @@ public class AlbumAdminService {
         }
 
         syncArtists(album, hasArtists ? artistIds : List.of());
+        replaceTracks(album, parseTracks(tracksJson));
 
         if (image != null && !image.isEmpty()) {
             try {
@@ -317,8 +320,6 @@ public class AlbumAdminService {
                 deleteManagedImage(previous);
             }
         }
-
-        replaceTracks(album, parseTracks(tracksJson));
     }
 
     private void syncArtists(Album album, List<Long> artistIds) {
@@ -368,9 +369,18 @@ public class AlbumAdminService {
             track.setIsTitle(Boolean.TRUE.equals(item.getIsTitle()));
             track.setMelonSongId(normalizeMelonSongId(item.getMelonSongId()));
             track.setYoutubeVideoId(normalizeYoutubeVideoId(item.getYoutubeVideoId()));
+            track.setLyrics(normalizeLyrics(item.getLyrics()));
             album.getTracks().add(track);
             i++;
         }
+    }
+
+    private static String normalizeLyrics(String lyrics) {
+        if (lyrics == null || lyrics.isBlank()) return null;
+        if (lyrics.length() > MAX_LYRICS_LENGTH) {
+            throw new IllegalArgumentException("가사는 트랙당 최대 20,000자까지 입력할 수 있습니다.");
+        }
+        return lyrics;
     }
 
     private List<AlbumAdminDto.TrackItem> parseTracks(String tracksJson) {
@@ -411,6 +421,7 @@ public class AlbumAdminService {
                         .isTitle(Boolean.TRUE.equals(t.getIsTitle()))
                         .melonSongId(t.getMelonSongId())
                         .youtubeVideoId(t.getYoutubeVideoId())
+                        .lyrics(t.getLyrics())
                         .build());
             }
         }

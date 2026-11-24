@@ -12,7 +12,7 @@ import lombok.*;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString(exclude = {"album"})
+@ToString(exclude = {"album", "lyrics"})
 public class Track {
 
     @Id
@@ -37,19 +37,20 @@ public class Track {
     @Column(name = "youtube_video_id", length = 20)
     private String youtubeVideoId;
 
+    @Column(columnDefinition = "MEDIUMTEXT")
+    private String lyrics;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "album_id")
     private Album album;
 
     /** Compatibility constructor for existing initializers. */
     public Track(Long trackId, int trackNum, String title, String duration, Boolean isTitle, Album album) {
-        this.trackId = trackId;
-        this.trackNum = trackNum;
-        this.title = title;
-        this.duration = duration;
-        this.isTitle = isTitle;
-        this.album = album;
-        this.melonSongId = null;
-        this.youtubeVideoId = null;
+        this(trackId, trackNum, title, duration, isTitle, null, null, album);
+    }
+
+    public Track(Long trackId, int trackNum, String title, String duration, Boolean isTitle,
+                 String melonSongId, String youtubeVideoId, Album album) {
+        this(trackId, trackNum, title, duration, isTitle, melonSongId, youtubeVideoId, null, album);
     }
 }

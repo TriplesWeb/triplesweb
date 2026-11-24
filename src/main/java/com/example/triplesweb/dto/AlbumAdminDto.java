@@ -48,6 +48,7 @@ public class AlbumAdminDto {
         private Boolean isTitle;
         private String melonSongId;
         private String youtubeVideoId;
+        private String lyrics;
     }
 
     @Getter

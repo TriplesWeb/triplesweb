@@ -122,7 +122,8 @@
             </tr>
         </thead>
         <tbody class="divide-y divide-[#3a4a46]/20 bg-[#16181f]/40">
-        {{#tracks}}
+        {{#detailTracks}}
+        {{#track}}
             <tr class="hover:bg-[#202430]/60 transition-colors group">
                 <td class="album-track-num py-3 px-3 text-center font-mono text-xs text-[#8b9b95]">{{trackNum}}</td>
                 <td class="album-track-title-col py-3 px-3 font-medium text-[#e3e2e8]">
@@ -143,12 +144,41 @@
                 </td>
                 <td class="album-track-dur py-3 px-3 text-center font-mono text-xs text-[#8b9b95]">{{duration}}</td>
             </tr>
-        {{/tracks}}
-        {{^tracks}}
+        {{/track}}
+        {{#parsedLyrics}}
+        {{#hasStanzas}}
+            <tr>
+                <td colspan="3" class="album-lyrics-cell">
+                    <details class="album-lyrics">
+                        <summary aria-label="{{track.title}} 가사"><span aria-hidden="true">▼</span> 가사</summary>
+                        <div class="album-lyrics-content">
+                            {{#hasLegend}}
+                            <div class="album-lyrics-legend">
+                                {{#legend}}
+                                <span{{#color}} style="color: {{color}}"{{/color}}>{{name}}</span>
+                                {{/legend}}
+                            </div>
+                            <hr>
+                            {{/hasLegend}}
+                            {{#stanzas}}
+                            <div class="album-lyrics-stanza">
+                                {{#.}}
+                                <div><span{{#color}} style="color: {{color}}"{{/color}}{{#gradient}} class="album-lyrics-gradient" style="--album-lyrics-gradient: {{gradient}}"{{/gradient}}>{{text}}</span></div>
+                                {{/.}}
+                            </div>
+                            {{/stanzas}}
+                        </div>
+                    </details>
+                </td>
+            </tr>
+        {{/hasStanzas}}
+        {{/parsedLyrics}}
+        {{/detailTracks}}
+        {{^detailTracks}}
             <tr>
                 <td colspan="3" class="py-8 px-4 text-center text-[#b9cac4]/60">등록된 트랙이 없습니다.</td>
             </tr>
-        {{/tracks}}
+        {{/detailTracks}}
         </tbody>
     </table>
     </div>
