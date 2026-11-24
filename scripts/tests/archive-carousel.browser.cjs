@@ -110,6 +110,19 @@ ${css}
     assert.ok(layout.visible >= 4, '여러 장이 한 화면에 보이지 않는다: ' + layout.visible);
     assert.equal(layout.titleBefore, true, '제목이 멤버 로고보다 아래에 있다');
 
+    const dimensions = await page.evaluate(() => {
+      const grid = document.getElementById('archiveGrid');
+      const card = grid.querySelector('.ar-card');
+      const thumbnail = card.querySelector('.ar-photo-link');
+      return ['10', '20', '30', '40', '50'].map(size => {
+        grid.dataset.pageSize = size;
+        return [card.offsetWidth, card.offsetHeight, thumbnail.offsetHeight];
+      });
+    });
+    for (const size of dimensions) {
+      assert.deepEqual(size, dimensions[0], '페이지당 표시 개수에 따라 카드 크기가 달라진다');
+    }
+
     const opener = page.locator('#archiveGrid .ar-card').nth(1).locator('[data-archive-open]');
     await opener.click();
     const detail = await page.evaluate(() => ({
