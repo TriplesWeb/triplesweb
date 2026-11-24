@@ -1882,7 +1882,7 @@
         return true;
     }
 
-    document.querySelectorAll(".ar-dialog").forEach(dialog => {
+    document.querySelectorAll(".ar-dialog:not(#archiveDetail)").forEach(dialog => {
         dialog.querySelectorAll("[data-ar-close]:not(.ar-dialog-backdrop)").forEach(button => {
             button.addEventListener("click", () => closeDialog(dialog));
         });

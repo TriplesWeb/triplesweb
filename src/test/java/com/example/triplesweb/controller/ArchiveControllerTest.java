@@ -590,7 +590,6 @@ class ArchiveControllerTest {
         org.assertj.core.api.Assertions.assertThat(html)
                 .contains("class=\"ar-density\"")
                 .contains("id=\"archivePageSize\"")
-                .contains("data-page-size=\"20\"")
                 .contains("value=\"20\" selected")
                 .contains(">20개</option>")
                 .contains(">10개</option>")

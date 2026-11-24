@@ -1,6 +1,7 @@
 (function () {
     const detail = document.getElementById('archiveDetail');
     if (!detail) return;
+    const closeButton = detail.querySelector('.ar-detail-close');
     const photo = document.getElementById('archiveDetailPhoto') || detail.querySelector('.ar-detail-photo');
     const image = document.getElementById('archiveDetailImage');
     const description = document.getElementById('archiveDetailDescription');
@@ -281,7 +282,7 @@
         detail.hidden = false;
         document.body.style.overflow = 'hidden';
         fitMembers();
-        detail.querySelector('[data-ar-close]')?.focus();
+        closeButton?.focus();
     }
 
     /** 그리드 soft-refresh 후 같은 게시글 카드로 상세·수정 버튼 메타를 맞춘다. */
@@ -306,10 +307,16 @@
         }
     };
 
-    edit?.addEventListener('click', () => {
+    function closeDetail() {
         detail.hidden = true;
         if (!document.querySelector('.ar-dialog:not([hidden])')) document.body.style.overflow = '';
+    }
+
+    closeButton?.addEventListener('click', () => {
+        closeDetail();
+        activeCard?.querySelector('[data-archive-open]')?.focus({ preventScroll: true });
     });
+    edit?.addEventListener('click', closeDetail);
 
     prev?.addEventListener('click', event => {
         event.preventDefault();

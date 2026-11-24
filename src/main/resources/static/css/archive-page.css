@@ -1206,14 +1206,6 @@ body.site-page > main.archive-page.is-folder-view {
     object-position: center;
     background: #07080b;
 }
-.archive-page[data-archive-kind="image"] .ar-grid[data-page-size="20"] .ar-card .ar-photo-link { aspect-ratio: 1 / 0.94; }
-.archive-page[data-archive-kind="image"] .ar-grid[data-page-size="30"] .ar-card .ar-photo-link { aspect-ratio: 1 / 0.9; }
-.archive-page[data-archive-kind="image"] .ar-grid[data-page-size="40"] .ar-card .ar-photo-link { aspect-ratio: 1 / 0.86; }
-.archive-page[data-archive-kind="image"] .ar-grid[data-page-size="50"] .ar-card .ar-photo-link { aspect-ratio: 1 / 0.82; }
-.archive-page[data-archive-kind="image"] .ar-grid[data-page-size="20"] .ar-card .ar-body { zoom: 0.88; }
-.archive-page[data-archive-kind="image"] .ar-grid[data-page-size="30"] .ar-card .ar-body { zoom: 0.8; }
-.archive-page[data-archive-kind="image"] .ar-grid[data-page-size="40"] .ar-card .ar-body { zoom: 0.74; }
-.archive-page[data-archive-kind="image"] .ar-grid[data-page-size="50"] .ar-card .ar-body { zoom: 0.68; }
 .ar-card-count {
     position: absolute;
     top: 0.45rem;
