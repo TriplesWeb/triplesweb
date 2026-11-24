@@ -282,7 +282,7 @@ class ObjektDescriptionEditorTest {
             for (ObjektDescriptionSharePref value : values) prefs.put(value.getId(), value);
             return List.copyOf(values);
         });
-        return new ObjektDescriptionEditor(objekts, descriptions, scopeRepo, prefRepo);
+        return new ObjektDescriptionEditor(objekts, descriptions, scopeRepo, prefRepo, mock(org.springframework.context.ApplicationEventPublisher.class));
     }
 
     private static Map<String, Object> card(String member, String number) {

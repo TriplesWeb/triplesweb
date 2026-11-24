@@ -47,6 +47,7 @@ class ObjektFeaturesTest {
     @MockitoBean ObjektDescriptionScopeRepository descriptionScopes;
     @MockitoBean ObjektDescriptionSharePrefRepository descriptionSharePrefs;
     @MockitoBean AboutAdminAuth admin;
+    @Autowired org.springframework.context.ApplicationEventPublisher events;
 
     /** Mirrors ObjektService.findByKey indexing so detail routes resolve under the mock catalog. */
     private void stubCatalog(List<Map<String, Object>> items) {
@@ -725,6 +726,47 @@ class ObjektFeaturesTest {
         mvc.perform(get("/cosmo/objekt/more").param("page", "1").param("group", "other"))
                 .andExpect(jsonPath("$.loaded").value(5)).andExpect(jsonPath("$.hasMore").value(false))
                 .andExpect(jsonPath("$.items[0].id").value("other20"));
+    }
+
+    @Test void searchPaginationReusesResultsUntilTheCatalogChanges() throws Exception {
+        List<Map<String, Object>> items = new java.util.ArrayList<>();
+        for (int i = 0; i < 21; i++) {
+            items.add(Map.of("id", "card" + i, "searchText", "match", "member", "SeoYeon"));
+        }
+        stubCatalog(items);
+        when(market.withMintCounts(anyList())).thenAnswer(call -> call.getArgument(0));
+
+        mvc.perform(get("/cosmo/objekt/more").param("search", "match").param("page", "0"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.loaded").value(20));
+        mvc.perform(get("/cosmo/objekt/more").param("search", "match").param("page", "1"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.loaded").value(1));
+        verify(descriptions).findAll();
+
+        when(catalog.findCollections("triples"))
+                .thenReturn(List.of(Map.of("id", "new-card", "searchText", "match", "member", "SeoYeon")));
+        mvc.perform(get("/cosmo/objekt/more").param("search", "match").param("page", "0"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.items[0].id").value("new-card"));
+        verify(descriptions, times(2)).findAll();
+
+        events.publishEvent(new ObjektDescriptionEditor.DescriptionsChanged());
+        mvc.perform(get("/cosmo/objekt/more").param("search", "match").param("page", "0"))
+                .andExpect(status().isOk());
+        verify(descriptions, times(3)).findAll();
+    }
+
+    @Test void mintSortInvalidatesWhenSupplyChanges() throws Exception {
+        stubCatalog(List.of(Map.of("id", "alpha", "slug", "alpha"), Map.of("id", "beta", "slug", "beta")));
+        when(market.withMintCounts(anyList())).thenAnswer(call -> call.getArgument(0));
+        when(market.mintsSignature()).thenReturn("initial");
+        when(market.mintCount("alpha")).thenReturn(2L);
+        when(market.mintCount("beta")).thenReturn(1L);
+        mvc.perform(get("/cosmo/objekt/more").param("sort", "mint_high").param("page", "0"))
+                .andExpect(jsonPath("$.items[0].id").value("alpha"));
+
+        when(market.mintCount("beta")).thenReturn(3L);
+        when(market.mintsSignature()).thenReturn("changed");
+        mvc.perform(get("/cosmo/objekt/more").param("sort", "mint_high").param("page", "0"))
+                .andExpect(jsonPath("$.items[0].id").value("beta"));
     }
 
     @Test void mintCountsCopyOnlyTheVisiblePage() throws Exception {

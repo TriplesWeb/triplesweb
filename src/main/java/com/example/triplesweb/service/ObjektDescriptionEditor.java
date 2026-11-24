@@ -9,6 +9,7 @@ import com.example.triplesweb.repository.ObjektDescriptionSharePrefRepository;
 import com.example.triplesweb.util.ObjektDescriptionKeys;
 import com.example.triplesweb.util.TripleSMembers;
 import org.springframework.stereotype.Service;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
@@ -34,15 +35,20 @@ public class ObjektDescriptionEditor {
     private final ObjektDescriptionRepository descriptions;
     private final ObjektDescriptionScopeRepository scopes;
     private final ObjektDescriptionSharePrefRepository sharePrefs;
+    private final ApplicationEventPublisher events;
+
+    public record DescriptionsChanged() {}
 
     public ObjektDescriptionEditor(ObjektService objekts,
                                    ObjektDescriptionRepository descriptions,
                                    ObjektDescriptionScopeRepository scopes,
-                                   ObjektDescriptionSharePrefRepository sharePrefs) {
+                                   ObjektDescriptionSharePrefRepository sharePrefs,
+                                   ApplicationEventPublisher events) {
         this.objekts = objekts;
         this.descriptions = descriptions;
         this.scopes = scopes;
         this.sharePrefs = sharePrefs;
+        this.events = events;
     }
 
     public Map<String, Object> view(Map<String, Object> item) {
@@ -380,7 +386,10 @@ public class ObjektDescriptionEditor {
             entity.setDescription(entry.getValue());
             rows.add(entity);
         }
-        if (!rows.isEmpty()) descriptions.saveAll(rows);
+        if (!rows.isEmpty()) {
+            descriptions.saveAll(rows);
+            events.publishEvent(new DescriptionsChanged());
+        }
     }
 
     private void flushScopes(Set<ObjektDescriptionScope.Key> remember, Set<ObjektDescriptionScope.Key> forget) {

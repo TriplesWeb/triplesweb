@@ -7,6 +7,7 @@ import com.example.triplesweb.repository.ObjektDescriptionRepository;
 import com.example.triplesweb.service.ArtistSnapshotService;
 import com.example.triplesweb.service.EventService;
 import com.example.triplesweb.service.ObjektService;
+import com.example.triplesweb.service.ObjektDescriptionEditor;
 import com.example.triplesweb.service.ObjektMarketDataService;
 import com.example.triplesweb.service.ObjektLiveSettings;
 import com.example.triplesweb.service.ShopService;
@@ -19,6 +20,7 @@ import com.example.triplesweb.util.ObjektSeasonColors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.transaction.event.TransactionalEventListener;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -33,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -46,6 +49,11 @@ import java.util.stream.Collectors;
 public class CosmoController {
 
     private static final int PAGE_SIZE = 20;
+    private static final int LISTING_CACHE_LIMIT = 16;
+    private static final long SEARCH_CACHE_MS = 10_000;
+    private final LinkedHashMap<ListingKey, CachedListing> listings = new LinkedHashMap<>(16, .75f, true);
+    private List<Map<String, Object>> listingCatalog;
+    private volatile long descriptionRevision;
     private final ObjektService objektService;
     private final ArtistSnapshotService artistSnapshot;
     private final ObjektMarketDataService marketData;
@@ -190,28 +198,21 @@ public class CosmoController {
             ex.printStackTrace();
         }
 
-        String query = normalize(search);
+        String selectedSort = normalize(sort);
         List<String> selectedMembers = cleanSelections(member);
         String selectedGroup = memberGroup(group, selectedMembers);
-        java.util.Set<String> selectedNames = selectedMembers.stream()
-                .flatMap(value -> MemberPortraitOptions.objektMembers(value).stream()).collect(Collectors.toSet());
-        Map<String, java.util.Set<String>> membershipCache = new java.util.HashMap<>();
-        List<String> selectedSeasons = cleanSelections(season);
-        List<String> selectedClasses = cleanSelections(classFilters);
         String selectedKind = "전체".equals(normalize(kind)) ? "all" : normalize(kind);
-        String selectedSort = normalize(sort);
-        Map<String, String> descriptionTexts = query.isBlank() ? Map.of() : descriptionIndex();
-
-        // 전체 캐시에서 검색어와 모든 필터를 먼저 적용하고, 그 결과에만 정렬과 페이지네이션을 적용한다.
-        List<Map<String, Object>> filtered = allObjekts.stream()
-                .filter(objekt -> matchesSearch(query, objekt, descriptionTexts))
-                .filter(objekt -> "all".equals(selectedGroup) || matchesMember(selectedGroup, selectedNames,
-                        membershipCache.computeIfAbsent(firstValue(objekt, "member", "memberName"), MemberPortraitOptions::objektMembers)))
-                .filter(objekt -> matchesSelection(selectedSeasons, firstValue(objekt, "seasonKey", "season")))
-                .filter(objekt -> matchesSelection(selectedClasses, firstValue(objekt, "classKey", "class")))
-                .filter(objekt -> ObjektCatalogSort.matchesKind(selectedKind, objekt))
-                .sorted(sortComparator(selectedSort))
-                .toList();
+        String query = normalize(search);
+        ListingKey key = new ListingKey(query, canonicalSelections(selectedMembers),
+                canonicalSelections(cleanSelections(season)), canonicalSelections(cleanSelections(classFilters)),
+                selectedKind, selectedSort, selectedGroup,
+                isMintSort(selectedSort) ? marketData.mintsSignature() : "",
+                query.isBlank() ? 0 : descriptionRevision);
+        List<Map<String, Object>> filtered = cachedListing(allObjekts, key);
+        if (filtered == null) {
+            filtered = filterListing(allObjekts, key);
+            rememberListing(allObjekts, key, filtered);
+        }
 
         int resultCount = filtered.size();
         int totalPages = Math.max(1, (int) Math.ceil(resultCount / (double) PAGE_SIZE));
@@ -238,6 +239,66 @@ public class CosmoController {
                 error
         );
     }
+
+    private static List<String> canonicalSelections(List<String> selections) {
+        return selections.stream().sorted().distinct().toList();
+    }
+
+    private List<Map<String, Object>> filterListing(List<Map<String, Object>> catalog, ListingKey key) {
+        java.util.Set<String> names = key.members().stream()
+                .flatMap(value -> MemberPortraitOptions.objektMembers(value).stream()).collect(Collectors.toSet());
+        Map<String, java.util.Set<String>> membership = new HashMap<>();
+        Map<String, String> descriptionTexts = key.query().isBlank() ? Map.of() : descriptionIndex();
+        var filtered = catalog.stream()
+                .filter(objekt -> matchesSearch(key.query(), objekt, descriptionTexts))
+                .filter(objekt -> "all".equals(key.group()) || matchesMember(key.group(), names,
+                        membership.computeIfAbsent(firstValue(objekt, "member", "memberName"), MemberPortraitOptions::objektMembers)))
+                .filter(objekt -> matchesSelection(key.seasons(), firstValue(objekt, "seasonKey", "season")))
+                .filter(objekt -> matchesSelection(key.classes(), firstValue(objekt, "classKey", "class")))
+                .filter(objekt -> ObjektCatalogSort.matchesKind(key.kind(), objekt));
+        if (!isMintSort(key.sort())) {
+            return filtered.sorted(ObjektCatalogSort.comparator(key.sort())).toList();
+        }
+        Map<Map<String, Object>, Long> counts = new IdentityHashMap<>();
+        List<Map<String, Object>> matched = filtered.collect(Collectors.toCollection(ArrayList::new));
+        for (Map<String, Object> item : matched) counts.put(item, mintOf(item));
+        matched.sort(mintComparator("mint_high".equals(key.sort()), counts));
+        return List.copyOf(matched);
+    }
+
+    private synchronized List<Map<String, Object>> cachedListing(List<Map<String, Object>> catalog, ListingKey key) {
+        if (listingCatalog != catalog) {
+            listings.clear();
+            listingCatalog = catalog;
+        }
+        CachedListing hit = listings.get(key);
+        if (hit == null || (!key.query().isBlank() && System.currentTimeMillis() - hit.createdAt() >= SEARCH_CACHE_MS)) {
+            return null;
+        }
+        return hit.items();
+    }
+
+    private synchronized void rememberListing(List<Map<String, Object>> catalog, ListingKey key,
+                                               List<Map<String, Object>> items) {
+        if (listingCatalog != catalog || (!key.query().isBlank() && key.descriptionRevision() != descriptionRevision)
+                || (isMintSort(key.sort()) && !Objects.equals(key.mintSignature(), marketData.mintsSignature()))) return;
+        listings.put(key, new CachedListing(items, System.currentTimeMillis()));
+        if (listings.size() > LISTING_CACHE_LIMIT) listings.remove(listings.keySet().iterator().next());
+    }
+
+    @TransactionalEventListener(fallbackExecution = true)
+    synchronized void invalidateDescriptionSearch(ObjektDescriptionEditor.DescriptionsChanged event) {
+        descriptionRevision++;
+        listings.keySet().removeIf(key -> !key.query().isBlank());
+    }
+
+    private static boolean isMintSort(String sort) {
+        return "mint_low".equals(sort) || "mint_high".equals(sort);
+    }
+
+    private record ListingKey(String query, List<String> members, List<String> seasons, List<String> classes,
+                              String kind, String sort, String group, String mintSignature, long descriptionRevision) {}
+    private record CachedListing(List<Map<String, Object>> items, long createdAt) {}
 
     private record ObjektPageResult(
             List<Map<String, Object>> items,
@@ -275,15 +336,10 @@ public class CosmoController {
         return selected.stream().map(CosmoController::normalize).anyMatch(normalizedActual::equals);
     }
 
-    private Comparator<Map<String, Object>> sortComparator(String sort) {
-        if ("mint_low".equals(sort)) return mintComparator(false);
-        if ("mint_high".equals(sort)) return mintComparator(true);
-        return ObjektCatalogSort.comparator(sort);
-    }
-
-    private Comparator<Map<String, Object>> mintComparator(boolean descending) {
+    private Comparator<Map<String, Object>> mintComparator(boolean descending,
+                                                           Map<Map<String, Object>, Long> snapshot) {
         Comparator<Long> counts = descending ? Comparator.reverseOrder() : Comparator.naturalOrder();
-        return Comparator.<Map<String, Object>, Long>comparing(this::mintOf, Comparator.nullsLast(counts))
+        return Comparator.<Map<String, Object>, Long>comparing(snapshot::get, Comparator.nullsLast(counts))
                 .thenComparing(item -> firstValue(item, "slug", "id"));
     }
 
