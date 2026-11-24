@@ -20,7 +20,7 @@ jobs:
     name: validate deploy configuration
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           sparse-checkout: |
             .github
@@ -43,7 +43,7 @@ jobs:
       integration: ${{ steps.filter.outputs.integration }}
       qodana: ${{ steps.filter.outputs.qodana }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 2
           sparse-checkout: scripts
@@ -61,17 +61,17 @@ jobs:
     if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           sparse-checkout: |
             gradle
             scripts
             src
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v5
       - name: Java tests and production WAR in one Gradle invocation
         run: ./gradlew test bootWar --no-daemon --stacktrace --parallel
       - name: Summarize failed SQL tests
@@ -79,7 +79,7 @@ jobs:
         run: grep -n -A 10 -B 2 -E 'BadSqlGrammarException|JdbcSQLSyntaxErrorException' build/test-results/test/*.xml || true
       # Server-generated HTML fixtures are produced by the Java test above.
       # Run cross-layer browser tests only when this PR touches BOTH areas.
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         if: needs.changes.outputs.integration == 'true'
         with:
           node-version: '20'
@@ -121,8 +121,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # Tailwind's automatic scan must see the same files as a full checkout.
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: '20'
           cache: npm
@@ -177,7 +177,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
@@ -223,7 +223,7 @@ jobs:
       # A diff without JVM sources can leave no SARIF and the CLI at the base commit.
       - name: Restore PR head before full scan
         if: steps.scan.outcome == 'failure'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
