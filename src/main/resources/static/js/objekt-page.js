@@ -1466,6 +1466,7 @@
                 <div class="objekt-card-foot">
                     ${memberChipHtml(item, member)}
                     ${klass ? `<span class="badge badge-sm badge-neutral objekt-card-class">${escapeHtml(klass)}</span>` : ''}
+                    ${item.mintPending ? '<span class="badge badge-sm badge-neutral">확인 중</span>' : ''}
                 </div>
                 <p class="objekt-card-supply" data-supply-count${Number.isFinite(item.mintCount) ? ` data-supply-done="true"` : ''}>${Number.isFinite(item.mintCount) ? `발행량 ${escapeHtml(String(item.mintCount))}개` : '발행량 확인 중'}</p>
             </div>
@@ -1513,7 +1514,7 @@
     }
 
     async function applyFilters() {
-        if (!grid) return;
+        if (!grid) return false;
         const request = ++listGeneration;
         loading = true;
         hasMore = false;
@@ -1528,7 +1529,7 @@
             });
             if (!res.ok) throw new Error('load failed');
             const data = await res.json();
-            if (request !== listGeneration) return;
+            if (request !== listGeneration) return false;
             const items = Array.isArray(data.items) ? data.items : [];
             renderLoadedCards(items);
             loadedCount = items.length;
@@ -1539,9 +1540,11 @@
             rememberCounts();
             params.delete('page');
             syncFilterAddress(params);
+            return true;
         } catch (_) {
-            if (request !== listGeneration) return;
+            if (request !== listGeneration) return false;
             if (statusEl) statusEl.textContent = '검색 결과를 바꾸지 못했습니다. 잠시 후 다시 시도해 주세요.';
+            return false;
         } finally {
             if (request === listGeneration) {
                 loading = false;

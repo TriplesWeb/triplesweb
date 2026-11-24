@@ -61,6 +61,10 @@ public class ObjektMarketDataService {
         this(indexUrl, cosmoUrl, rpcUrl, contract, new ObjektIndexClient(indexUrl), new ObjektSerialSupplyService(indexUrl), null);
     }
 
+    public boolean usesChainMints() {
+        return chainMints;
+    }
+
     public String mintsSignature() {
         return mintsSignature;
     }

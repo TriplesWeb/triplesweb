@@ -1,10 +1,13 @@
 package com.example.triplesweb.service;
 
+import com.example.triplesweb.dto.ObjektCatalogDto;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -14,6 +17,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class ObjektCatalogRefreshTest {
     @Test
@@ -63,6 +67,34 @@ class ObjektCatalogRefreshTest {
         } finally {
             server.stop(0);
         }
+    }
+
+    @Test
+    void pendingCollectionIsSearchableAndIsReplacedByTheStoredCollection() {
+        ObjektCatalogStore store = mock(ObjektCatalogStore.class);
+        ObjektService service = new ObjektService("http://127.0.0.1", 3000, store, null);
+        var row = ObjektCatalogDto.from(new ObjectMapper().createObjectNode()
+                .put("id", "test-101z").put("slug", "test-101z").put("collectionId", "Cream02 SeoYeon 101Z")
+                .put("artist", "triples").put("season", "Cream02").put("member", "SeoYeon")
+                .put("collectionNo", "101Z")).toEntity();
+        when(store.load("triples")).thenReturn(List.of()).thenReturn(List.of(row));
+
+        service.reloadStoredCatalog();
+        service.publishPendingCollections(List.of(row));
+        assertThat(service.findByKey("test-101z")).containsEntry("mintPending", true);
+        assertThat(service.findStoredByKey("test-101z")).isNull();
+        String pendingSignature = service.catalogSignature();
+
+        service.publishPendingCollections(List.of());
+        assertThat(service.findByKey("test-101z")).isNull();
+        service.publishPendingCollections(List.of(row));
+
+        service.reloadStoredCatalog();
+        assertThat(service.findCollections("triples")).hasSize(1);
+        assertThat(service.findByKey("test-101z")).doesNotContainKey("mintPending");
+        assertThat(service.catalogSignature()).isNotEqualTo(pendingSignature);
+        service.publishPendingCollections(List.of());
+        assertThat(service.findByKey("test-101z")).isNotNull();
     }
 
     private static HttpServer catalogServer(AtomicReference<String> season) throws Exception {

@@ -73,6 +73,8 @@ public class CosmoController {
             @RequestParam(defaultValue = "all") String group,
             Model model
     ) {
+        model.addAttribute("objektCatalogSig", objektService.catalogSignature());
+        model.addAttribute("objektMintsSig", marketData.mintsSignature());
         // 무한 스크롤: 최초 HTML은 항상 첫 페이지(20개)만 렌더한다.
         ObjektPageResult page = loadObjektPage(0, search, member, season, classFilters, kind, sort, group);
 
@@ -156,15 +158,16 @@ public class CosmoController {
         body.put("catalogAt", objektService.getLastSuccessfulRefreshMillis());
         body.put("mintsSig", marketData.mintsSignature());
         body.put("mintsAt", marketData.mintsRefreshedAt());
+        boolean chainMints = marketData.usesChainMints();
+        body.put("chainMints", chainMints);
         Map<String, Object> supplies = new LinkedHashMap<>();
         if (keys != null) {
             for (String key : keys.stream().filter(Objects::nonNull).map(String::trim)
                     .filter(value -> !value.isBlank()).distinct().limit(24).toList()) {
                 Map<String, Object> item = objektService.findByKey(key);
-                if (item == null) continue;
-                Long count = liveMint(item);
-                if (count == null) continue;
-                supplies.put(key, Map.of("status", "available", "count", count));
+                Long count = item == null ? null : liveMint(item);
+                if (count != null) supplies.put(key, Map.of("status", "available", "count", count));
+                else if (chainMints) supplies.put(key, Map.of("status", "unavailable"));
             }
         }
         body.put("supplies", supplies);

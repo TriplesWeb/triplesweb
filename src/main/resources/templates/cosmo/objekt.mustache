@@ -62,7 +62,7 @@
     <div class="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">{{objektError}}</div>
     {{/objektError}}
     <div id="objekt-empty" class="hidden mt-8 rounded-2xl border border-white/10 bg-white/[0.03] p-10 text-center text-slate-400">검색 조건에 맞는 오브젝트가 없습니다.</div>
-    <div id="objekt-card-grid" class="objekt-card-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 py-2 mt-3" data-objekt-grid data-cols="2">
+    <div id="objekt-card-grid" class="objekt-card-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 py-2 mt-3" data-objekt-grid data-cols="2" data-catalog-sig="{{objektCatalogSig}}" data-mints-sig="{{objektMintsSig}}">
         {{#objekts}}
         <article class="card objekt-card objekt-item group relative border rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1"
                  data-objekt-key="{{publicKey}}"
@@ -82,6 +82,7 @@
                         <span class="objekt-member-name">{{member}}</span>
                     </a>
                     {{#class}}<span class="badge badge-sm badge-neutral objekt-card-class">{{class}}</span>{{/class}}
+                    {{#mintPending}}<span class="badge badge-sm badge-neutral">확인 중</span>{{/mintPending}}
                 </div>
                 <p class="objekt-card-supply" data-supply-count>{{#mintCountKnown}}발행량 {{mintCount}}개{{/mintCountKnown}}{{^mintCountKnown}}발행량 확인 중{{/mintCountKnown}}</p>
             </div>

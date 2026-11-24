@@ -28,7 +28,7 @@ const html = `<!doctype html><html><head><meta charset="utf-8">
 </form>
 <p id="objekt-result-summary" data-result-count="1" data-all-count="1" data-loaded="1">검색 결과 <strong>1</strong>개</p>
 <div id="objekt-empty" class="hidden"></div>
-<div id="objekt-card-grid">
+<div id="objekt-card-grid" data-catalog-sig="1:old" data-mints-sig="1:mints">
   <article class="objekt-card objekt-item" data-objekt-key="old-card">
     <button type="button" class="objekt-open-detail">old</button>
     <p class="objekt-card-supply" data-supply-count>발행량 10개</p>
@@ -55,6 +55,7 @@ const html = `<!doctype html><html><head><meta charset="utf-8">
     let catalogSig = '1:old';
     let mintsSig = '1:mints';
     let count = 10;
+    let chainMints = false;
     const moreCalls = [];
     await page.route('**/*', async (route) => {
       const url = new URL(route.request().url());
@@ -72,6 +73,7 @@ const html = `<!doctype html><html><head><meta charset="utf-8">
             mintsSig,
             catalogCount: catalogSig === '2:new' ? 2 : 1,
             supplies: {'old-card': {status: 'available', count}},
+            chainMints,
             dropWindow: true,
             pollMs: 5000,
             forceRefreshMs: 600000,
@@ -85,11 +87,14 @@ const html = `<!doctype html><html><head><meta charset="utf-8">
           contentType: 'application/json',
           body: JSON.stringify({
             items: [
-              {id: 'new-card', publicKey: 'new-card', collectionId: '신규 카드', member: 'HaYeon', mintCount: 1},
+              ...(catalogSig === '2:new' ? [{
+                id: 'new-card', publicKey: 'new-card', collectionId: '신규 카드',
+                member: 'HaYeon', mintCount: 1, mintPending: true
+              }] : []),
               {id: 'old-card', publicKey: 'old-card', collectionId: '기존 카드', member: 'HaYeon', mintCount: count}
             ],
-            resultCount: 2,
-            allCount: 2,
+            resultCount: catalogSig === '2:new' ? 2 : 1,
+            allCount: catalogSig === '2:new' ? 2 : 1,
             hasMore: false,
             nextPage: null
           })
@@ -114,11 +119,22 @@ const html = `<!doctype html><html><head><meta charset="utf-8">
     await page.waitForFunction(() => /12/.test(document.querySelector('[data-objekt-key="old-card"] [data-supply-count]')?.textContent || ''), {timeout: 15000});
     assert.equal(moreCalls.length, 0, '민트만 바뀌면 목록을 다시 불러오지 않는다');
 
+    chainMints = true;
+    count = 11;
+    mintsSig = '3:mints';
+    await page.locator('[data-objekt-key="old-card"] [data-supply-count]')
+      .filter({hasText: '발행량 11개'}).waitFor({timeout: 15000});
+    assert.equal(moreCalls.length, 0, '체인 재구성으로 줄어든 수량을 열린 카드에 반영한다');
+
     catalogSig = '2:new';
     await page.waitForFunction(() => document.querySelector('[data-objekt-key="new-card"]'), {timeout: 15000});
-    assert.match(await page.locator('[data-objekt-key="old-card"] [data-supply-count]').textContent(), /12/);
+    assert.match(await page.locator('[data-objekt-key="old-card"] [data-supply-count]').textContent(), /11/);
+    assert.match(await page.locator('[data-objekt-key="new-card"]').textContent(), /확인 중/);
     assert.ok(moreCalls.length >= 1);
-    console.log('PASS: pulse가 새 오브젝트를 넣고 발행량을 메모리 스냅샷으로 올린다');
+
+    catalogSig = '1:old';
+    await page.locator('[data-objekt-key="new-card"]').waitFor({state: 'detached', timeout: 15000});
+    console.log('PASS: pulse가 최근 발행량과 신규 카드를 표시하고 체인 재구성을 반영한다');
   } finally {
     await browser.close();
   }
