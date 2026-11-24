@@ -30,7 +30,6 @@ import org.springframework.data.jpa.domain.Specification;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -66,7 +65,7 @@ public class ArchiveService {
     private record CachedSources(Set<String> value, long at) {}
     private record CachedBrowse(FolderBrowse value, long at) {}
 
-    /** 폴더 목록 페이지와 출처 탭을 한 번의 필터 스캔으로 만든다. */
+    /** 폴더 목록 페이지와 선택 가능한 출처. */
     public record FolderBrowse(Page<Archive> page, Set<String> availableSources) {}
 
     @Transactional(readOnly = true)
@@ -202,9 +201,6 @@ public class ArchiveService {
         int safeSize = Math.max(1, size);
         int safePage = Math.max(0, page);
         Specification<Archive> spec = archiveSpec(type, keyword, members, from, to, source, unclassifiedOnly, requireAllMembers);
-        if (order.isMemberSort()) {
-            return pageByMemberSort(spec, safePage, safeSize, order);
-        }
         // Spring Data Sort의 nullsFirst/Last는 JPA QueryUtils에서 미지원이므로 Criteria로 정렬한다.
         Pageable pageable = PageRequest.of(safePage, safeSize);
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
@@ -225,28 +221,6 @@ public class ArchiveService {
         return new PageImpl<>(content, pageable, total);
     }
 
-    private Page<Archive> pageByMemberSort(Specification<Archive> spec, int page, int size, ArchiveSort sort) {
-        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
-        CriteriaQuery<Object[]> scanQuery = cb.createQuery(Object[].class);
-        Root<Archive> root = scanQuery.from(Archive.class);
-        Predicate pred = spec.toPredicate(root, scanQuery, cb);
-        scanQuery.multiselect(root.get("id"), root.get("artistNames"), root.get("registeredOn"), root.get("title"));
-        if (pred != null) scanQuery.where(pred);
-        List<SortRow> rows = new ArrayList<>();
-        for (Object[] row : entityManager.createQuery(scanQuery).getResultList()) {
-            rows.add(new SortRow((Long) row[0], (String) row[1], (LocalDate) row[2], (String) row[3]));
-        }
-        rows.sort(rowComparator(sort));
-        Pageable pageable = PageRequest.of(page, size);
-        if (rows.isEmpty()) return new PageImpl<>(List.of(), pageable, 0);
-        int fromIndex = page * size;
-        if (fromIndex >= rows.size()) return new PageImpl<>(List.of(), pageable, rows.size());
-        List<Long> pageIds = rows.subList(fromIndex, Math.min(rows.size(), fromIndex + size)).stream()
-                .map(SortRow::id)
-                .toList();
-        return new PageImpl<>(loadInOrder(pageIds), pageable, rows.size());
-    }
-
     private static List<Order> criteriaOrders(CriteriaBuilder cb, Root<Archive> root, ArchiveSort sort) {
         LocalDate nullDate = LocalDate.of(1970, 1, 1);
         Expression<LocalDate> date = cb.coalesce(root.get("registeredOn"), nullDate);
@@ -254,61 +228,14 @@ public class ArchiveService {
         return switch (sort == null ? ArchiveSort.NEWEST : sort) {
             case OLDEST -> List.of(cb.asc(date), cb.asc(root.get("id")));
             case TITLE -> List.of(cb.asc(title), cb.desc(root.get("id")));
-            case FIRST_MEMBER, LAST_MEMBER, NEWEST -> List.of(cb.desc(date), cb.desc(root.get("id")));
+            case FIRST_MEMBER -> List.of(cb.asc(root.get("castMemberRank")), cb.desc(root.get("id")));
+            case LAST_MEMBER -> {
+                Expression<Integer> rank = root.get("castMemberRank");
+                Expression<Integer> unknown = cb.<Integer>selectCase().when(cb.equal(rank, 24), 1).otherwise(0);
+                yield List.of(cb.asc(unknown), cb.desc(rank), cb.desc(root.get("id")));
+            }
+            case NEWEST -> List.of(cb.desc(date), cb.desc(root.get("id")));
         };
-    }
-
-    private record SortRow(Long id, String artistNames, LocalDate registeredOn, String title) {}
-
-    /** 수동 unitId가 가리키는 유닛 구성과 선택 멤버 필터가 같을 때. */
-    private static boolean matchesStoredUnitMemberFilter(Long storedUnitId, List<String> comboMembers,
-                                                         List<ArchiveFolderClassifier.UnitMembers> units) {
-        if (storedUnitId == null || comboMembers == null || comboMembers.isEmpty() || units == null) {
-            return false;
-        }
-        Set<String> wanted = new LinkedHashSet<>(ArchiveFolderClassifier.membersOf(String.join(",", comboMembers)));
-        for (ArchiveFolderClassifier.UnitMembers unit : units) {
-            if (unit == null || unit.members() == null || unit.members().isEmpty()) continue;
-            if (!storedUnitId.equals(unit.unitId())) continue;
-            return unit.members().equals(wanted);
-        }
-        return false;
-    }
-
-    private static Comparator<SortRow> rowComparator(ArchiveSort sort) {
-        Comparator<SortRow> byIdDesc = Comparator.comparing(SortRow::id, Comparator.nullsLast(Long::compareTo)).reversed();
-        Comparator<SortRow> byIdAsc = Comparator.comparing(SortRow::id, Comparator.nullsLast(Long::compareTo));
-        Comparator<SortRow> byDate = Comparator.comparing(
-                row -> row.registeredOn() == null ? LocalDate.of(1970, 1, 1) : row.registeredOn());
-        Comparator<SortRow> byTitle = Comparator.comparing(
-                row -> row.title() == null ? "" : row.title(), String.CASE_INSENSITIVE_ORDER);
-        Comparator<SortRow> byMemberAsc = Comparator.comparingInt(
-                row -> MemberPortraitOptions.earliestMemberIndex(row.artistNames()));
-        Comparator<SortRow> byMemberDesc = Comparator.comparingInt((SortRow row) -> {
-            int order = MemberPortraitOptions.earliestMemberIndex(row.artistNames());
-            return order >= 24 ? 24 : 23 - order;
-        });
-        return switch (sort == null ? ArchiveSort.NEWEST : sort) {
-            case OLDEST -> byDate.thenComparing(byIdAsc);
-            case TITLE -> byTitle.thenComparing(byIdDesc);
-            case FIRST_MEMBER -> byMemberAsc.thenComparing(byIdDesc);
-            case LAST_MEMBER -> byMemberDesc.thenComparing(byIdDesc);
-            case NEWEST -> byDate.reversed().thenComparing(byIdDesc);
-        };
-    }
-
-    private List<Archive> loadInOrder(List<Long> ids) {
-        if (ids == null || ids.isEmpty()) return List.of();
-        Map<Long, Archive> byId = new LinkedHashMap<>();
-        for (Archive archive : archiveRepository.findAllById(ids)) {
-            byId.put(archive.getId(), archive);
-        }
-        List<Archive> ordered = new ArrayList<>(ids.size());
-        for (Long id : ids) {
-            Archive archive = byId.get(id);
-            if (archive != null) ordered.add(archive);
-        }
-        return ordered;
     }
 
     private long countArchives(Specification<Archive> spec) {
@@ -407,9 +334,46 @@ public class ArchiveService {
             }
         }
 
-        // 콤보 등: 매칭 행을 모아 정렬한 뒤 페이지 본문만 조회한다.
-        Specification<Archive> scanSpec = archiveSpec(type, keyword, members, from, to, null, false, false);
-        return browseMatchedRows(scanSpec, page, size, source, unclassifiedOnly, folderKey, comboMembers, units, order);
+        Specification<Archive> folderSpec = archiveSpec(type, keyword, members, from, to, null, false, false)
+                .and(castFolderSpec(lowerFolder, comboMembers, units));
+        Specification<Archive> filtered = folderSpec.and((root, query, cb) -> {
+            if (unclassifiedOnly) return cb.isNull(root.get("source"));
+            if (source == null) return cb.conjunction();
+            return cb.equal(cb.lower(root.get("source")), source.toLowerCase(Locale.ROOT));
+        });
+        return new FolderBrowse(pageBySpec(filtered, page, size, order), distinctSources(folderSpec));
+    }
+
+    private static Specification<Archive> castFolderSpec(String key, List<String> comboMembers,
+                                                          List<ArchiveFolderClassifier.UnitMembers> units) {
+        if (key.matches("s(?:[1-9]|1[0-9]|2[0-4])")) {
+            int mask = 1 << (Integer.parseInt(key.substring(1)) - 1);
+            return (root, query, cb) -> cb.equal(root.get("castMemberMask"), mask);
+        }
+        if (!key.equals("combo") && !key.startsWith("combo-")) {
+            return (root, query, cb) -> cb.disjunction();
+        }
+        Integer size = ArchiveFolderClassifier.comboSize(key);
+        int requestedMask = ArchiveFolderClassifier.memberMask(comboMembers == null ? "" : String.join(",", comboMembers));
+        if (size == null && (!key.equals("combo") || requestedMask == 0)) {
+            return (root, query, cb) -> cb.disjunction();
+        }
+        int bucket = size == null ? 0 : Math.min(size, 5);
+        List<Long> visibleUnits = units == null ? List.of() : units.stream()
+                .filter(unit -> unit != null && unit.members() != null && !unit.members().isEmpty())
+                .map(ArchiveFolderClassifier.UnitMembers::unitId).distinct().toList();
+        return (root, query, cb) -> {
+            Expression<Integer> count = root.get("castMemberCount");
+            Predicate matchingSize = bucket == 0 ? cb.between(count, 2, 23)
+                    : bucket == 5 ? cb.between(count, 5, 23) : cb.equal(count, bucket);
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(matchingSize);
+            if (requestedMask != 0) predicates.add(cb.equal(root.get("castMemberMask"), requestedMask));
+            if (!visibleUnits.isEmpty()) {
+                predicates.add(cb.or(cb.isNull(root.get("unitId")), cb.not(root.get("unitId").in(visibleUnits))));
+            }
+            return cb.and(predicates.toArray(Predicate[]::new));
+        };
     }
 
     private FolderBrowse cachedPagedBrowse(MediaType type, int page, int size, String keyword, List<String> members,
@@ -455,9 +419,6 @@ public class ArchiveService {
         ArchiveSort sort = order == null ? ArchiveSort.NEWEST : order;
         int safeSize = Math.max(1, size);
         int safePage = Math.max(0, page);
-        if (sort.isMemberSort()) {
-            return pageByMemberSort(spec, safePage, safeSize, sort);
-        }
         Pageable pageable = PageRequest.of(safePage, safeSize);
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
         CriteriaQuery<Archive> contentQuery = cb.createQuery(Archive.class);
@@ -472,72 +433,6 @@ public class ArchiveService {
                 .getResultList();
         long total = countArchives(spec);
         return new PageImpl<>(content, pageable, total);
-    }
-
-    private FolderBrowse browseMatchedRows(Specification<Archive> scanSpec, int page, int size,
-                                           String source, boolean unclassifiedOnly,
-                                           String folderKey, List<String> comboMembers,
-                                           List<ArchiveFolderClassifier.UnitMembers> units, ArchiveSort order) {
-        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
-        CriteriaQuery<Object[]> scanQuery = cb.createQuery(Object[].class);
-        Root<Archive> root = scanQuery.from(Archive.class);
-        Predicate base = scanSpec.toPredicate(root, scanQuery, cb);
-        scanQuery.multiselect(
-                root.get("id"),
-                root.get("artistNames"),
-                root.get("source"),
-                root.get("registeredOn"),
-                root.get("title"),
-                root.get("unitId"));
-        if (base != null) scanQuery.where(base);
-
-        List<SortRow> matched = new ArrayList<>();
-        Set<String> sources = new LinkedHashSet<>();
-        for (Object[] row : entityManager.createQuery(scanQuery).getResultList()) {
-            Long id = (Long) row[0];
-            String artistNames = (String) row[1];
-            String rowSource = (String) row[2];
-            LocalDate registeredOn = (LocalDate) row[3];
-            Long storedUnitId = (Long) row[5];
-            ArchiveFolderClassifier.Match classified =
-                    ArchiveFolderClassifier.classify(artistNames, units, registeredOn, storedUnitId);
-            boolean inFolder;
-            Long unitScopedId = unitScopeId(folderKey, comboMembers, units);
-            if (unitScopedId != null) {
-                // 유닛 폴더(디멘션 카드·unit-N): 해제한 글(unitId null)은 넣지 않는다.
-                inFolder = storedUnitId != null && storedUnitId.equals(unitScopedId);
-            } else {
-                inFolder = ArchiveFolderClassifier.matches(
-                        classified, folderKey, comboMembers, units, registeredOn);
-                if (!inFolder && storedUnitId != null && folderKey.equalsIgnoreCase("s")
-                        && comboMembers != null && !comboMembers.isEmpty()) {
-                    inFolder = matchesStoredUnitMemberFilter(storedUnitId, comboMembers, units);
-                }
-            }
-            if (!inFolder) {
-                continue;
-            }
-            if (rowSource != null) sources.add(rowSource);
-            if (unclassifiedOnly) {
-                if (rowSource != null) continue;
-            } else if (source != null && (rowSource == null || !source.equalsIgnoreCase(rowSource))) {
-                continue;
-            }
-            matched.add(new SortRow(id, artistNames, registeredOn, (String) row[4]));
-        }
-        matched.sort(rowComparator(order));
-
-        int safeSize = Math.max(1, size);
-        int safePage = Math.max(0, page);
-        int fromIndex = safePage * safeSize;
-        Pageable pageable = PageRequest.of(safePage, safeSize);
-        if (fromIndex >= matched.size()) {
-            return new FolderBrowse(new PageImpl<>(List.of(), pageable, matched.size()), Set.copyOf(sources));
-        }
-        List<Long> pageIds = matched.subList(fromIndex, Math.min(matched.size(), fromIndex + safeSize)).stream()
-                .map(SortRow::id)
-                .toList();
-        return new FolderBrowse(new PageImpl<>(loadInOrder(pageIds), pageable, matched.size()), Set.copyOf(sources));
     }
 
     private static Long unitIdForMembers(Set<String> members, List<ArchiveFolderClassifier.UnitMembers> units) {
@@ -578,6 +473,12 @@ public class ArchiveService {
             return cached.value();
         }
         Specification<Archive> spec = archiveSpec(type, keyword, members, from, to, null, false, requireAllMembers);
+        Set<String> sources = distinctSources(spec);
+        sourcesCache.put(key, new CachedSources(sources, now));
+        return sources;
+    }
+
+    private Set<String> distinctSources(Specification<Archive> spec) {
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
         CriteriaQuery<String> query = cb.createQuery(String.class);
         Root<Archive> root = query.from(Archive.class);
@@ -585,11 +486,9 @@ public class ArchiveService {
         Predicate notNull = cb.isNotNull(root.get("source"));
         query.select(root.get("source")).distinct(true)
                 .where(base == null ? notNull : cb.and(base, notNull));
-        Set<String> sources = Set.copyOf(entityManager.createQuery(query).getResultList().stream()
+        return Set.copyOf(entityManager.createQuery(query).getResultList().stream()
                 .filter(Objects::nonNull)
                 .toList());
-        sourcesCache.put(key, new CachedSources(sources, now));
-        return sources;
     }
 
     private static Specification<Archive> archiveSpec(
@@ -693,32 +592,9 @@ public class ArchiveService {
             return cached.value();
         }
         Specification<Archive> spec = archivesAssignedToUnit(type, keyword, from, to, null, false, unitId);
-        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
-        CriteriaQuery<String> query = cb.createQuery(String.class);
-        Root<Archive> root = query.from(Archive.class);
-        Predicate base = spec.toPredicate(root, query, cb);
-        Predicate notNull = cb.isNotNull(root.get("source"));
-        query.select(root.get("source")).distinct(true)
-                .where(base == null ? notNull : cb.and(base, notNull));
-        Set<String> sources = Set.copyOf(entityManager.createQuery(query).getResultList().stream()
-                .filter(Objects::nonNull)
-                .toList());
+        Set<String> sources = distinctSources(spec);
         sourcesCache.put(key, new CachedSources(sources, now));
         return sources;
-    }
-
-    /** folder=s + 유닛 구성 멤버, 또는 folder=unit-N 이면 그 유닛 id. */
-    private static Long unitScopeId(String folderKey, List<String> comboMembers,
-                                    List<ArchiveFolderClassifier.UnitMembers> units) {
-        if (folderKey == null) return null;
-        String key = folderKey.trim();
-        if (key.toLowerCase(Locale.ROOT).startsWith("unit-")) {
-            return parseUnitFolderId(key);
-        }
-        if (!key.equalsIgnoreCase("s") || comboMembers == null || comboMembers.isEmpty()) return null;
-        Set<String> wanted = new LinkedHashSet<>(ArchiveFolderClassifier.membersOf(String.join(",", comboMembers)));
-        if (!ArchiveFolderClassifier.isExactUnitMemberSet(wanted, units)) return null;
-        return unitIdForMembers(wanted, units);
     }
 
     @Transactional(readOnly = true)

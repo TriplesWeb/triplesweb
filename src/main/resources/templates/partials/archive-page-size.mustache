@@ -1,0 +1,5 @@
+<select id="archivePageSize" name="size" aria-label="페이지당 개수">
+    {{#archiveSizeOptions}}
+    <option value="{{value}}"{{#selected}} selected{{/selected}}>{{label}}</option>
+    {{/archiveSizeOptions}}
+</select>

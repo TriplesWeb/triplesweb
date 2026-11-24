@@ -36,6 +36,18 @@ public final class ArchiveFolderClassifier {
         return ObjektFilterOrder.sortedMembers(MemberPortraitOptions.objektMembers(artistNames));
     }
 
+    public static int memberMask(String artistNames) {
+        int mask = 0;
+        for (String member : MemberPortraitOptions.objektMembers(artistNames)) {
+            mask |= 1 << MemberPortraitOptions.memberIndex(member);
+        }
+        return mask;
+    }
+
+    public static int memberRank(int mask) {
+        return Math.min(24, Integer.numberOfTrailingZeros(mask));
+    }
+
     public static Match classify(String artistNames, List<UnitMembers> units) {
         return classify(artistNames, units, null, null);
     }
@@ -128,9 +140,12 @@ public final class ArchiveFolderClassifier {
         if (folder == null) return null;
         Matcher matcher = COMBO_FOLDER.matcher(folder.trim());
         if (!matcher.matches()) return null;
-        int size = Integer.parseInt(matcher.group(1));
-        if (size < 2 || size > 23) return null;
-        return size;
+        try {
+            int size = Integer.parseInt(matcher.group(1));
+            return size >= 2 && size <= 23 ? size : null;
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
     }
 
     public static boolean matches(Match actual, String folder, List<String> comboMembers) {

@@ -8,6 +8,7 @@ import com.example.triplesweb.repository.ScheduleRepository;
 import com.example.triplesweb.service.AlbumService;
 import com.example.triplesweb.service.ArchiveService;
 import com.example.triplesweb.service.ArtistSnapshotService;
+import com.example.triplesweb.util.ArchiveCardImages;
 import com.example.triplesweb.util.SchedulePresentation;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -48,6 +49,8 @@ public class MainController {
     private final ArtistSnapshotService artistSnapshot;
     private final ObjectMapper objectMapper;
     private volatile Map<String, Object> homeSnapshot;
+
+    private record RecentPhoto(String title, String previewUrl) {}
 
     @EventListener(ApplicationReadyEvent.class)
     @Scheduled(fixedDelayString = "${home.cache.refresh-ms:30000}", initialDelay = 30000)
@@ -102,6 +105,7 @@ public class MainController {
         model.addAttribute("recentPhotos", archiveService.pageByType(MediaType.IMAGE, 0, HOME_ARCHIVE_LIMIT, null)
                 .getContent().stream()
                 .filter(photo -> photo.getFile() != null && photo.getFile().getUrl() != null)
+                .map(photo -> new RecentPhoto(photo.getTitle(), ArchiveCardImages.previewUrl(photo.getFile().getUrl())))
                 .toList());
         model.addAttribute("recentVideos", archiveService.pageByType(MediaType.VIDEO, 0, HOME_ARCHIVE_LIMIT, null)
                 .getContent());

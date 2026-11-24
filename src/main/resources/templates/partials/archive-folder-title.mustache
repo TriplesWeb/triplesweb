@@ -1,0 +1,5 @@
+{{#archiveFolderView}}{{#hasFolderTitle}}
+<h1 class="ar-folder-title{{#folderIsSolo}} is-solo{{/folderIsSolo}}" data-base-title="{{folderBaseTitle}}">{{#folderIsSolo}}<span class="ar-folder-num">{{folderTitleNumber}}</span> <span class="ar-folder-name">{{folderTitleName}}</span>{{/folderIsSolo}}{{^folderIsSolo}}{{folderTitle}}{{/folderIsSolo}}</h1>
+{{/hasFolderTitle}}{{^hasFolderTitle}}
+<h1>아카이브</h1>
+{{/hasFolderTitle}}{{/archiveFolderView}}

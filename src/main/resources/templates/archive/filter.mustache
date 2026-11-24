@@ -1,0 +1,12 @@
+<div id="archiveFilterResponse">
+    <div class="ar-headline"{{#folderAccent}} style="--folder-color: {{folderAccent}}"{{/folderAccent}}>
+                {{>partials/archive-folder-title}}
+    </div>
+    {{>partials/archive-type-tabs}}
+    {{>partials/archive-source-tabs}}
+    {{>partials/archive-page-size}}
+    <select id="archiveSort">
+        <option value="{{sortKey}}" selected></option>
+    </select>
+    {{>partials/archive-results}}
+</div>
