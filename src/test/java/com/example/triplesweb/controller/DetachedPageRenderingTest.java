@@ -127,7 +127,7 @@ class DetachedPageRenderingTest {
 
             Archive photo = new Archive("렌더링 아카이브", attachment);
             photo.setRegisteredOn(scheduleDate);
-            photo.setUnitId(unitId);
+            photo.setUnitIds(Set.of(unitId));
             photo.setArtistNames(artist.getName());
             entities.persist(photo);
         });
