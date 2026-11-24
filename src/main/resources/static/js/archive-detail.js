@@ -4,6 +4,7 @@
     const closeButton = detail.querySelector('.ar-detail-close');
     const photo = document.getElementById('archiveDetailPhoto') || detail.querySelector('.ar-detail-photo');
     const image = document.getElementById('archiveDetailImage');
+    const originalLink = document.getElementById('archiveDetailOriginalLink');
     const description = document.getElementById('archiveDetailDescription');
     const meta = document.getElementById('archiveDetailMeta');
     const date = document.getElementById('archiveDetailDate');
@@ -210,13 +211,33 @@
         photo?.classList.remove('is-pan');
     }
 
+    function detailVariantUrl(url) {
+        if (!url) return null;
+        try {
+            const local = new URL(url, window.location.href);
+            if (local.origin !== window.location.origin || !local.pathname.startsWith('/uploads/')) return null;
+            // GIF는 축소 JPEG로 바꾸면 애니메이션이 멈추므로 원본을 띄운다.
+            if (/\.gif$/i.test(local.pathname)) return null;
+            local.searchParams.set('w', '1600');
+            return local.pathname + local.search + local.hash;
+        } catch (_) {
+            return null;
+        }
+    }
+
     function showImage() {
         if (!image || !activeCard) return;
         const url = urls[index] || '';
         // 큰 틀(object-fit: contain) 안에 맞춰 넣고, cover/팬으로 잘리지 않게 한다.
         resetImageFrame();
         image.alt = descriptionText(activeCard) || '사진';
-        image.src = url;
+        const variant = detailVariantUrl(url);
+        image.src = variant || url;
+        if (originalLink) {
+            originalLink.parentElement.hidden = !variant;
+            if (variant) originalLink.href = url;
+            else originalLink.removeAttribute('href');
+        }
         showCast();
     }
 

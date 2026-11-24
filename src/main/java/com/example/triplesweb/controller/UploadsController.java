@@ -4,6 +4,7 @@ import com.example.triplesweb.entity.UploadBlob;
 import com.example.triplesweb.service.UploadContentStore;
 import com.example.triplesweb.service.UploadImageResizeService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.FileSystemResource;
@@ -17,6 +18,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.context.request.ServletWebRequest;
 
 import java.net.URI;
 import java.io.IOException;
@@ -25,6 +27,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 /**
  * {@code /uploads/**} 서빙. 로컬 파일이 없으면 공유 원본(운영) URL로 리다이렉트한다.
@@ -32,6 +35,9 @@ import java.util.Locale;
  */
 @RestController
 public class UploadsController {
+
+    private static final Pattern UUID_FILENAME = Pattern.compile(
+            "[0-9a-f]{32}(?:\\.card-[0-9]+\\.jpg|\\.[^.]+)?", Pattern.CASE_INSENSITIVE);
 
     private final Path uploadRoot;
     private final Path uploadRootReal;
@@ -62,7 +68,7 @@ public class UploadsController {
     }
 
     @RequestMapping(value = "/uploads/**", method = {RequestMethod.GET, RequestMethod.HEAD})
-    public ResponseEntity<Resource> serve(HttpServletRequest request) {
+    public ResponseEntity<Resource> serve(HttpServletRequest request, HttpServletResponse response) {
         String relative = relativeUploadPath(request);
         if (!StringUtils.hasText(relative)) {
             return ResponseEntity.notFound().build();
@@ -84,7 +90,7 @@ public class UploadsController {
             } catch (IOException e) {
                 return ResponseEntity.notFound().build();
             }
-            return fileResponse(maybeCardVariant(local, request), local);
+            return fileResponse(maybeCardVariant(local, request), local, request, response);
         }
 
         UploadBlob stored = uploadContentStore.find(relative).orElse(null);
@@ -98,14 +104,14 @@ public class UploadsController {
                 }
                 if (Files.isRegularFile(local) && Files.isReadable(local)
                         && local.toRealPath().startsWith(uploadRootReal)) {
-                    return fileResponse(maybeCardVariant(local, request), local);
+                    return fileResponse(maybeCardVariant(local, request), local, request, response);
                 }
             } catch (IOException ignored) {
                 // 디스크 캐시 실패 시 메모리 응답으로 이어간다.
             }
             MediaType type = imageType(relative, mediaType(stored.getContentType()));
             return ResponseEntity.ok()
-                    .header(HttpHeaders.CACHE_CONTROL, "public, max-age=86400")
+                    .header(HttpHeaders.CACHE_CONTROL, cacheControl(local))
                     .header("X-Content-Type-Options", "nosniff")
                     .header(HttpHeaders.CONTENT_DISPOSITION, safeDisposition(type))
                     .contentType(type)
@@ -132,16 +138,38 @@ public class UploadsController {
                 .build();
     }
 
-    private ResponseEntity<Resource> fileResponse(Path preferred, Path fallback) {
+    private ResponseEntity<Resource> fileResponse(Path preferred, Path fallback,
+                                                  HttpServletRequest request, HttpServletResponse response) {
         Path local = preferred != null ? preferred : fallback;
+        String cacheControl = cacheControl(fallback);
+        long lastModified;
+        try {
+            lastModified = Files.getLastModifiedTime(local).toMillis();
+        } catch (IOException e) {
+            return ResponseEntity.notFound().build();
+        }
+        if (new ServletWebRequest(request, response).checkNotModified(lastModified)) {
+            return ResponseEntity.status(response.getStatus())
+                    .header(HttpHeaders.CACHE_CONTROL, cacheControl)
+                    .lastModified(lastModified)
+                    .build();
+        }
+
         MediaType type = imageType(local.getFileName().toString(), MediaTypeFactory.getMediaType(local.getFileName().toString())
                 .orElse(MediaType.APPLICATION_OCTET_STREAM));
         return ResponseEntity.ok()
-                .header(HttpHeaders.CACHE_CONTROL, "public, max-age=86400")
+                .header(HttpHeaders.CACHE_CONTROL, cacheControl)
+                .lastModified(lastModified)
                 .header("X-Content-Type-Options", "nosniff")
                 .header(HttpHeaders.CONTENT_DISPOSITION, safeDisposition(type))
                 .contentType(type)
                 .body(new FileSystemResource(local));
+    }
+
+    private static String cacheControl(Path upload) {
+        return UUID_FILENAME.matcher(upload.getFileName().toString()).matches()
+                ? "public, max-age=31536000, immutable"
+                : "public, max-age=86400";
     }
 
     private Path maybeCardVariant(Path local, HttpServletRequest request) {

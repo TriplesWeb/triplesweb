@@ -50,7 +50,7 @@ public interface ArchiveRepository extends JpaRepository<Archive, Long>, JpaSpec
     @Query("""
             select a from Archive a
             where a.file.mediaType = :type and locate(lower(:keyword), lower(a.title)) > 0
-            order by case when a.registeredOn is null then 1 else 0 end, a.registeredOn desc, a.id desc
+            order by a.registeredOn desc, a.id desc
             """)
     List<Archive> searchLatestByType(@Param("type") MediaType type, @Param("keyword") String keyword, Pageable pageable);
 
