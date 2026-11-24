@@ -16,6 +16,7 @@ const urls={
   await page.addInitScript(()=>{window.tailwind={};});
    const posts=[], pageErrors=[];
    const decorations = [], decorationPosts = [];
+   const scheduleUpdates = new Map(), scheduleRanges = [];
    const decorationDate = new Date().toISOString().slice(0, 8) + '10';
   page.on('pageerror',error=>pageErrors.push(error.message));
   await page.context().addCookies([{name:'XSRF-TOKEN',value:'fixture-csrf',domain:'filters.test',path:'/'}]);
@@ -25,6 +26,15 @@ const urls={
    if(url.origin!=='https://filters.test')return route.fulfill({body:'',contentType:url.pathname.endsWith('.css')?'text/css':'application/javascript'});
    if(url.pathname==='/api/artist/admin/status')return route.fulfill({json:{configured:true,admin:true}});
     if(url.pathname==='/api/calendar-decorations/birthdays')return route.fulfill({status:503});
+    if(url.pathname==='/api/schedule/events'){
+     const start=url.searchParams.get('start'),end=url.searchParams.get('end');
+     scheduleRanges.push({start,end});
+     const fixture=fs.readFileSync(path.join(base,'build/filter-pages/schedule.html'),'utf8');
+     const initial=JSON.parse(fixture.match(/const injectedEvents = (\[.*\]);/)[1]);
+     const events=new Map(initial.map(item=>[item.id,item]));
+     scheduleUpdates.forEach((item,id)=>events.set(id,item));
+     return route.fulfill({json:[...events.values()].filter(item=>item.start<end&&(item.end?item.end>start:item.start>=start))});
+    }
     if(url.pathname==='/api/calendar-decorations'){
      if(request.method()==='POST'){
       decorationPosts.push(request.headers());
@@ -38,7 +48,9 @@ const urls={
     const params=new URLSearchParams(request.postData());posts.push({params,headers:request.headers()});
     const category=params.get('category'),title=params.get('title'),start=params.get('start')||params.get('startDate');
     const color=category==='ANNIVERSARY'?'#22aeff':'#f87171',categoryLabel=category==='ANNIVERSARY'?'기념일':'발매';
-    return route.fulfill({json:{id:posts.length===3?'43':'42',title,displayTitle:(category==='ANNIVERSARY'?'🎂 ':'')+title,start,end:null,rawEnd:null,artistNames:'윤서연',category,categoryLabel,color}});
+    const saved={id:posts.length===3?'43':'42',title,displayTitle:(category==='ANNIVERSARY'?'🎂 ':'')+title,start,end:null,rawEnd:null,artistNames:'윤서연',category,categoryLabel,color};
+    scheduleUpdates.set(saved.id,saved);
+    return route.fulfill({json:saved});
    }
    if(url.pathname.startsWith('/fixture/')){
     const name=url.pathname.slice('/fixture/'.length);
@@ -235,6 +247,13 @@ const urls={
    await page.goto('https://filters.test/fixture/schedule?focus=1');
    await page.locator('#viewScheduleModal.is-open').waitFor();
    assert.equal(await page.locator('#modalScheduleTitle').textContent(),'팬사인회');
+   await page.locator('#viewScheduleModal .site-modal-close').click();
+   const nextRange=page.waitForResponse(response=>new URL(response.url()).pathname==='/api/schedule/events');
+   await page.locator('#calendar .fc-next-button').click();
+   assert.equal((await nextRange).ok(),true);
+   const range=scheduleRanges.at(-1);
+   assert.match(range.start,/^\d{4}-\d{2}-\d{2}$/);
+   assert.ok((Date.parse(range.end)-Date.parse(range.start))/86400000<=42);
   console.log('통과: 시즌 버튼 색상·다중/단일 선택·동기화·동적 옵션·초기화·키보드·모바일 / 실제 FullCalendar·SiteUi 일정 분류·멤버색·케이크·CSRF·저장 후 수정');
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exit(1);});

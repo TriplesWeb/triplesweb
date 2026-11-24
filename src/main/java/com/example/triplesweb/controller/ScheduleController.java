@@ -6,14 +6,12 @@ import com.example.triplesweb.entity.ScheduleCategory;
 import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.util.SchedulePresentation;
 import java.util.Map;
-import java.util.Comparator;
 import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.repository.ScheduleRepository;
 import com.example.triplesweb.service.AboutAdminAuth;
+import com.example.triplesweb.service.ArtistSnapshotService;
 import com.example.triplesweb.service.ScheduleService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -25,7 +23,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
-import java.util.Arrays;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 @Controller
@@ -34,39 +32,63 @@ public class ScheduleController {
     private final ScheduleService scheduleService;
     private final ArtistRepository artistRepository;
     private final AboutAdminAuth aboutAdminAuth;
+    private final ArtistSnapshotService artistSnapshot;
+    private final ObjectMapper objectMapper;
 
     public ScheduleController(ScheduleService scheduleService,
                               ScheduleRepository scheduleRepository,
                               ArtistRepository artistRepository,
-                              AboutAdminAuth aboutAdminAuth) {
+                              AboutAdminAuth aboutAdminAuth,
+                              ArtistSnapshotService artistSnapshot,
+                              ObjectMapper objectMapper) {
         this.scheduleService = scheduleService;
         this.scheduleRepository = scheduleRepository;
         this.artistRepository = artistRepository;
         this.aboutAdminAuth = aboutAdminAuth;
+        this.artistSnapshot = artistSnapshot;
+        this.objectMapper = objectMapper;
     }
 
     @GetMapping("/schedule")
     public String showSchedulePage(@RequestParam(value = "artist", required = false) String artist,
+                                   @RequestParam(required = false) Long focus,
+                                   @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
                                    HttpServletRequest request,
                                    HttpSession session,
                                    Model model) throws Exception {
-        List<Schedule> all = scheduleService.findAll();
-        List<Schedule> schedules = artist == null || artist.isBlank()
-                ? all
-                : all.stream().filter(s -> splitNames(s.getArtistNames()).contains(artist)).toList();
-        List<Artist> artists=artistRepository.findAll().stream().sorted(Comparator.comparing(Artist::getArtistId,Comparator.nullsLast(Comparator.naturalOrder()))).toList();
-        List<ScheduleForm> dtos=schedules.stream().map(schedule->SchedulePresentation.form(schedule,artists)).toList();
-        ObjectMapper mapper = new ObjectMapper()
-                .registerModule(new JavaTimeModule())
-                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        model.addAttribute("schedules", dtos);
-        model.addAttribute("schedulesJson", mapper.writeValueAsString(dtos).replace("<", "\\u003c").replace("&", "\\u0026"));
+        LocalDate requestedDate = focus == null ? date : scheduleRepository.findStartById(focus).orElse(date);
+        LocalDate initialDate = requestedDate == null ? LocalDate.now() : requestedDate;
+        LocalDate first = initialDate.withDayOfMonth(1);
+        LocalDate start = first.minusDays(6);
+        LocalDate end = first.plusMonths(1).plusDays(6);
+        String selectedArtist = artist == null || artist.isBlank() ? null : artist;
+        List<Artist> artists = artistSnapshot.findAll();
+        List<ScheduleForm> dtos = scheduleService.findOverlapping(start, end, selectedArtist).stream()
+                .map(schedule -> SchedulePresentation.form(schedule, artists)).toList();
+        model.addAttribute("schedulesJson", objectMapper.writeValueAsString(dtos).replace("<", "\\u003c").replace("&", "\\u0026"));
+        model.addAttribute("scheduleInitialDate", requestedDate == null ? "" : requestedDate.toString());
+        model.addAttribute("scheduleInitialStart", start.toString());
+        model.addAttribute("scheduleInitialEnd", end.toString());
         model.addAttribute("isAdmin", aboutAdminAuth.isAdmin(request, session));
         model.addAttribute("artistOptions", artists);
         model.addAttribute("scheduleCategories", SchedulePresentation.categories());
         // Mustache는 빈 문자열도 section을 렌더하므로, 필터 없을 때는 null로 둔다.
-        model.addAttribute("selectedArtist", artist == null || artist.isBlank() ? null : artist);
+        model.addAttribute("selectedArtist", selectedArtist);
         return "schedule";
+    }
+
+    @GetMapping("/api/schedule/events")
+    @ResponseBody
+    public List<ScheduleForm> events(@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
+                                     @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end,
+                                     @RequestParam(required = false) String artist) {
+        if (!start.isBefore(end) || ChronoUnit.DAYS.between(start, end) > 62) {
+            throw new IllegalArgumentException("일정 조회 범위는 1~62일이어야 합니다.");
+        }
+        List<Artist> artists = artistSnapshot.findAll();
+        return scheduleService.findOverlapping(start, end, artist == null || artist.isBlank() ? null : artist).stream()
+                .map(schedule -> SchedulePresentation.form(schedule, artists))
+                .toList();
     }
 
     @GetMapping("/schedule/{id}")
@@ -125,11 +147,6 @@ public class ScheduleController {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<?> invalidSchedule(IllegalArgumentException error) {
         return ResponseEntity.badRequest().body(Map.of("message",error.getMessage()));
-    }
-
-    private List<String> splitNames(String names) {
-        if (names == null || names.isBlank()) return List.of();
-        return Arrays.stream(names.split(",")).map(String::trim).filter(s -> !s.isBlank()).toList();
     }
 
     private String scheduleFocus(Long id) {

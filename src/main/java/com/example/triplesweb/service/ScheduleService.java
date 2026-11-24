@@ -43,6 +43,11 @@ public class ScheduleService {
     }
 
     @Transactional(readOnly = true)
+    public List<Schedule> findOverlapping(LocalDate start, LocalDate exclusiveEnd, String artist) {
+        return scheduleRepository.findOverlapping(start, exclusiveEnd, artist);
+    }
+
+    @Transactional(readOnly = true)
     public Schedule findById(String idStr) {
         Long id = Long.parseLong(idStr);
         return scheduleRepository.findById(id)

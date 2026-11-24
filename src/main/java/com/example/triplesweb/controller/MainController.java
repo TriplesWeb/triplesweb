@@ -10,8 +10,6 @@ import com.example.triplesweb.service.ArchiveService;
 import com.example.triplesweb.service.ArtistSnapshotService;
 import com.example.triplesweb.util.SchedulePresentation;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
@@ -19,9 +17,11 @@ import org.springframework.ui.Model;
 import org.springframework.ui.ExtendedModelMap;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.GetMapping;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Controller
@@ -47,6 +46,7 @@ public class MainController {
     private final ArchiveService archiveService;
     private final AlbumService albumService;
     private final ArtistSnapshotService artistSnapshot;
+    private final ObjectMapper objectMapper;
     private volatile Map<String, Object> homeSnapshot;
 
     @EventListener(ApplicationReadyEvent.class)
@@ -80,19 +80,18 @@ public class MainController {
 
     private void populateHome(Model model) {
 
-        List<Schedule> scheduleList = scheduleRepository.findAllWithArtists();
+        LocalDate today = LocalDate.now();
+        YearMonth month = YearMonth.from(today);
+        LocalDate first = month.atDay(1);
         var artists = artistSnapshot.findAll();
-        List<ScheduleForm> scheduleForms = scheduleList.stream()
+        List<CalendarDot> monthSchedules = scheduleRepository.findOverlapping(first, first.plusMonths(1), null).stream()
                 .map(schedule -> SchedulePresentation.form(schedule, artists))
-                .collect(Collectors.toList());
-
-        ObjectMapper mapper = new ObjectMapper()
-                .registerModule(new JavaTimeModule())
-                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+                .map(form -> new CalendarDot(form.getStart(), form.getEnd(), form.getDisplayTitle(), form.getColor()))
+                .toList();
 
         String schedulesJson = "[]";
         try {
-            schedulesJson = mapper.writeValueAsString(scheduleForms)
+            schedulesJson = objectMapper.writeValueAsString(monthSchedules)
                     .replace("<", "\\u003c")
                     .replace("&", "\\u0026");
         } catch (Exception ignored) {}
@@ -107,12 +106,20 @@ public class MainController {
         model.addAttribute("recentVideos", archiveService.pageByType(MediaType.VIDEO, 0, HOME_ARCHIVE_LIMIT, null)
                 .getContent());
         model.addAttribute("schedulesJson", schedulesJson);
-        List<Map<String, String>> upcoming = upcomingSchedules(scheduleForms);
+        model.addAttribute("homeScheduleMonth", month.toString());
+        List<LocalDate> upcomingStarts = scheduleRepository.findUpcomingStartDates(today, PageRequest.of(0, HOME_UPCOMING_LIMIT));
+        List<Map<String, String>> upcoming = upcomingStarts.isEmpty() ? List.of()
+                : upcomingSchedules(scheduleRepository.findOverlapping(today,
+                                upcomingStarts.get(upcomingStarts.size() - 1).plusDays(1), null).stream()
+                        .map(schedule -> SchedulePresentation.form(schedule, artists))
+                        .toList());
         model.addAttribute("upcomingSchedules", upcoming);
         model.addAttribute("hasUpcomingSchedules", !upcoming.isEmpty());
         model.addAttribute("isHomePage", true);
 
     }
+
+    private record CalendarDot(LocalDate start, LocalDate end, String title, String color) {}
 
     static List<Map<String, String>> upcomingSchedules(List<ScheduleForm> scheduleForms) {
         LocalDate today = LocalDate.now();

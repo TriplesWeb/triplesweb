@@ -42,7 +42,7 @@
         <section class="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
             <div class="lg:col-span-8">
                 <div class="schedule-legend" aria-label="일정 분류 색상"><span style="--schedule-color:#a78bfa">팬사인회</span><span style="--schedule-color:#fb923c">방송</span><span style="--schedule-color:#00f5d4">🎂 기념일 · 멤버색</span><span style="--schedule-color:#f87171">발매</span><span style="--schedule-color:#7dd3fc">행사</span></div>
-                <div id="calendar" aria-label="공식 스케줄 캘린더"{{#selectedArtist}} data-selected-artist="{{selectedArtist}}"{{/selectedArtist}}></div>
+                <div id="calendar" aria-label="공식 스케줄 캘린더" data-initial-date="{{scheduleInitialDate}}" data-initial-start="{{scheduleInitialStart}}" data-initial-end="{{scheduleInitialEnd}}"{{#selectedArtist}} data-selected-artist="{{selectedArtist}}"{{/selectedArtist}}></div>
             </div>
 
             <aside class="space-y-5 lg:col-span-4">
@@ -471,8 +471,10 @@
             }
 
             const selectedArtist = calendarElement.dataset.selectedArtist;
-            const matchesSelectedArtist = names => !selectedArtist
-                || String(names || '').split(',').some(name => name.trim() === selectedArtist);
+            const query = new URLSearchParams(window.location.search);
+            const initialDate = calendarElement.dataset.initialDate || calendarDate(new Date());
+            let initialEvents = getCalendarEvents();
+            let pendingFocus = query.get('focus');
 
             bindCategoryPreview('add','titleInput','addArtistNames');
             bindCategoryPreview('edit','editTitleInput','editArtistNames');
@@ -493,7 +495,7 @@
                     }
                 }, true);
             });
-            let selectedDay = new Date();
+            let selectedDay = new Date(initialDate + 'T00:00:00');
 
             function renderSelectedDate(dateObject) {
                 selectedDay = dateObject;
@@ -628,7 +630,21 @@
                 }
             };
             const eventSources = [
-                getCalendarEvents().map(toCalendarEvent),
+                {
+                    id: 'schedules',
+                    async events(fetchInfo) {
+                        const start = calendarDate(fetchInfo.start);
+                        const end = calendarDate(fetchInfo.end);
+                        if (initialEvents && start >= calendarElement.dataset.initialStart
+                                && end <= calendarElement.dataset.initialEnd) {
+                            return initialEvents.filter(item => item.start < end && (item.end
+                                ? item.end > start : item.start >= start)).map(toCalendarEvent);
+                        }
+                        const params = new URLSearchParams({ start, end });
+                        if (selectedArtist) params.set('artist', selectedArtist);
+                        return (await fetchCalendarItems('/api/schedule/events?' + params)).map(toCalendarEvent);
+                    }
+                },
                 {
                     async events(fetchInfo) {
                         // FullCalendar의 종료일은 제외되지만 생일 API는 종료일까지 조회한다.
@@ -645,6 +661,7 @@
 
             const calendar = new FullCalendar.Calendar(calendarElement, {
                 initialView: 'dayGridMonth',
+                initialDate,
                 locale: 'ko',
                 height: 'auto',
                 dayMaxEvents: window.matchMedia('(max-width: 600px)').matches ? 2 : 3,
@@ -687,27 +704,45 @@
                 dateClick: function (info) {
                     renderSelectedDate(info.date);
                 },
+                datesSet: function (info) {
+                    if (selectedDay < info.view.currentStart || selectedDay >= info.view.currentEnd) {
+                        renderSelectedDate(info.view.currentStart);
+                    }
+                },
                 eventClick: function (info) {
                     info.jsEvent.preventDefault();
                     renderSelectedDate(info.event.start);
                     openEventDetails(info.event);
                 },
-                eventsSet: () => renderSelectedDate(selectedDay)
+                eventsSet: () => {
+                    const focused = pendingFocus && calendar.getEventById(pendingFocus);
+                    if (focused) {
+                        pendingFocus = null;
+                        renderSelectedDate(focused.start);
+                        if (query.get('edit') === 'true' && document.getElementById('editBtn')) {
+                            fillEditForm(focused);
+                            scheduleModal(editModalElement).show();
+                        } else {
+                            openEventDetails(focused);
+                        }
+                    } else {
+                        renderSelectedDate(selectedDay);
+                    }
+                }
             });
 
             calendar.render();
             renderSelectedDate(selectedDay);
-            const query = new URLSearchParams(window.location.search);
-            const focused = query.has('focus') ? calendar.getEventById(query.get('focus')) : null;
-            if (focused) {
-                calendar.gotoDate(focused.start);
-                renderSelectedDate(focused.start);
-                if (query.get('edit') === 'true' && document.getElementById('editBtn')) {
-                    fillEditForm(focused);
-                    scheduleModal(editModalElement).show();
+
+            function refreshSchedules(date) {
+                initialEvents = null;
+                const current = calendar.getDate();
+                if (current.getFullYear() === date.getFullYear() && current.getMonth() === date.getMonth()) {
+                    calendar.getEventSourceById('schedules').refetch();
                 } else {
-                    openEventDetails(focused);
+                    calendar.gotoDate(date);
                 }
+                renderSelectedDate(date);
             }
             {{#isAdmin}}
             if (query.get('add') === 'true') showAddModal();
@@ -757,12 +792,9 @@
                             return;
                         }
 
-                        const saved=await response.json();
-                        if (matchesSelectedArtist(saved.artistNames)) calendar.addEvent(toCalendarEvent(saved));
-
                         hideScheduleModalThen(addModalElement);
                         addForm.reset();
-                        renderSelectedDate(new Date(`${start}T00:00:00`));
+                        refreshSchedules(new Date(`${start}T00:00:00`));
                     } catch (error) {
                         console.error('스케줄 추가 오류:', error);
                         window.SiteFeedback.alert('서버 통신 중 오류가 발생했습니다.');
@@ -808,13 +840,8 @@
                             return;
                         }
 
-                        const saved = await response.json();
-                        const eventToUpdate=calendar.getEventById(id);
-                        if(eventToUpdate)eventToUpdate.remove();
-                        if (matchesSelectedArtist(saved.artistNames)) calendar.addEvent(toCalendarEvent(saved));
-
                         hideScheduleModalThen(editModalElement);
-                        renderSelectedDate(new Date(`${start}T00:00:00`));
+                        refreshSchedules(new Date(`${start}T00:00:00`));
                     } catch (error) {
                         console.error('스케줄 수정 오류:', error);
                         window.SiteFeedback.alert('서버 통신 중 오류가 발생했습니다.');

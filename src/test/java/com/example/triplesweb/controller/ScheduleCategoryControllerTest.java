@@ -29,6 +29,7 @@ class ScheduleCategoryControllerTest {
     @MockitoBean ScheduleService service;
     @MockitoBean ScheduleRepository repository;
     @MockitoBean ArtistRepository artists;
+    @MockitoBean ArtistSnapshotService artistSnapshot;
     @MockitoBean AboutAdminAuth auth;
     Artist artist;
     LocalDate day=LocalDate.now();
@@ -39,8 +40,9 @@ class ScheduleCategoryControllerTest {
     @BeforeEach void setup() {
         artist=new Artist();artist.setArtistId(1L);artist.setName("윤서연");artist.setEngName("SeoYeon");artist.setColor("#22aeff");
         when(artists.findAll()).thenReturn(List.of(artist));
+        when(artistSnapshot.findAll()).thenReturn(List.of(artist));
         when(auth.isAdmin(any(),any())).thenReturn(true);
-        when(service.findAll()).thenReturn(List.of(
+        when(service.findOverlapping(any(), any(), isNull())).thenReturn(List.of(
             schedule(1,"팬사인회",ScheduleCategory.FANSIGN),schedule(2,"방송",ScheduleCategory.BROADCAST),
             schedule(3,"윤서연 생일",ScheduleCategory.ANNIVERSARY),schedule(4,"음원 발매",ScheduleCategory.RELEASE),schedule(5,"행사",ScheduleCategory.EVENT)));
     }
@@ -70,10 +72,31 @@ class ScheduleCategoryControllerTest {
         verify(service,never()).save(anyString(),any(),any(),anyString(),any());
     }
     @Test void titlesCannotBreakOutOfEmbeddedJson() throws Exception {
-        when(service.findAll()).thenReturn(List.of(schedule(9,"</script><script>window.scheduleInjected=true</script>",ScheduleCategory.OTHER)));
+        when(service.findOverlapping(any(), any(), isNull()))
+                .thenReturn(List.of(schedule(9,"</script><script>window.scheduleInjected=true</script>",ScheduleCategory.OTHER)));
         String html=mvc.perform(get("/schedule")).andExpect(status().isOk()).andReturn().getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
         assertThat(html).doesNotContain("</script><script>window.scheduleInjected=true");
         assertThat(html).contains("\\u003c/script>");
+    }
+
+    @Test void dateRangeEndpointPassesDatesAndArtistToTheDatabaseQuery() throws Exception {
+        LocalDate start = LocalDate.parse("2026-11-01");
+        LocalDate end = LocalDate.parse("2026-12-01");
+        when(service.findOverlapping(start, end, "윤서연")).thenReturn(List.of(schedule(1,"일정",ScheduleCategory.EVENT)));
+        mvc.perform(get("/api/schedule/events").param("start", start.toString()).param("end", end.toString())
+                        .param("artist", "윤서연"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].id").value("1"));
+        verify(service).findOverlapping(start, end, "윤서연");
+        mvc.perform(get("/api/schedule/events").param("start",start.toString()).param("end","2027-05-01"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test void openingOlderScheduleStartsWithItsMonth() throws Exception {
+        when(repository.findStartById(42L)).thenReturn(Optional.of(LocalDate.parse("2025-03-17")));
+        mvc.perform(get("/schedule").param("focus", "42"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("data-initial-date=\"2025-03-17\"")));
+        verify(service).findOverlapping(LocalDate.parse("2025-02-23"), LocalDate.parse("2025-04-07"), null);
     }
 
     @Test void artistFilterBannerOnlyWhenArtistSelected() throws Exception {
