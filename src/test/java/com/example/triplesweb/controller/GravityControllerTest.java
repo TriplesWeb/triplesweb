@@ -11,6 +11,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.context.annotation.Import;
 import com.example.triplesweb.config.MustacheConfig;
 
+import java.util.Optional;
+
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -24,7 +26,7 @@ class GravityControllerTest {
         when(service.hasCosmoToken()).thenReturn(true);
         java.util.List<java.util.Map<String,Object>> items=new java.util.ArrayList<>();
         for(int i=1;i<=3;i++)items.add(java.util.Map.of("id",(long)i,"title","그래비티 "+i,"statusLabel",i==1?"진행 중":"종료","type",i==1?"유닛":"타이틀","detailUrl","/cosmo/gravity/"+i,"hasComo",true,"comoUsed",i==1?100L:i==2?300L:200L,"periodLabel","2026-10"));
-        when(service.fetchGravityList("tripleS")).thenReturn(items);
+        when(service.fetchGravityListForPage("tripleS")).thenReturn(Optional.of(items));
         var result=mvc.perform(get("/cosmo/gravity")).andExpect(status().isOk()).andExpect(content().string(containsString("data-objekt-dropdown"))).andReturn();
         java.nio.file.Files.createDirectories(java.nio.file.Path.of("build/perf-pages"));
         java.nio.file.Files.writeString(java.nio.file.Path.of("build/perf-pages/gravity.html"),result.getResponse().getContentAsString());
@@ -42,7 +44,7 @@ class GravityControllerTest {
 
     @Test void listPageUsesLiveItemsWithoutDesignPlaceholders() throws Exception {
         when(service.hasCosmoToken()).thenReturn(true);
-        when(service.fetchGravityList("tripleS")).thenReturn(java.util.List.of(java.util.Map.of(
+        when(service.fetchGravityListForPage("tripleS")).thenReturn(Optional.of(java.util.List.of(java.util.Map.of(
                 "id", 21L,
                 "title", "Actual Gravity",
                 "description", "API description",
@@ -53,7 +55,7 @@ class GravityControllerTest {
                 "comoUsed", 120L,
                 "entireStartDate", "2026-10-01",
                 "entireEndDate", "2026-10-02"
-        )));
+        ))));
         mvc.perform(get("/cosmo/gravity")).andExpect(status().isOk())
                 .andExpect(content().string(containsString("Actual Gravity")))
                 .andExpect(content().string(containsString("API description")))
@@ -66,24 +68,24 @@ class GravityControllerTest {
 
     @Test void listUsesTripleSAndLoadsHeaderIconFont() throws Exception {
         when(service.hasCosmoToken()).thenReturn(true);
-        when(service.fetchGravityList("tripleS")).thenReturn(java.util.List.of());
+        when(service.fetchGravityListForPage("tripleS")).thenReturn(Optional.of(java.util.List.of()));
         mvc.perform(get("/cosmo/gravity?artistId=artms")).andExpect(status().isOk())
                 .andExpect(content().string(containsString("/fonts/site-icons.ttf")))
                 .andExpect(content().string(not(containsString("cdn.tailwindcss.com"))))
                 .andExpect(content().string(containsString("siteAdminLoginForm")))
                 .andExpect(content().string(not(containsString("href=\"?artistId=artms\""))))
                 .andExpect(content().string(not(containsString("href=\"?artistId=idntt\""))));
-        verify(service).fetchGravityList("tripleS");
-        verify(service, never()).fetchGravityList("artms");
+        verify(service).fetchGravityListForPage("tripleS");
+        verify(service, never()).fetchGravityListForPage("artms");
     }
 
     @Test void listAndRecentCardsHideIdsAndShowKoreanTimeWithStatusPills() throws Exception {
         when(service.hasCosmoToken()).thenReturn(true);
-        when(service.fetchGravityList("tripleS")).thenReturn(java.util.List.of(java.util.Map.of(
+        when(service.fetchGravityListForPage("tripleS")).thenReturn(Optional.of(java.util.List.of(java.util.Map.of(
                 "id", 21L, "title", "한국 시간 그래비티", "statusLabel", "진행 중", "type", "grand-gravity",
                 "detailUrl", "/cosmo/gravity/21", "hasComo", true, "comoUsed", 10L,
                 "entireStartDate", "2026-07-28T01:00:00.000Z",
-                "entireEndDate", "2026-07-28T13:00:00.000Z")));
+                "entireEndDate", "2026-07-28T13:00:00.000Z"))));
         mvc.perform(get("/cosmo/gravity")).andExpect(status().isOk())
                 .andExpect(content().string(containsString("gv-status--ongoing")))
                 .andExpect(content().string(containsString("2026-07-28 10:00 ~ 22:00")))
@@ -147,6 +149,14 @@ class GravityControllerTest {
         when(service.fetchGravityDetails(21)).thenReturn(gravity);
         when(service.toMap(any())).thenReturn(java.util.Map.of());
         mvc.perform(get("/cosmo/gravity/21?pollId=76")).andExpect(status().isNotFound());
+    }
+
+    @Test void pendingListRendersExistingNoticeWithRefreshGuidance() throws Exception {
+        when(service.hasCosmoToken()).thenReturn(true);
+        when(service.fetchGravityListForPage("tripleS")).thenReturn(Optional.empty());
+        mvc.perform(get("/gravity")).andExpect(status().isOk())
+                .andExpect(content().string(containsString("그래비티 목록을 준비 중입니다. 잠시 후 새로고침해 주세요.")))
+                .andExpect(content().string(not(containsString("등록된 그래비티가 없습니다."))));
     }
 
     @Test void apiRejectsInvalidArtistAndReturnsSanitizedConfigurationError() throws Exception {

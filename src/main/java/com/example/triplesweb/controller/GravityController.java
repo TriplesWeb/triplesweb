@@ -18,8 +18,12 @@ public class GravityController {
     public String gravity(Model model) {
         try {
             if (service.hasCosmoToken()) {
-                List<Map<String, Object>> list = service.fetchGravityList("tripleS").stream()
-                        .map(GravityDisplay::gravity).toList();
+                var cached = service.fetchGravityListForPage("tripleS");
+                if (cached.isEmpty()) {
+                    model.addAttribute("gravityListError", "그래비티 목록을 준비 중입니다. 잠시 후 새로고침해 주세요.");
+                    return "cosmo/gravity";
+                }
+                List<Map<String, Object>> list = cached.get().stream().map(GravityDisplay::gravity).toList();
                 model.addAttribute("gravityList", list);
                 model.addAttribute("emptyList", list.isEmpty());
                 model.addAttribute("hasGravityList", !list.isEmpty());

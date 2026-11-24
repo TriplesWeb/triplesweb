@@ -31,14 +31,17 @@ import java.util.EnumSet;
 /** Server-only COSMO credentials. JWT expiry is a refresh hint, not authentication. */
 @Component
 public class CosmoTokenProvider {
+    private static final String CREDENTIALS_READ_ERROR =
+            "COSMO 인증 파일을 읽을 수 없습니다. 서버 설정을 확인해 주세요.";
+
     private final RestClient client;
     private final ObjectMapper mapper;
     private final String baseUrl;
     private final String encryptionKey;
     private final Path credentialsFile;
-    private String accessToken;
-    private String refreshToken;
-    private boolean loaded;
+    private volatile String accessToken;
+    private volatile String refreshToken;
+    private volatile boolean loaded;
 
     @org.springframework.beans.factory.annotation.Autowired
     public CosmoTokenProvider(RestClient.Builder builder, ObjectMapper mapper,
@@ -62,6 +65,11 @@ public class CosmoTokenProvider {
         this.encryptionKey = encryptionKey.isBlank()
                 ? "aUkaF3wWVltAI1QYVmxsZXfTV6L7mPTxA5+MMkLV9DE=" : encryptionKey.trim();
         this.credentialsFile = Path.of(credentialsFile).toAbsolutePath();
+        try {
+            load();
+        } catch (IllegalStateException ignored) {
+            // Keep startup available; requests report the credential error until reconnected.
+        }
     }
 
     static SimpleClientHttpRequestFactory requestFactory() {
@@ -71,8 +79,13 @@ public class CosmoTokenProvider {
         return factory;
     }
 
-    public synchronized boolean isConfigured() {
-        load();
+    public boolean isConfigured() {
+        // 기동 시 읽기에 실패했을 때만 잠금을 잡고 다시 읽는다. 평소에는 갱신 잠금을 기다리지 않는다.
+        if (!loaded) {
+            synchronized (this) {
+                load();
+            }
+        }
         return !accessToken.isBlank() || !refreshToken.isBlank();
     }
 
@@ -96,7 +109,7 @@ public class CosmoTokenProvider {
                 accessToken = credentials.path("accessToken").asText("");
                 refreshToken = credentials.path("refreshToken").asText("");
             } catch (Exception e) {
-                throw new IllegalStateException("COSMO 인증 파일을 읽을 수 없습니다. 서버 설정을 확인해 주세요.");
+                throw new IllegalStateException(CREDENTIALS_READ_ERROR);
             }
         }
         loaded = true;

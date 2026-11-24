@@ -44,6 +44,7 @@ grep -Fq 'migrate-chemistry-photos-on-pi.sh' .github/workflows/deploy-main.yml
 reject_match -Fq 'rsync -az' .github/workflows/deploy-main.yml
 reject_match -Fq 'COPY scripts ./scripts' Dockerfile
 grep -Fq 'COPY scripts/setup-css.sh scripts/build-*css.cjs' Dockerfile
+grep -Fxq 'ENTRYPOINT ["java", "-XX:MaxRAMPercentage=50", "-XX:InitialRAMPercentage=5", "-XX:+ExitOnOutOfMemoryError", "-XX:+UseStringDeduplication", "-jar", "/app/app.war"]' Dockerfile
 grep -Fq -- "- '.github/**'" .github/workflows/deploy-main.yml
 python3 scripts/ci-path-filter.py --self-test
 test ! -e docker-compose.bluegreen.yml

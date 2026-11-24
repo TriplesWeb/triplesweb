@@ -114,14 +114,7 @@ public class EventService {
 
     @Transactional(readOnly = true)
     public Event getDetail(long eventId) {
-        Event event = eventRepository.findById(eventId)
+        return eventRepository.findByIdWithSectionAndStops(eventId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 이벤트가 존재하지 않습니다. id=" + eventId));
-        if (event.getSection() != null) {
-            event.getSection().getName();
-        }
-        if (event.getStops() != null) {
-            event.getStops().size();
-        }
-        return event;
     }
 }

@@ -128,16 +128,11 @@ public class AlbumService {
 
     @Transactional(readOnly = true)
     public Album getDetail(long albumId) {
-        Album album = albumRepository.findById(albumId)
+        Album album = albumRepository.findByIdWithTracks(albumId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 앨범이 존재하지 않습니다. id=" + albumId));
+        // Initialize these separately to avoid multiplying rows or joining two bag collections.
         if (album.getUnit() != null && album.getUnit().getSubUnits() != null) {
             album.getUnit().getSubUnits().size();
-        }
-        if (album.getTracks() != null) {
-            album.getTracks().size();
-        }
-        if (album.getSection() != null) {
-            album.getSection().getName();
         }
         if (album.getArtists() != null) {
             album.getArtists().size();
