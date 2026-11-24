@@ -281,9 +281,10 @@ public class ObjektChainMintService {
     }
 
     private long cursor(boolean lock) {
-        return jdbc.query("SELECT next_block FROM objekt_mint_cursor WHERE chain_id = ? AND contract = ?"
+        Long nextBlock = jdbc.query("SELECT next_block FROM objekt_mint_cursor WHERE chain_id = ? AND contract = ?"
                         + (lock ? " FOR UPDATE" : ""),
-                rows -> rows.next() ? rows.getLong(1) : -1L, chainId, contract);
+                rows -> rows.next() ? rows.getLong(1) : null, chainId, contract);
+        return nextBlock == null ? -1L : nextBlock;
     }
 
     private Commit store(long expected, long end, Batch batch) {
