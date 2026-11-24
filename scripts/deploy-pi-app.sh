@@ -96,6 +96,7 @@ run_deploy() {
   fi
 
   pull_image
+  mkdir -p -m 0750 logs || fail "Could not prepare the app log directory. The running app was left in place."
   start="$SECONDS"
   if [[ -n "$current" ]]; then
     "${COMPOSE[@]}" stop -t "$STOP_TIMEOUT_SECONDS" app

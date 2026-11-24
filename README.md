@@ -118,6 +118,8 @@ DB를 서버와 같이 쓰면 **파일도 같이** 보여야 합니다.
 
 Pi는 **MariaDB와 단일 운영 앱(8090)**을 실행합니다. PR에서는 CI 검사만 수행하고, `main` 머지 후 이미지 준비가 끝나면 기존 앱을 종료하고 새 앱을 기동합니다. 새 앱이 준비될 때까지 사이트 이용이 잠시 중단됩니다. [운영 배포 가이드](docs/DEPLOYMENT.md)
 
+운영 앱 로그는 Pi의 `$PI_DEPLOY_PATH/logs/triplesweb.log`에 남으며, 압축 이력은 최근 30일 범위에서 최대 1GB까지 보관합니다. 배포 디렉터리에서 `tail -F logs/triplesweb.log`로 현재 로그를 확인하세요.
+
 ```text
 PR open/push    → CI tests (Java/WAR, CSS/브라우저, Qodana) → 통과 시 머지 가능
 main 머지       → 이미지 준비 → 기존 앱 종료 → 새 앱 기동·Flyway 실행 → readiness 확인
