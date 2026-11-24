@@ -1,5 +1,6 @@
 package com.example.triplesweb.entity;
 
+import com.example.triplesweb.util.ArchiveFolderClassifier;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -50,6 +51,26 @@ public class Archive {
     /** 사진 순서와 맞춘 출연 멤버 JSON 배열. 각 항목은 쉼표로 구분한 이름. */
     @Column(name = "image_artists_json", columnDefinition = "TEXT")
     private String imageArtistsJson;
+
+    @Column(name = "cast_member_mask", nullable = false)
+    @Setter(AccessLevel.NONE)
+    private int castMemberMask;
+
+    @Column(name = "cast_member_count", nullable = false)
+    @Setter(AccessLevel.NONE)
+    private int castMemberCount;
+
+    @Column(name = "cast_member_rank", nullable = false)
+    @Setter(AccessLevel.NONE)
+    private int castMemberRank = 24;
+
+    @PrePersist
+    @PreUpdate
+    private void updateCastIndex() {
+        castMemberMask = ArchiveFolderClassifier.memberMask(artistNames);
+        castMemberCount = Integer.bitCount(castMemberMask);
+        castMemberRank = ArchiveFolderClassifier.memberRank(castMemberMask);
+    }
 
     @Embedded
     private SavedMeta file;
