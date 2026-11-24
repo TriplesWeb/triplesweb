@@ -13,8 +13,14 @@ record AbstractTransferLog(
         long tokenId,
         String fromAddress,
         String toAddress,
-        Long blockTimestamp
+        Long blockTimestamp,
+        String blockHash
 ) {
+    AbstractTransferLog(long blockNumber, int logIndex, String txHash, long tokenId,
+                        String fromAddress, String toAddress, Long blockTimestamp) {
+        this(blockNumber, logIndex, txHash, tokenId, fromAddress, toAddress, blockTimestamp, "");
+    }
+
     static List<AbstractTransferLog> parse(JsonNode logs) {
         List<AbstractTransferLog> rows = new ArrayList<>();
         if (logs == null || !logs.isArray()) return rows;
@@ -30,7 +36,8 @@ record AbstractTransferLog(
                         hexLong(topics.get(3).asText()),
                         address(topics.get(1).asText()),
                         address(topics.get(2).asText()),
-                        log.hasNonNull("blockTimestamp") ? hexLong(log.path("blockTimestamp").asText()) : null
+                        log.hasNonNull("blockTimestamp") ? hexLong(log.path("blockTimestamp").asText()) : null,
+                        log.path("blockHash").asText("").toLowerCase(java.util.Locale.ROOT)
                 ));
             } catch (RuntimeException ignored) {
                 // A non-standard log should not stop the rest of the chunk.

@@ -1,6 +1,8 @@
 (() => {
-  if (!document.getElementById('objekt-card-grid')) return;
-  let timer = 0, catalogSig = null, mintsSig = null, inflight = false;
+  const grid = document.getElementById('objekt-card-grid');
+  if (!grid) return;
+  let timer = 0, catalogSig = grid.dataset.catalogSig || null;
+  let mintsSig = grid.dataset.mintsSig || null, inflight = false;
 
   function schedule(ms) {
     clearTimeout(timer);
@@ -22,7 +24,9 @@
     try {
       const keys = window.ObjektPage?.visibleKeys?.() || [];
       const query = new URLSearchParams();
-      keys.forEach((key) => query.append('key', key));
+      const openKey = document.getElementById('objektDetailFavorite')?.dataset.key;
+      const watchedKeys = openKey ? [...new Set([openKey, ...keys])].slice(0, 24) : keys;
+      watchedKeys.forEach((key) => query.append('key', key));
       const response = await fetch('/cosmo/objekt/pulse' + (query.toString() ? '?' + query : ''), {
         headers: { Accept: 'application/json' },
         credentials: 'same-origin',
@@ -33,18 +37,14 @@
       const data = await response.json();
       const nextSig = String(data.catalogSig || '');
       const nextMints = String(data.mintsSig || '');
-      if (catalogSig == null) {
+      const catalogChanged = catalogSig != null && nextSig && nextSig !== catalogSig;
+      const mintSortChanged = mintsSig != null && nextMints && nextMints !== mintsSig && mintSortActive();
+      const reloaded = (catalogChanged || mintSortChanged) ? await window.ObjektPage?.reloadVisible?.() : true;
+      if (reloaded !== false) {
         catalogSig = nextSig;
         mintsSig = nextMints;
-      } else if (nextSig && nextSig !== catalogSig) {
-        catalogSig = nextSig;
-        mintsSig = nextMints;
-        await window.ObjektPage?.reloadVisible?.();
-      } else if (nextMints && nextMints !== mintsSig) {
-        mintsSig = nextMints;
-        if (mintSortActive()) await window.ObjektPage?.reloadVisible?.();
       }
-      window.ObjektIssued?.applyLive?.(data.supplies);
+      window.ObjektIssued?.applyLive?.(data.supplies, data.chainMints === true);
       schedule(Math.max(5000, Number(data.pollMs) || 20000));
     } catch {
       schedule(20000);

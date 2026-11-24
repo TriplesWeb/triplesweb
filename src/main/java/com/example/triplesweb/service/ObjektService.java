@@ -52,6 +52,10 @@ public class ObjektService {
 
     public static final int DROP_ALERT_LIMIT = 3;
 
+    private List<Map<String, Object>> storedCollections = List.of();
+    private Map<String, Map<String, Object>> storedByKey = Map.of();
+    private List<Map<String, Object>> pendingCollections = List.of();
+
     private volatile List<Map<String, Object>> cachedCollections = List.of();
     private volatile Map<String, Map<String, Object>> byKey = Map.of();
     private volatile Map<String, Integer> groupCounts = Map.of();
@@ -87,7 +91,8 @@ public class ObjektService {
     @PostConstruct
     void loadStoredCatalog() {
         catalogStore.retainOnly("triples");
-        install(loadFromDatabase("triples"));
+        if (chainMints) reloadStoredCatalog();
+        else install(loadFromDatabase("triples"));
     }
 
     public List<Map<String, Object>> findCollections(String artist) {
@@ -101,8 +106,15 @@ public class ObjektService {
 
     /** O(1) lookup by id, collectionId, slug, or ObjektLinks.key. */
     public Map<String, Object> findByKey(String key) {
+        return lookup(byKey, key);
+    }
+
+    Map<String, Object> findStoredByKey(String key) {
+        return lookup(storedByKey, key);
+    }
+
+    private static Map<String, Object> lookup(Map<String, Map<String, Object>> index, String key) {
         if (key == null || key.isBlank()) return null;
-        Map<String, Map<String, Object>> index = byKey;
         Map<String, Object> found = index.get(key);
         if (found != null) return found;
         return index.get(key.toLowerCase(Locale.ROOT));
@@ -218,7 +230,7 @@ public class ObjektService {
         for (ObjektCatalog row : externalCatalog) {
             String image = row.getBackImage();
             if (image == null || image.isBlank()) continue;
-            Map<String, Object> existing = findByKey(row.getCollectionId());
+            Map<String, Object> existing = findStoredByKey(row.getCollectionId());
             // Newly discovered chain rows use the generated slug as their temporary external ID.
             if (existing != null && row.getCollectionId().equals(existing.get("collectionId"))
                     && string(existing, "slug").equals(existing.get("id"))
@@ -233,7 +245,34 @@ public class ObjektService {
     }
 
     synchronized void reloadStoredCatalog() {
-        install(loadFromDatabase("triples"));
+        storedCollections = loadFromDatabase("triples");
+        storedByKey = buildIndex(storedCollections);
+        installChainCatalog();
+    }
+
+    synchronized void publishPendingCollections(List<ObjektCatalog> collections) {
+        List<Map<String, Object>> views = collections.stream()
+                .filter(row -> findStoredByKey(row.getCollectionId()) == null && findStoredByKey(row.getSlug()) == null)
+                .map(row -> {
+                    Map<String, Object> view = new LinkedHashMap<>(ObjektCatalogDto.toView(row));
+                    view.put("mintPending", true);
+                    return view;
+                }).toList();
+        if (views.equals(pendingCollections)) return;
+        pendingCollections = views;
+        installChainCatalog();
+    }
+
+    private void installChainCatalog() {
+        List<Map<String, Object>> views = new ArrayList<>(storedCollections);
+        for (Map<String, Object> pending : pendingCollections) {
+            if (findStoredByKey(string(pending, "slug")) == null
+                    && findStoredByKey(string(pending, "collectionId")) == null) {
+                views.add(pending);
+            }
+        }
+        if (views.equals(cachedCollections)) return;
+        install(views);
         lastSuccessfulRefreshMillis = System.currentTimeMillis();
     }
 

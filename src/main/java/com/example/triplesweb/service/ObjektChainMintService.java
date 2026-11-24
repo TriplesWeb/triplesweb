@@ -5,6 +5,7 @@ import com.example.triplesweb.entity.ObjektCatalog;
 import com.example.triplesweb.infra.GzipRestClients;
 import com.example.triplesweb.repository.ObjektCatalogRepository;
 import com.fasterxml.jackson.databind.JsonNode;
+import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,6 +29,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /** Indexes issuance and retirement events without storing transfers between collectors. */
 @Service
@@ -36,6 +41,9 @@ public class ObjektChainMintService {
     private static final Logger log = LoggerFactory.getLogger(ObjektChainMintService.class);
     private static final String NULL = "0x" + "0".repeat(40);
     private static final String TRANSFER = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
+
+    private static final Batch EMPTY_BATCH = new Batch(List.of(), List.of());
+    private static final int PREVIEW_METADATA_LIMIT = 32;
 
     private final JdbcTemplate jdbc;
     private final NamedParameterJdbcTemplate namedJdbc;
@@ -49,6 +57,14 @@ public class ObjektChainMintService {
     private final String chainId;
     private final int confirmations;
     private final int blockBatch;
+
+    private final ExecutorService metadataWorkers = Executors.newFixedThreadPool(8);
+    private final Map<AbstractTransferLog, TokenMetadata> previewMetadata = new HashMap<>();
+    private final Map<AbstractTransferLog, Long> metadataRetryAt = new HashMap<>();
+    private Batch pending = EMPTY_BATCH;
+    private long nextConfirmedBlock = -1;
+    private Map<String, Long> confirmedCounts = Map.of();
+    private Map<String, Long> displayedCounts = Map.of();
     private boolean loaded;
     private boolean chainVerified;
 
@@ -77,39 +93,91 @@ public class ObjektChainMintService {
     @Scheduled(fixedDelayString = "${objekt.mints.chain-poll-ms:5000}", initialDelay = 1000,
             scheduler = "objektMintScheduler")
     void collect() {
+        long head;
         try {
-            long next = cursor(false);
-            if (!loaded && next >= 0) reloadView();
             if (!chainVerified) {
                 if (!chainId.equals(Long.toString(quantity(call("eth_chainId", List.of()))))) {
                     throw new IllegalStateException("RPC 체인이 설정과 일치하지 않습니다.");
                 }
                 chainVerified = true;
             }
+            long next = cursor(false);
             if (next < 0) {
                 initialize();
-                reloadView();
+                reloadView(cursor(false));
                 return;
             }
-            long confirmed = quantity(call("eth_blockNumber", List.of())) - confirmations;
-            if (next > confirmed) return;
-            long end = Math.min(next + blockBatch - 1, confirmed);
-            Batch batch = prepare(next, end);
-            long expected = next;
-            Commit result = transactions.execute(status -> store(expected, end, batch));
-            if (result == null) {
-                loaded = false;
-                return;
-            }
-            if (result.newCollections() || result.newMints()) {
-                loaded = false;
-                if (result.newCollections()) catalog.reloadStoredCatalog();
-                if (result.newMints()) publishCounts();
-                loaded = true;
-            }
+            if (!loaded || next != nextConfirmedBlock) reloadView(next);
+            head = quantity(call("eth_blockNumber", List.of()));
+        } catch (RuntimeException error) {
+            log.warn("오브젝트 민팅 수집 재시도: {}", error.getMessage());
+            return;
+        }
+
+        try {
+            collectPreview(head);
+        } catch (RuntimeException error) {
+            log.warn("오브젝트 최근 민팅 조회 재시도: {}", error.getMessage());
+        }
+        try {
+            collectConfirmed(head - confirmations);
         } catch (RuntimeException error) {
             log.warn("오브젝트 민팅 수집 재시도: {}", error.getMessage());
         }
+    }
+
+    private void collectConfirmed(long confirmed) {
+        long next = nextConfirmedBlock;
+        if (next > confirmed) return;
+        long end = Math.min(next + blockBatch - 1, confirmed);
+        Batch batch = prepare(readEvents(next, end, false), false);
+        Commit result = transactions.execute(status -> store(next, end, batch));
+        if (result == null) {
+            loaded = false;
+            return;
+        }
+
+        loaded = false;
+        nextConfirmedBlock = end + 1;
+        if (result.newMints()) {
+            confirmedCounts = loadConfirmedCounts();
+            Set<String> confirmedTokens = new HashSet<>();
+            for (Event event : batch.events()) {
+                if ("mint".equals(event.kind())) confirmedTokens.add(event.token());
+            }
+            pending = new Batch(pending.events().stream()
+                    .filter(event -> !confirmedTokens.contains(event.token())).toList(), pending.collections());
+        }
+        publishCounts();
+        if (result.newCollections()) catalog.reloadStoredCatalog();
+        publishPendingCollections();
+        loaded = true;
+    }
+
+    private void collectPreview(long head) {
+        // Bound the live scan even if the persistent cursor is catching up after downtime.
+        long start = Math.max(nextConfirmedBlock, head - Math.max(blockBatch, confirmations) + 1);
+        if (start > head) {
+            pending = EMPTY_BATCH;
+        } else {
+            String tipHash = blockHash(head);
+            var logs = readEvents(start, head, true);
+            Batch preview = prepare(logs, true);
+            if (!tipHash.equals(blockHash(head))) {
+                throw new IllegalStateException("최근 블록이 조회 중 교체되었습니다.");
+            }
+            pending = preview;
+        }
+        long keepFrom = Math.min(start, head) - confirmations;
+        previewMetadata.keySet().removeIf(event -> event.blockNumber() < keepFrom);
+        metadataRetryAt.keySet().removeIf(event -> event.blockNumber() < keepFrom);
+        publishCounts();
+        publishPendingCollections();
+    }
+
+    @PreDestroy
+    void stopMetadataWorkers() {
+        metadataWorkers.shutdownNow();
     }
 
     @Scheduled(cron = "${objekt.mints.audit-cron:0 40 4 * * *}", zone = "Asia/Seoul",
@@ -125,9 +193,9 @@ public class ObjektChainMintService {
             List<String> examples = new ArrayList<>();
             for (ObjektCatalog row : externalCatalog) {
                 String slug = row.getSlug();
-                Long local = market.mintCount(slug);
+                Long local = confirmedCounts.get(slug);
                 Long observed = external.get(slug);
-                boolean missingCollection = catalog.findByKey(slug) == null;
+                boolean missingCollection = catalog.findStoredByKey(slug) == null;
                 if (missingCollection) missing++;
                 if (observed != null && !observed.equals(local)) different++;
                 if (examples.size() < 10 && (missingCollection || observed != null && !observed.equals(local))) {
@@ -176,10 +244,16 @@ public class ObjektChainMintService {
         log.info("오브젝트 기준 수량 저장 완료: {}개 컬렉션, 체인 수집 시작 블록 {}", counts.size(), cutoverBlock + 1);
     }
 
-    private Batch prepare(long start, long end) {
+    private List<AbstractTransferLog> readEvents(long start, long end, boolean mintOnly) {
         Map<String, AbstractTransferLog> logs = new LinkedHashMap<>();
         for (AbstractTransferLog event : queryLogs(start, end, List.of(TRANSFER, topic(NULL)))) {
             logs.put(event.blockNumber() + ":" + event.logIndex(), event);
+        }
+        if (mintOnly) {
+            if (logs.values().stream().anyMatch(row -> !row.blockHash().matches("0x[0-9a-f]{64}"))) {
+                throw new IllegalStateException("최근 민팅 이벤트의 블록 해시를 읽지 못했습니다.");
+            }
+            return List.copyOf(logs.values());
         }
         List<Object> recipients = new ArrayList<>();
         recipients.add(TRANSFER);
@@ -188,11 +262,15 @@ public class ObjektChainMintService {
         for (AbstractTransferLog event : queryLogs(start, end, recipients)) {
             logs.put(event.blockNumber() + ":" + event.logIndex(), event);
         }
+        return List.copyOf(logs.values());
+    }
+
+    private Batch prepare(List<AbstractTransferLog> logs, boolean preview) {
         List<Event> events = new ArrayList<>();
         Map<String, ObjektCatalog> newCollections = new LinkedHashMap<>();
         Map<String, String> tokenSlugs = new HashMap<>();
         Set<TokenEvent> seen = new HashSet<>();
-        List<String> tokens = logs.values().stream()
+        List<String> tokens = logs.stream()
                 .map(row -> Long.toUnsignedString(row.tokenId())).distinct().toList();
         for (int offset = 0; offset < tokens.size(); offset += 250) {
             namedJdbc.query("""
@@ -205,46 +283,91 @@ public class ObjektChainMintService {
                 seen.add(new TokenEvent(token, row.getString("event_kind")));
             });
         }
-        Map<Long, Instant> blockDates = new HashMap<>();
-        for (AbstractTransferLog row : logs.values().stream()
+        List<AbstractTransferLog> ordered = logs.stream()
                 .sorted(Comparator.comparingLong(AbstractTransferLog::blockNumber)
-                        .thenComparingInt(AbstractTransferLog::logIndex)).toList()) {
+                        .thenComparingInt(AbstractTransferLog::logIndex)).toList();
+        if (preview) prefetchPreviewMetadata(ordered, seen);
+
+        Map<Long, Instant> blockDates = new HashMap<>();
+        for (AbstractTransferLog row : ordered) {
             String token = Long.toUnsignedString(row.tokenId());
             String kind = eventKind(row.fromAddress(), row.toAddress(), spin);
-            if (kind == null) throw new IllegalStateException("RPC가 필터 범위 밖의 이벤트를 반환했습니다.");
+            if (kind == null || (preview && !"mint".equals(kind))) {
+                throw new IllegalStateException("RPC가 필터 범위 밖의 이벤트를 반환했습니다.");
+            }
             if (!seen.add(new TokenEvent(token, kind))) continue;
             String slug = tokenSlugs.get(token);
             if (slug == null) {
-                JsonNode metadata = market.fetchTokenMetadata(token);
-                Map<String, String> traits = new HashMap<>();
-                for (JsonNode attribute : metadata.path("attributes")) {
-                    traits.put(attribute.path("trait_type").asText(), attribute.path("value").asText());
+                TokenMetadata metadata = previewMetadata.get(row);
+                if (metadata == null) {
+                    if (preview) continue;
+                    metadata = fetchMetadata(token);
                 }
-                if (!"triples".equalsIgnoreCase(requiredTrait(traits, "Artist"))) {
+                if (metadata.collectionId().isEmpty()) {
                     tokenSlugs.put(token, "");
                     continue;
                 }
-                if ("Unit".equalsIgnoreCase(traits.get("Class"))) {
-                    for (JsonNode attribute : metadata.path("attributes")) {
-                        String value = attribute.path("value").asText();
-                        if (value.toLowerCase(Locale.ROOT).contains(" x ")) traits.put("Member", value);
-                    }
-                }
-                String collectionId = metadata.path("name").asText().replaceFirst(" #\\d+$", "");
-                if (collectionId.isBlank()) throw new IllegalStateException("오브젝트 컬렉션 이름이 없습니다.");
-                Map<String, Object> existing = catalog.findByKey(collectionId);
+                Map<String, Object> existing = catalog.findStoredByKey(metadata.collectionId());
                 boolean newCollection = existing == null || existing.isEmpty();
-                slug = newCollection ? collectionSlug(collectionId) : existing.getOrDefault("slug", "").toString();
+                slug = newCollection ? collectionSlug(metadata.collectionId()) : existing.getOrDefault("slug", "").toString();
                 if (slug.isBlank()) throw new IllegalStateException("저장된 컬렉션에 slug가 없습니다.");
                 if (newCollection && !newCollections.containsKey(slug)) {
-                    Instant date = blockDates.computeIfAbsent(row.blockNumber(), this::blockDate);
-                    newCollections.put(slug, collection(metadata, traits, collectionId, slug, date));
+                    Instant date = row.blockTimestamp() == null
+                            ? blockDates.computeIfAbsent(row.blockNumber(), this::blockDate)
+                            : Instant.ofEpochSecond(row.blockTimestamp());
+                    newCollections.put(slug, collection(metadata.data(), metadata.traits(), metadata.collectionId(), slug, date));
                 }
                 tokenSlugs.put(token, slug);
             }
             if (!slug.isEmpty()) events.add(new Event(row, token, kind, slug));
         }
         return new Batch(events, List.copyOf(newCollections.values()));
+    }
+
+    private void prefetchPreviewMetadata(List<AbstractTransferLog> logs, Set<TokenEvent> seen) {
+        long now = System.currentTimeMillis();
+        Map<AbstractTransferLog, CompletableFuture<TokenMetadata>> requests = new LinkedHashMap<>();
+        for (AbstractTransferLog row : logs) {
+            if (requests.size() == PREVIEW_METADATA_LIMIT) break;
+            String token = Long.toUnsignedString(row.tokenId());
+            if (seen.contains(new TokenEvent(token, "mint")) || previewMetadata.containsKey(row)
+                    || metadataRetryAt.getOrDefault(row, 0L) > now) continue;
+            requests.put(row, CompletableFuture.supplyAsync(() -> fetchMetadata(token), metadataWorkers));
+        }
+        requests.forEach((row, request) -> {
+            try {
+                previewMetadata.put(row, request.join());
+                metadataRetryAt.remove(row);
+            } catch (RuntimeException error) {
+                // A token whose metadata is still propagating should not hide the other new cards.
+                metadataRetryAt.put(row, System.currentTimeMillis() + 20_000);
+            }
+        });
+    }
+
+    private TokenMetadata fetchMetadata(String token) {
+        JsonNode metadata = market.fetchTokenMetadata(token);
+        Map<String, String> traits = new HashMap<>();
+        for (JsonNode attribute : metadata.path("attributes")) {
+            traits.put(attribute.path("trait_type").asText(), attribute.path("value").asText());
+        }
+        if (!"triples".equalsIgnoreCase(requiredTrait(traits, "Artist"))) {
+            return new TokenMetadata(metadata, traits, "");
+        }
+        if ("Unit".equalsIgnoreCase(traits.get("Class"))) {
+            for (JsonNode attribute : metadata.path("attributes")) {
+                String value = attribute.path("value").asText();
+                if (value.toLowerCase(Locale.ROOT).contains(" x ")) traits.put("Member", value);
+            }
+        }
+        String name = metadata.path("name").asText().replaceFirst(" #\\d+$", "");
+        if (name.isBlank()) throw new IllegalStateException("오브젝트 컬렉션 이름이 없습니다.");
+        Map<String, Object> existing = catalog.findStoredByKey(name);
+        if (existing == null || existing.isEmpty()) {
+            collectionSlug(name);
+            for (String trait : List.of("Season", "Collection", "Member", "Class")) requiredTrait(traits, trait);
+        }
+        return new TokenMetadata(metadata, traits, name);
     }
 
     static String eventKind(String from, String to, String spin) {
@@ -320,19 +443,40 @@ public class ObjektChainMintService {
         return new Commit(!batch.collections().isEmpty(), !increments.isEmpty());
     }
 
-    private void publishCounts() {
-        Map<String, Long> counts = jdbc.query("SELECT slug, baseline_count + new_mints FROM objekt_mint_total ORDER BY slug",
+    private Map<String, Long> loadConfirmedCounts() {
+        return jdbc.query("SELECT slug, baseline_count + new_mints FROM objekt_mint_total ORDER BY slug",
                 rows -> {
-                    Map<String, Long> result = new LinkedHashMap<>();
+                    Map<String, Long> result = new TreeMap<>();
                     while (rows.next()) result.put(rows.getString(1), rows.getLong(2));
                     return result;
                 });
-        market.installMintCounts(counts);
     }
 
-    private void reloadView() {
-        catalog.reloadStoredCatalog();
+    private void publishCounts() {
+        Map<String, Long> counts = new TreeMap<>(confirmedCounts);
+        for (Event event : pending.events()) {
+            if (event.log().blockNumber() >= nextConfirmedBlock) counts.merge(event.slug(), 1L, Long::sum);
+        }
+        if (counts.equals(displayedCounts)) return;
+        market.installMintCounts(counts);
+        displayedCounts = counts;
+    }
+
+    private void publishPendingCollections() {
+        Set<String> pendingSlugs = new HashSet<>();
+        for (Event event : pending.events()) {
+            if (event.log().blockNumber() >= nextConfirmedBlock) pendingSlugs.add(event.slug());
+        }
+        catalog.publishPendingCollections(pending.collections().stream()
+                .filter(row -> pendingSlugs.contains(row.getSlug())).toList());
+    }
+
+    private void reloadView(long next) {
+        nextConfirmedBlock = next;
+        confirmedCounts = loadConfirmedCounts();
         publishCounts();
+        catalog.reloadStoredCatalog();
+        publishPendingCollections();
         loaded = true;
     }
 
@@ -350,6 +494,12 @@ public class ObjektChainMintService {
             }
         }
         return parsed;
+    }
+
+    private String blockHash(long block) {
+        String hash = call("eth_getBlockByNumber", List.of(hex(block), false)).path("hash").asText();
+        if (!hash.matches("0x[0-9a-fA-F]{64}")) throw new IllegalStateException("RPC 블록 해시를 읽지 못했습니다.");
+        return hash;
     }
 
     private Instant blockDate(long block) {
@@ -380,6 +530,7 @@ public class ObjektChainMintService {
         return "0x" + Long.toHexString(value);
     }
 
+    private record TokenMetadata(JsonNode data, Map<String, String> traits, String collectionId) {}
     private record Event(AbstractTransferLog log, String token, String kind, String slug) {}
     private record TokenEvent(String token, String kind) {}
     private record Batch(List<Event> events, List<ObjektCatalog> collections) {}
