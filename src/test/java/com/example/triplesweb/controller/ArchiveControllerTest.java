@@ -187,7 +187,7 @@ class ArchiveControllerTest {
                 .andExpect(content().string(not(containsString("ar-folder-label\">5명 이상</span>"))))
                 .andExpect(content().string(containsString("ar-home-upload")))
                 .andExpect(content().string(containsString("사진 추가")))
-                .andExpect(content().string(containsString("id=\"uploadModal\"")))
+                .andExpect(content().string(not(containsString("id=\"uploadModal\""))))
                 .andExpect(content().string(not(containsString("data-stats-toggle"))))
                 .andExpect(content().string(containsString("id=\"archiveStats\"")))
                 .andExpect(content().string(not(containsString("is-copy-only"))))
@@ -432,6 +432,25 @@ class ArchiveControllerTest {
                 .andExpect(redirectedUrl("/archive?folder=s&members=%EC%9C%A4%EC%84%9C%EC%97%B0&members=%EC%A0%95%ED%98%9C%EB%A6%B0&members=%EC%9D%B4%EC%A7%80%EC%9A%B0&members=%EA%B9%80%EC%B1%84%EC%97%B0"));
     }
 
+    @Test void filterResponseReusesThePublicResultsMarkup() throws Exception {
+        when(artistSnapshot.findAll()).thenReturn(List.of());
+        stubFolder(MediaType.IMAGE, photo());
+        String full = mvc.perform(get("/archive").param("folder", "s"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        String fragment = mvc.perform(get("/archive").param("folder", "s").header("X-Archive-Filter", "1"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        var fullPage = Jsoup.parse(full);
+        var filterPage = Jsoup.parse(fragment);
+        org.assertj.core.api.Assertions.assertThat(fragment.length()).isLessThan(full.length());
+        for (String selector : List.of("#archiveGrid", ".ar-pager", ".ar-type-tabs", ".ar-source-tabs")) {
+            org.assertj.core.api.Assertions.assertThat(filterPage.select(selector).html())
+                    .isEqualTo(fullPage.select(selector).html());
+        }
+        org.assertj.core.api.Assertions.assertThat(fragment)
+                .doesNotContain("archiveAdminMount", "archiveChemistryNames", "archiveDetail");
+        mvc.perform(get("/archive/admin-forms")).andExpect(status().isForbidden());
+    }
+
     @Test void adminImageArchiveShowsEditAndDelete() throws Exception {
         when(aboutAdminAuth.isAdmin(any(), any())).thenReturn(true);
         when(artistSnapshot.findAll()).thenReturn(List.of());
@@ -442,9 +461,6 @@ class ArchiveControllerTest {
                 .andExpect(content().string(containsString("<h1>아카이브</h1>")))
                 .andExpect(content().string(containsString("site-section-tabs")))
                 .andExpect(content().string(containsString("사진 날짜")))
-                .andExpect(content().string(containsString("실제로 올라온 날짜를 선택하세요.")))
-                .andExpect(content().string(containsString("type=\"date\"")))
-                .andExpect(content().string(containsString("name=\"registeredOn\"")))
                 .andExpect(content().string(containsString("data-date-clear")))
                 .andExpect(content().string(containsString(">초기화</button>")))
                 .andExpect(content().string(not(containsString(">지우기</button>"))))
@@ -456,23 +472,17 @@ class ArchiveControllerTest {
                 .andExpect(content().string(containsString("archive-symbol-chip")))
                 .andExpect(content().string(containsString("data-archive-edit")))
                 .andExpect(content().string(containsString("data-archive-delete")))
-                .andExpect(content().string(containsString("archiveEditForm")))
                 .andExpect(content().string(containsString("사진 추가")))
                 .andExpect(content().string(containsString("멤버 선택")))
-                .andExpect(content().string(containsString("id=\"uploadModal\" hidden")))
-                .andExpect(content().string(containsString("archive-upload-picker")))
-                .andExpect(content().string(containsString("data-upload-url=\"/archive/upload/image\"")))
                 .andExpect(content().string(containsString("data-url=\"/uploads/a.jpg\"")))
                 .andExpect(content().string(containsString("data-images=")))
                 .andExpect(content().string(not(containsString("목록에서 보이는 모습 · 카드/슬라이드"))))
-                .andExpect(content().string(containsString("사진 편집")))
                 .andExpect(content().string(containsString("id=\"archiveDetail\"")))
                 .andExpect(content().string(not(containsString("더보기"))))
                 .andExpect(content().string(not(containsString("원본 열기"))))
                 .andExpect(content().string(not(containsString("archiveDetailOriginal"))))
                 .andExpect(content().string(not(containsString("class=\"ar-submit\">검색</button>"))))
                 .andExpect(content().string(containsString(">초기화</a>")))
-                .andExpect(content().string(containsString("class=\"ar-submit\"")))
                 .andExpect(content().string(not(containsString("ar-search-go"))))
                 .andExpect(content().string(containsString("멤버번호 낮은순")))
                 .andExpect(content().string(containsString("멤버번호 높은순")))
@@ -497,6 +507,19 @@ class ArchiveControllerTest {
                 .andExpect(content().string(not(containsString("extraArtists"))))
                 .andExpect(content().string(not(containsString("다른 출연자"))))
                 .andExpect(content().string(not(containsString("목록에 없는 출연자"))))
+                .andExpect(content().string(containsString("ar-source-tabs")))
+                .andExpect(content().string(containsString("ar-folder-tabs")))
+                .andExpect(content().string(containsString("unit-member-chip")));
+        mvc.perform(get("/archive/admin-forms"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("실제로 올라온 날짜를 선택하세요.")))
+                .andExpect(content().string(containsString("type=\"date\"")))
+                .andExpect(content().string(containsString("name=\"registeredOn\"")))
+                .andExpect(content().string(containsString("archiveEditForm")))
+                .andExpect(content().string(containsString("id=\"uploadModal\" hidden")))
+                .andExpect(content().string(containsString("archive-upload-picker")))
+                .andExpect(content().string(containsString("data-upload-url=\"/archive/upload/image\"")))
+                .andExpect(content().string(containsString("사진 편집")))
                 .andExpect(content().string(containsString("파일 선택")))
                 .andExpect(content().string(containsString("선택된 파일 없음")))
                 .andExpect(content().string(containsString("multiple")))
@@ -511,10 +534,7 @@ class ArchiveControllerTest {
                 .andExpect(content().string(not(containsString("기타/팬메이드"))))
                 .andExpect(content().string(not(containsString("value=\"FANCAM\""))))
                 .andExpect(content().string(not(containsString("직찍"))))
-                .andExpect(content().string(not(containsString(">미분류<"))))
-                .andExpect(content().string(containsString("unit-member-chip")))
-                .andExpect(content().string(containsString("ar-source-tabs")))
-                .andExpect(content().string(containsString("ar-folder-tabs")));
+                .andExpect(content().string(not(containsString(">미분류<"))));
     }
 
     @Test void sourceTabsOnlyShowSourcesWithPostsAndKeepAllUploadOptions() throws Exception {
@@ -527,7 +547,12 @@ class ArchiveControllerTest {
                 .containsAnyOf("source=polaroid", "source&#x3D;polaroid")
                 .doesNotContain("source=cosmo_room", "source=magazine",
                         "source&#x3D;cosmo_room", "source&#x3D;magazine")
-                .contains("value=\"POLAROID\"", "value=\"COSMO_ROOM\"");
+                .doesNotContain("value=\"POLAROID\"", "value=\"COSMO_ROOM\"");
+        when(aboutAdminAuth.isAdmin(any(), any())).thenReturn(true);
+        mvc.perform(get("/archive/admin-forms"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("value=\"POLAROID\"")))
+                .andExpect(content().string(containsString("value=\"COSMO_ROOM\"")));
     }
 
     @Test void oldTeaserLinkSelectsTheTeaserBehindSource() throws Exception {
@@ -544,8 +569,11 @@ class ArchiveControllerTest {
                     org.assertj.core.api.Assertions.assertThat(tab.text()).isEqualTo("티저/비하인드");
                     org.assertj.core.api.Assertions.assertThat(tab.hasClass("is-active")).isTrue();
                 });
-        org.assertj.core.api.Assertions.assertThat(page.select("option[value=TEASER]")).isEmpty();
-        org.assertj.core.api.Assertions.assertThat(page.select("option[value=TEASER_BEHIND]").eachText())
+        when(aboutAdminAuth.isAdmin(any(), any())).thenReturn(true);
+        var adminForms = Jsoup.parse(mvc.perform(get("/archive/admin-forms"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        org.assertj.core.api.Assertions.assertThat(adminForms.select("option[value=TEASER]")).isEmpty();
+        org.assertj.core.api.Assertions.assertThat(adminForms.select("option[value=TEASER_BEHIND]").eachText())
                 .isNotEmpty().containsOnly("티저/비하인드");
         verify(archiveService).browseFolder(eq(MediaType.IMAGE), anyInt(), anyInt(), nullable(String.class), any(),
                 nullable(java.time.LocalDate.class), nullable(java.time.LocalDate.class),
@@ -648,7 +676,7 @@ class ArchiveControllerTest {
         org.assertj.core.api.Assertions.assertThat(html).contains("ar-page-jump-meta");
         org.assertj.core.api.Assertions.assertThat(html).contains(">1</span>");
         org.assertj.core.api.Assertions.assertThat(html).contains("is-current");
-        org.assertj.core.api.Assertions.assertThat(html).contains("코스모룸");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("value=\"COSMO_ROOM\"");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("직찍");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("기타/팬메이드");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain(">미분류<");
@@ -656,7 +684,7 @@ class ArchiveControllerTest {
         org.assertj.core.api.Assertions.assertThat(html).contains("삭제하기");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("ar-stat-filter");
         org.assertj.core.api.Assertions.assertThat(html).contains("class=\"ar-source-badge\"");
-        org.assertj.core.api.Assertions.assertThat(html).contains("ar-source-field");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("ar-source-field");
         org.assertj.core.api.Assertions.assertThat(html).contains("lang=\"ko\"");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("출처 미분류");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("is-violet");
@@ -762,6 +790,7 @@ class ArchiveControllerTest {
 
     @Test void videoArchiveUsesSameLiveFields() throws Exception {
         when(aboutAdminAuth.isAdmin(any(), any())).thenReturn(false);
+        when(aboutAdminAuth.isAdmin(any(), any())).thenReturn(true);
         when(artistSnapshot.findAll()).thenReturn(List.of());
         Archive video = photo();
         video.setTitle("무대영상");
@@ -775,16 +804,11 @@ class ArchiveControllerTest {
                 .andExpect(content().string(containsString("data-archive-video")))
                 .andExpect(content().string(containsString("id=\"archiveVideoPlayer\"")))
                 .andExpect(content().string(not(containsString("<video controls preload=\"metadata\""))))
-                .andExpect(content().string(containsString("name=\"thumbnail\"")))
                 .andExpect(content().string(containsString("무대영상")))
                 .andExpect(content().string(containsString("<h1>아카이브</h1>")))
                 .andExpect(content().string(containsString("영상 날짜")))
-                .andExpect(content().string(containsString("data-upload-url=\"/archive/upload/video\"")))
                 .andExpect(content().string(containsString("data-admin-only")))
                 .andExpect(content().string(containsString("영상 추가")))
-                .andExpect(content().string(containsString("archive-upload-picker")))
-                .andExpect(content().string(containsString("id=\"editModal\" hidden")))
-                .andExpect(content().string(containsString("목록에서 보이는 모습")))
                 .andExpect(content().string(containsString("data-url=\"/uploads/a.mp4\"")))
                 .andReturn().getResponse().getContentAsString();
         int gridStart = html.indexOf("id=\"archiveGrid\"");
@@ -792,6 +816,13 @@ class ArchiveControllerTest {
                 .doesNotContain("data-archive-edit", "data-archive-delete");
         org.assertj.core.api.Assertions.assertThat(html.substring(html.indexOf("id=\"archiveVideoPlayer\"")))
                 .contains("data-archive-edit", "data-archive-delete");
+        mvc.perform(get("/archive/admin-forms").param("type", "video"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("name=\"thumbnail\"")))
+                .andExpect(content().string(containsString("data-upload-url=\"/archive/upload/video\"")))
+                .andExpect(content().string(containsString("archive-upload-picker")))
+                .andExpect(content().string(containsString("id=\"editModal\" hidden")))
+                .andExpect(content().string(containsString("목록에서 보이는 모습")));
     }
 
     @Test void adminCanUpdateAndDelete() throws Exception {

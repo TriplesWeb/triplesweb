@@ -1,0 +1,22 @@
+<section class="ar-grid{{#archiveBrowse}} ar-grid-browse{{/archiveBrowse}}" id="archiveGrid" aria-label="{{#imageArchive}}사진 목록{{/imageArchive}}{{#videoArchive}}영상 목록{{/videoArchive}}" data-number-offset="{{archiveOffset}}" data-page-size="{{archiveSize}}">
+    {{#archiveCards}}
+    {{#imageArchive}}
+    {{>partials/archive-photo-card}}
+    {{/imageArchive}}
+    {{#videoArchive}}
+    <article class="ar-panel ar-card" data-id="{{id}}" data-title="{{title}}" data-artists="{{artistNames}}" data-member-order="{{memberOrder}}" data-registered="{{registeredOn}}" data-url="{{file.url}}" data-source="{{sourceValue}}" data-source-label="{{sourceLabel}}" data-source-color="{{sourceColor}}" data-unit-id="{{unitId}}" data-unit-label="{{unitBadgeLabel}}" data-unit-color="{{unitBadgeColor}}" data-thumbnail-url="{{thumbnailUrl}}">
+        <a class="ar-photo-link ar-video-thumb" href="{{file.url}}" data-archive-video data-poster="{{thumbnailUrl}}" aria-label="{{#title}}{{title}}{{/title}}{{^title}}영상{{/title}} 자세히 보기">
+            <span class="ar-video-placeholder" aria-hidden="true"></span>
+            {{#thumbnailUrl}}<img src="{{thumbnailUrl}}" alt="" loading="lazy" decoding="async">{{/thumbnailUrl}}
+            <span class="ar-video-play" aria-hidden="true">▶</span>
+        </a>
+        {{>partials/archive-card-body}}
+    </article>
+    {{/videoArchive}}
+    {{/archiveCards}}
+</section>
+{{^hasArchives}}
+<p class="ar-panel ar-empty">{{#hasQuery}}검색 결과가 없습니다.{{/hasQuery}}{{^hasQuery}}등록된 {{#imageArchive}}사진{{/imageArchive}}{{#videoArchive}}영상{{/videoArchive}}이 없습니다.{{/hasQuery}}</p>
+{{/hasArchives}}
+
+{{>partials/archive-pager}}

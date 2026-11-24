@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { chromium } = require('playwright');
 const script = fs.readFileSync(path.join(__dirname, '../../src/main/resources/static/js/archive-browse.js'), 'utf8');
+const adminLoader = fs.readFileSync(path.join(__dirname, '../../src/main/resources/static/js/archive-admin-loader.js'), 'utf8');
 const dateScript = fs.readFileSync(path.join(__dirname, '../../src/main/resources/static/js/date-range-filter.js'), 'utf8');
 const html = (query = '') => `<!doctype html><meta charset="utf-8"><body style="min-height:5000px">
 <main class="archive-page"><form id="archiveFilterForm" action="/archive">
@@ -35,7 +36,11 @@ const html = (query = '') => `<!doctype html><meta charset="utf-8"><body style="
       assert.ok(pending.length, '필터 요청이 없다');
       return pending.shift();
     };
-    const respond = (route, query) => route.fulfill({ contentType: 'text/html', body: html(query) });
+    const respond = (route, query) => {
+      const markup = html(query);
+      const fragment = markup.slice(markup.indexOf('<div class="ar-folder-tabs">'), markup.indexOf('</main>'));
+      return route.fulfill({ contentType: 'text/html; charset=utf-8', body: fragment });
+    };
     await page.goto('https://archive-live.test/archive');
     await submit('new');
     await respond(await take(), 'new');
@@ -78,6 +83,37 @@ const html = (query = '') => `<!doctype html><meta charset="utf-8"><body style="
     await page.waitForTimeout(400);
     assert.equal(await page.locator('[data-date-popover]').isHidden(), true, '적용 후 날짜 팝업이 닫히지 않는다');
     assert.equal(requests, before + 1, '날짜 적용이 중복 요청된다');
+    const adminPage = await browser.newPage();
+    adminPage.setDefaultTimeout(5000);
+    const fetched = [];
+    await adminPage.route('https://archive-admin.test/**', route => {
+      const pathname = new URL(route.request().url()).pathname;
+      fetched.push(pathname);
+      if (pathname === '/archive/admin-forms') {
+        return route.fulfill({ contentType: 'text/html', body: '<div id="archiveAdminForms"><div id="uploadModal" hidden></div></div>' });
+      }
+      if (pathname === '/js/archive-manage.js') {
+        return route.fulfill({
+          contentType: 'application/javascript',
+          body: "window.showAddModal = () => { document.getElementById('uploadModal').hidden = false; };"
+        });
+      }
+      return route.fulfill({ contentType: 'text/html', body: `<!doctype html><meta charset="utf-8"><body>
+        <main class="is-folder-home" data-archive-kind="image">
+          <a class="ar-back-folders" href="/archive">이전</a>
+          <button data-archive-add>사진 추가</button>
+        </main>
+        <div id="archiveAdminMount"><span data-admin-script="/js/archive-manage.js" hidden></span></div>
+        <script>${script}</script><script>${adminLoader}</script>` });
+    });
+    await adminPage.goto('https://archive-admin.test/archive?folder=units');
+    await adminPage.waitForTimeout(1000);
+    assert.deepEqual(fetched, ['/archive'], '첫 진입에 뒤로가기 또는 관리자 리소스를 선요청한다');
+    await adminPage.evaluate(() => document.body.classList.add('site-admin-enabled'));
+    await adminPage.getByRole('button', { name: '사진 추가' }).click();
+    await adminPage.locator('#uploadModal').waitFor({ state: 'attached' });
+    await adminPage.waitForFunction(() => !document.getElementById('uploadModal').hidden, null, { timeout: 5000 });
+    assert.deepEqual(fetched, ['/archive', '/archive/admin-forms', '/js/archive-manage.js']);
     console.log('PASS: 아카이브 탭·스크롤·이전 요청 실패·날짜 적용');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

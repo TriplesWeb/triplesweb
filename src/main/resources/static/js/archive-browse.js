@@ -1,25 +1,4 @@
 (function () {
-    const backLink = document.querySelector('a.ar-back-folders');
-    if (backLink?.href) {
-        const backUrl = backLink.href;
-        let warming = false;
-        const warmBack = () => {
-            if (warming) return;
-            warming = true;
-            // no-store 응답이어도 서버 쪽 짧은 캐시(건수·유닛 목록)를 데운다.
-            fetch(backUrl, {
-                credentials: 'same-origin',
-                headers: { Purpose: 'prefetch', 'X-Archive-Back-Warm': '1' }
-            }).catch(() => {});
-        };
-        backLink.addEventListener('pointerenter', warmBack, { once: true });
-        backLink.addEventListener('focus', warmBack, { once: true });
-        if ('requestIdleCallback' in window) window.requestIdleCallback(warmBack, { timeout: 900 });
-        else window.setTimeout(warmBack, 350);
-        // href(예: /archive?folder=units)로만 이동한다.
-        // history.back()은 referrer와 실제 히스토리가 다를 때 /archive 홈으로 떨어질 수 있다.
-    }
-
     const grid = document.getElementById('archiveGrid');
     if (!grid) return;
     let cards = [...grid.querySelectorAll('.ar-card')];
@@ -572,10 +551,14 @@
         loadArchiveFilter(url.pathname + url.search);
     });
     let filterSeq = 0;
+    let pendingFilter;
     async function loadArchiveFilter(url, push) {
         const seq = ++filterSeq;
+        pendingFilter?.abort();
+        const controller = new AbortController();
+        pendingFilter = controller;
         try {
-            const response = await fetch(url, { credentials: 'same-origin', headers: { 'X-Archive-Filter': '1' } });
+            const response = await fetch(url, { credentials: 'same-origin', signal: controller.signal, headers: { 'X-Archive-Filter': '1' } });
             if (seq !== filterSeq) return;
             if (!response.ok) throw new Error(String(response.status));
             const doc = new DOMParser().parseFromString(await response.text(), 'text/html');
@@ -641,7 +624,9 @@
             if (push !== false && !same) history.pushState({ archiveLive: true }, '', nextUrl.pathname + nextUrl.search);
             window.scrollTo(x, y);
         } catch (error) {
-            if (seq === filterSeq) window.location.assign(url);
+            if (error.name !== "AbortError" && seq === filterSeq) window.location.assign(url);
+        } finally {
+            if (pendingFilter === controller) pendingFilter = undefined;
         }
     }
     form?.addEventListener('submit', (event) => {

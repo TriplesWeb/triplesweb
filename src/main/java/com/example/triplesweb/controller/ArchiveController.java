@@ -36,14 +36,18 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
@@ -55,6 +59,7 @@ import java.time.format.DateTimeParseException;
 @RequestMapping("/archive")
 public class ArchiveController {
 
+    private static final String FILTER_HEADER = "X-Archive-Filter";
     private static final int DEFAULT_ARCHIVE_SIZE = 10;
     private static final List<Integer> ARCHIVE_SIZE_OPTIONS = List.of(10, 20, 30, 40, 50);
 
@@ -84,7 +89,8 @@ public class ArchiveController {
                               @RequestParam(required = false) String source,
                               @RequestParam(required = false) String chem,
                               @RequestParam(required = false) String sort,
-                              HttpServletRequest request, HttpSession session, Model model) {
+                              HttpServletRequest request, HttpServletResponse response, HttpSession session, Model model) {
+        response.addHeader(HttpHeaders.VARY, FILTER_HEADER);
         String jump = pageJumpRedirect(go, request);
         if (jump != null) return jump;
         if (folder == null || folder.isBlank()) {
@@ -112,11 +118,31 @@ public class ArchiveController {
                                 @RequestParam(required = false) Integer go,
                                 @RequestParam(required = false) List<String> members,
                                 @RequestParam(required = false) String sort,
-                                HttpServletRequest request, HttpSession session, Model model) {
+                                HttpServletRequest request, HttpServletResponse response, HttpSession session, Model model) {
+        response.addHeader(HttpHeaders.VARY, FILTER_HEADER);
         String jump = pageJumpRedirect(go, request);
         if (jump != null) return jump;
         return renderArchive("image", page, size, q, from, to, on, members, null, null, null, null, sort,
                 true, request, session, model);
+    }
+
+    @GetMapping("/admin-forms")
+    public String archiveAdminForms(@RequestParam(defaultValue = "image") String type,
+                                    @RequestParam(defaultValue = "false") boolean folderHome,
+                                    HttpServletRequest request, HttpSession session, Model model) {
+        if (!aboutAdminAuth.isAdmin(request, session)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+        }
+        boolean video = !folderHome && mediaType(type) == MediaType.VIDEO;
+        model.addAttribute("archiveFolderHome", folderHome);
+        model.addAttribute("imageArchive", !video);
+        model.addAttribute("videoArchive", video);
+        model.addAttribute("memberPickerOptions", memberOptions(artistSnapshot.findAll(), List.of()));
+        model.addAttribute("archiveSources", sourceOptions(null));
+        addUnitCheckboxOptions(model);
+        addCommonDateFlags(model);
+        if (video) model.addAttribute("mediaDateLabel", "영상 날짜");
+        return "archive/admin";
     }
 
     @GetMapping("/image_archive")
@@ -167,11 +193,10 @@ public class ArchiveController {
         model.addAttribute("archiveFolderHome", true);
         model.addAttribute("archiveFolderView", false);
         model.addAttribute("archiveBrowse", false);
+        folders.stream().limit(2).forEach(card -> card.put("eagerFolderArt", true));
         model.addAttribute("archiveFolders", folders);
         model.addAttribute("isAdmin", isAdmin);
         model.addAttribute("isAuthenticated", isAdmin);
-        model.addAttribute("artistOptions", artists);
-        model.addAttribute("memberPickerOptions", memberOptions(artists, List.of()));
         model.addAttribute("imageArchive", true);
         model.addAttribute("videoArchive", false);
         model.addAttribute("archiveTotal", photoCount);
@@ -181,12 +206,10 @@ public class ArchiveController {
         model.addAttribute("archivePageDisplay", 1);
         model.addAttribute("archiveTotalPages", 1);
         model.addAttribute("hasArchives", !folders.isEmpty());
-        model.addAttribute("archiveSources", sourceOptions(null));
         model.addAttribute("defaultUploadArtists", "");
         model.addAttribute("hasArchiveBack", false);
         model.addAttribute("archiveBackHref", "/archive");
         model.addAttribute("archiveFolderIndex", false);
-        addUnitCheckboxOptions(model);
         addCommonDateFlags(model);
         return "archive/archive";
     }
@@ -207,6 +230,7 @@ public class ArchiveController {
         model.addAttribute("archiveFolderIndex", true);
         model.addAttribute("archiveFolderView", false);
         model.addAttribute("archiveBrowse", false);
+        folders.stream().limit(2).forEach(card -> card.put("eagerFolderArt", true));
         model.addAttribute("archiveFolders", folders);
         model.addAttribute("folderTitle", title);
         model.addAttribute("folderAccent", accent);
@@ -214,8 +238,6 @@ public class ArchiveController {
         model.addAttribute("archiveBackHref", "/archive");
         model.addAttribute("isAdmin", isAdmin);
         model.addAttribute("isAuthenticated", isAdmin);
-        model.addAttribute("artistOptions", artists);
-        model.addAttribute("memberPickerOptions", memberOptions(artists, List.of()));
         model.addAttribute("imageArchive", true);
         model.addAttribute("videoArchive", false);
         model.addAttribute("archiveTotal", photoCount);
@@ -225,9 +247,7 @@ public class ArchiveController {
         model.addAttribute("archivePageDisplay", 1);
         model.addAttribute("archiveTotalPages", 1);
         model.addAttribute("hasArchives", !folders.isEmpty());
-        model.addAttribute("archiveSources", sourceOptions(null));
         model.addAttribute("defaultUploadArtists", "");
-        addUnitCheckboxOptions(model);
         addCommonDateFlags(model);
         return "archive/archive";
     }
@@ -237,6 +257,7 @@ public class ArchiveController {
                                  String sortRaw, boolean browse, HttpServletRequest request, HttpSession session, Model model) {
         boolean isAdmin = aboutAdminAuth.isAdmin(request, session);
         boolean isAuthenticated = isAdmin;
+        boolean filterOnly = "1".equals(request.getHeader(FILTER_HEADER));
 
         MediaType type = mediaType(typeSlug);
         String folderKey = ArchiveFolderClassifier.canonicalComboFolder(folder == null ? "" : folder.trim());
@@ -279,9 +300,7 @@ public class ArchiveController {
         List<Map<String, Object>> cards = archiveCards(archives, artists, allVisibleUnits, selectedMembers);
         model.addAttribute("archives", archives);
         model.addAttribute("archiveCards", cards);
-        model.addAttribute("artistOptions", artists);
-        model.addAttribute("memberPickerOptions", memberOptions(artists, selectedMembers));
-        addUnitCheckboxOptions(model);
+        if (!filterOnly) model.addAttribute("memberPickerOptions", memberOptions(artists, selectedMembers));
         model.addAttribute("selectedMembers", selectedMembers);
         model.addAttribute("hasSelectedMembers", !selectedMembers.isEmpty());
         model.addAttribute("defaultUploadArtists", String.join(",", selectedMembers));
@@ -305,7 +324,7 @@ public class ArchiveController {
         model.addAttribute("showChemistryFilter", false);
         model.addAttribute("chemistryOptions", List.of());
         model.addAttribute("hasChemistryOptions", false);
-        model.addAttribute("chemistryNamesJson", chemistryNamesJson());
+        if (!filterOnly) model.addAttribute("chemistryNamesJson", chemistryNamesJson());
         model.addAttribute("folderKey", folderKey);
         model.addAttribute("comboValue", "");
         model.addAttribute("hasCombo", false);
@@ -367,7 +386,6 @@ public class ArchiveController {
         model.addAttribute("sourceKey", sourceKey == null ? "" : sourceKey.trim());
         model.addAttribute("hasSourceFilter", sourceSlug != null && !sourceSlug.isBlank());
         model.addAttribute("chemQuery", "");
-        model.addAttribute("archiveSources", sourceOptions(sourceEntity));
         model.addAttribute("hasActiveArchiveFilters", (q != null && !q.isBlank())
                 || (showMemberFilter && !selectedMembers.isEmpty())
                 || fromDate != null || toDate != null || onDate != null
@@ -400,7 +418,7 @@ public class ArchiveController {
         model.addAttribute("sourceTabs", sourceTabs(browse ? "/archive/all" : "/archive",
                 keptFilters + sizeQuery + sortQuery, sourceKey, availableSources));
         model.addAttribute("externalSource", externalView);
-        return "archive/archive";
+        return filterOnly ? "archive/filter" : "archive/archive";
     }
 
     private static MediaType mediaType(String typeSlug) {
