@@ -102,6 +102,13 @@
             <input type="text" class="track-melon-id" placeholder="곡 ID 또는 URL" value="${escapeAttr(t.melonSongId || "")}" title="멜론 곡 ID 또는 곡 상세 URL" aria-label="멜론 곡 ID">
           </label>
         </div>
+        <details>
+          <summary>가사</summary>
+          <label class="about-edit-label">
+            <textarea class="track-lyrics" rows="3" maxlength="20000" placeholder="ALL: ... / 김채연: ..." aria-label="가사">
+${escapeAttr(t.lyrics || "")}</textarea>
+          </label>
+        </details>
       </div>`).join("");
   }
 
@@ -121,7 +128,8 @@
         duration: row.querySelector(".track-duration")?.value?.trim() || "",
         isTitle: Boolean(row.querySelector(".track-title-flag")?.checked),
         youtubeVideoId: row.querySelector(".track-youtube-id")?.value?.trim() || "",
-        melonSongId: row.querySelector(".track-melon-id")?.value?.trim() || ""
+        melonSongId: row.querySelector(".track-melon-id")?.value?.trim() || "",
+        lyrics: row.querySelector(".track-lyrics")?.value || ""
       });
     });
     return out;

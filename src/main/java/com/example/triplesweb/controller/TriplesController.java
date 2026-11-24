@@ -4,12 +4,14 @@ package com.example.triplesweb.controller;
 import com.example.triplesweb.dto.GroupIntroDto;
 import com.example.triplesweb.entity.Album;
 import com.example.triplesweb.entity.Artist;
+import com.example.triplesweb.entity.Track;
 import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.service.AlbumService;
 import com.example.triplesweb.service.ArtistAdminService;
 import com.example.triplesweb.service.ChemistryViewCache;
 import com.example.triplesweb.service.MemberSpotlightService;
 import com.example.triplesweb.service.UnitService;
+import com.example.triplesweb.util.LyricsParser;
 import com.example.triplesweb.util.MemberPortraitOptions;
 
 import lombok.RequiredArgsConstructor;
@@ -153,9 +155,22 @@ public class TriplesController {
     ) {
         Album album = albumService.getDetail(albumId);
         model.addAttribute("album", album);
+        List<Track> tracks = album.getTracks() != null ? album.getTracks() : List.of();
+        boolean hasLyrics = tracks.stream().anyMatch(track -> hasLyrics(track.getLyrics()));
+        List<Artist> artists = hasLyrics ? artistrepository.findAll() : List.of();
+        model.addAttribute("detailTracks", tracks.stream()
+                .map(track -> new DetailTrack(track, hasLyrics(track.getLyrics())
+                        ? LyricsParser.parse(track.getLyrics(), artists) : null))
+                .toList());
 
         return "triples/album_detail";
     }
+
+    private static boolean hasLyrics(String lyrics) {
+        return lyrics != null && !lyrics.isBlank();
+    }
+
+    public record DetailTrack(Track track, LyricsParser.Result parsedLyrics) {}
 
     /**
      * 기존 유닛 상세 링크를 유닛 탭으로 연결한다.
