@@ -25,11 +25,13 @@ import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Order;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -129,9 +131,12 @@ public class ArchiveService {
                 root.get("thumbnailUrl"),
                 root.get("file").get("url"),
                 root.get("file").get("mediaType"),
-                root.get("unitId"),
                 root.get("registeredOn"));
         query.orderBy(cb.desc(root.get("id")));
+        Map<Long, Set<Long>> unitIdsByArchive = new LinkedHashMap<>();
+        for (Object[] row : archiveRepository.findFolderIndexUnitIds()) {
+            unitIdsByArchive.computeIfAbsent((Long) row[0], id -> new LinkedHashSet<>()).add((Long) row[1]);
+        }
         List<Archive> rows = new ArrayList<>();
         for (Object[] row : entityManager.createQuery(query).getResultList()) {
             Archive archive = new Archive();
@@ -142,8 +147,8 @@ public class ArchiveService {
             file.setUrl((String) row[3]);
             file.setMediaType((MediaType) row[4]);
             archive.setFile(file);
-            archive.setUnitId((Long) row[5]);
-            archive.setRegisteredOn((LocalDate) row[6]);
+            archive.setUnitIds(unitIdsByArchive.getOrDefault(archive.getId(), Set.of()));
+            archive.setRegisteredOn((LocalDate) row[5]);
             rows.add(archive);
         }
         return rows;
@@ -171,10 +176,12 @@ public class ArchiveService {
         return pageByType(type, page, size, keyword, List.of());
     }
 
+    @Transactional(readOnly = true)
     public Page<Archive> pageByType(MediaType type, int page, int size, String keyword, List<String> members) {
         return pageByType(type, page, size, keyword, members, null, null);
     }
 
+    @Transactional(readOnly = true)
     public Page<Archive> pageByType(MediaType type, int page, int size, String keyword, List<String> members,
                                     LocalDate from, LocalDate to) {
         return pageByType(type, page, size, keyword, members, from, to, null, false);
@@ -218,7 +225,7 @@ public class ArchiveService {
                 ? cachedCount(filterCacheKey("count", type, keyword, members, from, to, source, unclassifiedOnly, true),
                 () -> countArchives(spec))
                 : countArchives(spec);
-        return new PageImpl<>(content, pageable, total);
+        return new PageImpl<>(withUnitIds(content), pageable, total);
     }
 
     private static List<Order> criteriaOrders(CriteriaBuilder cb, Root<Archive> root, ArchiveSort sort) {
@@ -359,7 +366,7 @@ public class ArchiveService {
         }
         int bucket = size == null ? 0 : Math.min(size, 5);
         List<Long> visibleUnits = units == null ? List.of() : units.stream()
-                .filter(unit -> unit != null && unit.members() != null && !unit.members().isEmpty())
+                .filter(Objects::nonNull)
                 .map(ArchiveFolderClassifier.UnitMembers::unitId).distinct().toList();
         return (root, query, cb) -> {
             Expression<Integer> count = root.get("castMemberCount");
@@ -369,7 +376,10 @@ public class ArchiveService {
             predicates.add(matchingSize);
             if (requestedMask != 0) predicates.add(cb.equal(root.get("castMemberMask"), requestedMask));
             if (!visibleUnits.isEmpty()) {
-                predicates.add(cb.or(cb.isNull(root.get("unitId")), cb.not(root.get("unitId").in(visibleUnits))));
+                Subquery<Long> assigned = query.subquery(Long.class);
+                var unitId = assigned.correlate(root).<Archive, Long>joinSet("unitIds");
+                assigned.select(unitId).where(unitId.in(visibleUnits));
+                predicates.add(cb.not(cb.exists(assigned)));
             }
             return cb.and(predicates.toArray(Predicate[]::new));
         };
@@ -431,7 +441,15 @@ public class ArchiveService {
                 .setMaxResults(pageable.getPageSize())
                 .getResultList();
         long total = countArchives(spec);
-        return new PageImpl<>(content, pageable, total);
+        return new PageImpl<>(withUnitIds(content), pageable, total);
+    }
+
+    private List<Archive> withUnitIds(List<Archive> content) {
+        if (!content.isEmpty()) {
+            // 현재 영속성 컨텍스트의 페이지 엔티티에 컬렉션을 일괄 로드한다.
+            archiveRepository.findWithUnitIdsByIdIn(content.stream().map(Archive::getId).toList());
+        }
+        return content;
     }
 
     private static Long unitIdForMembers(Set<String> members, List<ArchiveFolderClassifier.UnitMembers> units) {
@@ -574,8 +592,7 @@ public class ArchiveService {
         if (unitId == null) {
             return common.and((root, query, cb) -> cb.disjunction());
         }
-        Long lockedUnitId = unitId;
-        return common.and((root, query, cb) -> cb.equal(root.get("unitId"), lockedUnitId));
+        return common.and((root, query, cb) -> cb.isMember(unitId, root.<Set<Long>>get("unitIds")));
     }
 
     /** 유닛 폴더 출처 탭: 해당 unitId 글의 source만. */
@@ -953,13 +970,19 @@ public class ArchiveService {
         return saved;
     }
 
-    /** 수동 소속 유닛. null·0 이하면 해제. */
+    /** 수동 소속 유닛. 유효한 ID가 없으면 전체 해제한다. */
     @Transactional
-    public Archive assignUnitId(long id, Long unitId) {
-        Archive archive = show(id);
-        Long next = unitId != null && unitId > 0 ? unitId : null;
-        if (Objects.equals(archive.getUnitId(), next)) return archive;
-        archive.setUnitId(next);
+    public Archive assignUnitIds(long id, Collection<Long> unitIds) {
+        Archive archive = archiveRepository.findByIdForUnitAssignment(id)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 아카이브: " + id));
+        Set<Long> next = new LinkedHashSet<>();
+        if (unitIds != null) {
+            for (Long unitId : unitIds) {
+                if (unitId != null && unitId > 0) next.add(unitId);
+            }
+        }
+        if (archive.getUnitIds().equals(next)) return archive;
+        archive.setUnitIds(next);
         Archive saved = archiveRepository.save(archive);
         invalidateIndexCache();
         return saved;
@@ -995,21 +1018,20 @@ public class ArchiveService {
     }
 
     /**
-     * unit_id 가 비어 있고 출연진이 유닛 구성과 완전 일치(결성일 이후)인 글에 unit_id 를 채운다.
-     * 예전 출연진 자동 분류 → 저장 unitId 전환 시 뱃지·유닛 폴더가 비는 것을 한 번 복구한다.
-     * 이미 해제(null)한 뒤 다시 돌리면 동일 조건으로 다시 채워지므로 일회성 runner 에서만 호출한다.
+     * 소속 유닛이 없고 출연진이 결성된 유닛 구성과 완전히 일치하는 글의 소속을 채운다.
+     * 수동으로 해제한 유닛이 복원되지 않도록 일회성 runner에서만 호출한다.
      */
     @Transactional
     public int backfillUnitIdsFromExactCast(List<ArchiveFolderClassifier.UnitMembers> units) {
         if (units == null || units.isEmpty()) return 0;
         List<Archive> pending = archiveRepository.findAll(
-                (root, query, cb) -> cb.isNull(root.get("unitId")));
+                (root, query, cb) -> cb.isEmpty(root.<Set<Long>>get("unitIds")));
         List<Archive> toSave = new ArrayList<>();
         for (Archive archive : pending) {
             Long matched = ArchiveFolderClassifier.unitIdForExactCast(
                     archive.getArtistNames(), archive.getRegisteredOn(), units);
             if (matched == null) continue;
-            archive.setUnitId(matched);
+            archive.setUnitIds(new LinkedHashSet<>(Set.of(matched)));
             toSave.add(archive);
         }
         if (toSave.isEmpty()) return 0;

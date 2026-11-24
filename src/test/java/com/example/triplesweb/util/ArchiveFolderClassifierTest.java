@@ -35,7 +35,7 @@ class ArchiveFolderClassifierTest {
 
     @Test void assignedUnitIdGoesToThatUnitFolder() {
         var match = ArchiveFolderClassifier.classify(
-                "윤서연,김유연,김나경,공유빈", List.of(aaa()), null, 1L);
+                "윤서연,김유연,김나경,공유빈", List.of(aaa()), Set.of(1L));
         assertThat(match.kind()).isEqualTo(ArchiveFolderClassifier.Kind.UNIT);
         assertThat(match.key()).isEqualTo("unit-1");
         assertThat(match.label()).isEqualTo("Acid Angel from Asia");
@@ -43,33 +43,35 @@ class ArchiveFolderClassifierTest {
         assertThat(ArchiveFolderClassifier.matches(match, "combo-4", List.of())).isFalse();
     }
 
-    @Test void assignedUnitKeepsUnitFolderEvenBeforeFormation() {
-        var before = ArchiveFolderClassifier.classify(
-                "윤서연,김유연,김나경,공유빈", List.of(aaa()), LocalDate.of(2022, 9, 24), 1L);
-        assertThat(before.kind()).isEqualTo(ArchiveFolderClassifier.Kind.UNIT);
-        assertThat(ArchiveFolderClassifier.matches(before, "unit-1", List.of())).isTrue();
+    @Test void assignedUnitsMatchEveryUnitFolderAndMemberSelection() {
+        var kre = new ArchiveFolderClassifier.UnitMembers(2L, "+(KR)ystal Eyes",
+                Set.of("윤서연", "이지우", "김채연", "김수민"));
+        var units = List.of(aaa(), kre);
+        var match = ArchiveFolderClassifier.classify(
+                "윤서연,이지우,김채연,김유연,김수민,김나경,공유빈", units, Set.of(1L, 2L));
+        assertThat(match.unitIds()).containsExactlyInAnyOrder(1L, 2L);
+        assertThat(ArchiveFolderClassifier.matches(match, "unit-1", List.of())).isTrue();
+        assertThat(ArchiveFolderClassifier.matches(match, "unit-2", List.of())).isTrue();
+        assertThat(ArchiveFolderClassifier.matches(match, "unit-3", List.of())).isFalse();
+        assertThat(ArchiveFolderClassifier.matches(match, "combo-5", List.of())).isFalse();
+        assertThat(ArchiveFolderClassifier.matches(match, "s", List.copyOf(kre.members()), units)).isTrue();
+    }
 
-        var unassigned = ArchiveFolderClassifier.classify(
-                "윤서연,김유연,김나경,공유빈", List.of(aaa()), LocalDate.of(2022, 9, 25));
-        assertThat(unassigned.kind()).isEqualTo(ArchiveFolderClassifier.Kind.COMBO);
+    @Test void assignedUnitKeepsUnitFolderEvenBeforeFormation() {
+        String cast = "윤서연,김유연,김나경,공유빈";
+        var units = List.of(aaa());
+        assertThat(ArchiveFolderClassifier.unitIdForExactCast(cast, LocalDate.of(2022, 9, 24), units)).isNull();
+        var assigned = ArchiveFolderClassifier.classify(cast, units, Set.of(1L));
+        assertThat(ArchiveFolderClassifier.matches(assigned, "unit-1", List.of())).isTrue();
     }
 
     @Test void exactUnitSetWithoutAssignmentIsNeverUnitFolder() {
-        var before = ArchiveFolderClassifier.classify(
-                "윤서연,김유연,김나경,공유빈", List.of(aaa()), LocalDate.of(2022, 9, 24));
-        assertThat(before.kind()).isEqualTo(ArchiveFolderClassifier.Kind.COMBO);
-        assertThat(before.key()).isEqualTo("combo-4");
+        String cast = "윤서연,김유연,김나경,공유빈";
+        var unassigned = ArchiveFolderClassifier.classify(cast, List.of(aaa()));
+        assertThat(unassigned.kind()).isEqualTo(ArchiveFolderClassifier.Kind.COMBO);
+        assertThat(unassigned.key()).isEqualTo("combo-4");
         assertThat(ArchiveFolderClassifier.matches(
-                before, "s", List.of("윤서연", "김유연", "김나경", "공유빈"), List.of(aaa()),
-                LocalDate.of(2022, 9, 24))).isFalse();
-
-        // 결성일 이후라도 저장 unitId 없으면 유닛 폴더에 넣지 않는다.
-        var onFormation = ArchiveFolderClassifier.classify(
-                "윤서연,김유연,김나경,공유빈", List.of(aaa()), LocalDate.of(2022, 9, 25));
-        assertThat(onFormation.kind()).isEqualTo(ArchiveFolderClassifier.Kind.COMBO);
-        assertThat(ArchiveFolderClassifier.matches(
-                onFormation, "s", List.of("윤서연", "김유연", "김나경", "공유빈"), List.of(aaa()),
-                LocalDate.of(2022, 9, 25))).isFalse();
+                unassigned, "s", List.of(cast.split(",")), List.of(aaa()))).isFalse();
     }
 
     @Test void unitMemberFolderRequiresExactCastNotSuperset() {
@@ -78,9 +80,9 @@ class ArchiveFolderClassifierTest {
         var acidEyes = new ArchiveFolderClassifier.UnitMembers(3L, "Acid Eyes",
                 Set.of("윤서연", "정혜린", "이지우", "김채연", "김유연", "김수민", "김나경", "공유빈"));
         var units = List.of(aaa(), kre, acidEyes);
-        var kreOnly = ArchiveFolderClassifier.classify("윤서연,이지우,김채연,김수민", units, null, 2L);
+        var kreOnly = ArchiveFolderClassifier.classify("윤서연,이지우,김채연,김수민", units, Set.of(2L));
         var acidEyesCast = ArchiveFolderClassifier.classify(
-                "윤서연,정혜린,이지우,김채연,김유연,김수민,김나경,공유빈", units, null, 3L);
+                "윤서연,정혜린,이지우,김채연,김유연,김수민,김나경,공유빈", units, Set.of(3L));
         List<String> kreMembers = List.of("윤서연", "이지우", "김채연", "김수민");
         assertThat(kreOnly.kind()).isEqualTo(ArchiveFolderClassifier.Kind.UNIT);
         assertThat(ArchiveFolderClassifier.matches(kreOnly, "s", kreMembers, units)).isTrue();

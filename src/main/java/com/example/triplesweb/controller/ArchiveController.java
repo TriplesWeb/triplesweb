@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -187,7 +188,7 @@ public class ArchiveController {
         boolean isAdmin = aboutAdminAuth.isAdmin(request, session);
         List<Artist> artists = artistSnapshot.findAll();
         // 홈 카드는 번들 아이콘·멤버 색만 필요. 유닛/아카이브 전체 스캔은 Tailscale RTT만 키운다.
-        List<Map<String, Object>> folders = folderCards(List.of(), List.of(), List.of(), artists);
+        List<Map<String, Object>> folders = folderCards(artists);
         ArchiveService.TypeTotals totals = archiveService.countTotals();
         long photoCount = totals.images();
         long videoCount = totals.videos();
@@ -219,9 +220,8 @@ public class ArchiveController {
         boolean isAdmin = aboutAdminAuth.isAdmin(request, session);
         List<Artist> artists = artistSnapshot.findAll();
         List<Unit> units = unitService.listVisibleForArchive();
-        // 유닛 카드도 번들 아트·등록 이미지를 쓰고 배지는 숨기므로 전체 아카이브 스캔을 생략한다.
-        FolderCounts counted = new FolderCounts(Map.of(), Map.of());
-        List<Map<String, Object>> folders = unitFolderCards(units, artists, counted);
+        // 유닛 카드는 번들 아트·등록 이미지를 쓰며, 인덱스에서는 건수를 표시하지 않는다.
+        List<Map<String, Object>> folders = unitFolderCards(units, artists);
         ArchiveService.TypeTotals totals = archiveService.countTotals();
         long photoCount = totals.images();
         long videoCount = totals.videos();
@@ -542,10 +542,12 @@ public class ArchiveController {
             if (artist.getName() != null) colors.put(artist.getName().trim().toLowerCase(Locale.ROOT), color);
             if (artist.getEngName() != null) colors.put(artist.getEngName().trim().toLowerCase(Locale.ROOT), color);
         }
-        List<ArchiveFolderClassifier.UnitMembers> unitMembers = unitSnapshots(units);
+        Map<Long, String> unitLabels = new LinkedHashMap<>();
         Map<Long, String> unitColors = new LinkedHashMap<>();
         for (Unit unit : units == null ? List.<Unit>of() : units) {
             if (unit.getUnitId() == null) continue;
+            String label = unit.getUnitName();
+            unitLabels.put(unit.getUnitId(), label == null || label.isBlank() ? "유닛" : label);
             unitColors.put(unit.getUnitId(), unitColor(unit, artists));
         }
         long offset = archives.getPageable().isPaged() ? archives.getPageable().getOffset() : 0;
@@ -643,31 +645,13 @@ public class ArchiveController {
                     ? "#00f5d4"
                     : sourceMeta.getColor());
             card.put("hasSource", sourceCode != null && !sourceCode.isBlank());
-            Long storedUnitId = archive.getUnitId();
-            card.put("unitId", storedUnitId == null ? "" : String.valueOf(storedUnitId));
-            // 유닛 배지는 저장된 unitId만. 목록에 없는 유닛이어도 id가 있으면 배지를 남긴다.
-            ArchiveFolderClassifier.UnitMembers storedUnit = storedUnitId == null ? null : unitMembers.stream()
-                    .filter(unit -> unit != null && storedUnitId.equals(unit.unitId()))
-                    .findFirst()
-                    .orElse(null);
-            boolean unitBadge = storedUnitId != null;
-            card.put("hasUnitBadge", unitBadge);
-            if (storedUnit != null) {
-                String label = storedUnit.unitName() == null || storedUnit.unitName().isBlank()
-                        ? "유닛" : storedUnit.unitName();
-                card.put("unitBadgeLabel", label);
-                card.put("unitBadgeColor", unitColors.getOrDefault(storedUnit.unitId(), "#a78bfa"));
-                card.put("unitBadgeKey", "unit-" + storedUnit.unitId());
-            } else if (storedUnitId != null) {
-                card.put("unitBadgeLabel", "유닛");
-                card.put("unitBadgeColor", unitColors.getOrDefault(storedUnitId, "#a78bfa"));
-                card.put("unitBadgeKey", "unit-" + storedUnitId);
-            } else {
-                card.put("unitBadgeLabel", "");
-                card.put("unitBadgeColor", "");
-                card.put("unitBadgeKey", "");
-            }
-            card.put("hasBadgeRow", (sourceCode != null && !sourceCode.isBlank()) || unitBadge);
+            List<Long> storedUnitIds = archive.getUnitIds().stream().sorted().toList();
+            card.put("unitIds", storedUnitIds.stream().map(String::valueOf).collect(Collectors.joining(",")));
+            card.put("unitBadges", storedUnitIds.stream()
+                    .map(unitId -> Map.of("label", unitLabels.getOrDefault(unitId, "유닛"),
+                            "color", unitColors.getOrDefault(unitId, "#a78bfa")))
+                    .toList());
+            card.put("hasBadgeRow", (sourceCode != null && !sourceCode.isBlank()) || !storedUnitIds.isEmpty());
             cards.add(card);
         }
         return cards;
@@ -1143,49 +1127,11 @@ public class ArchiveController {
         return "#00f5d4";
     }
 
-    private record FolderCounts(Map<String, Integer> counts, Map<String, String> previews) {}
-
-    private FolderCounts folderCounts(List<Archive> archives, List<ArchiveFolderClassifier.UnitMembers> unitMembers) {
-        Map<String, Integer> counts = new LinkedHashMap<>();
-        Map<String, String> previews = new LinkedHashMap<>();
-        for (Archive archive : archives) {
-            counts.merge("s", 1, Integer::sum);
-            ArchiveFolderClassifier.Match match = ArchiveFolderClassifier.classify(
-                    archive.getArtistNames(), unitMembers, archive.getRegisteredOn(), archive.getUnitId());
-            if (match.kind() == ArchiveFolderClassifier.Kind.OTHER) continue;
-            List<String> cast = match.members();
-            for (String name : cast) {
-                int index = MemberPortraitOptions.memberIndex(name);
-                if (index < 24) counts.merge("s" + (index + 1), 1, Integer::sum);
-            }
-            if (unitMembers == null) continue;
-            String preview = archivePreview(archive);
-            Long storedUnitId = archive.getUnitId();
-            // 유닛 폴더 수는 저장된 unitId만. 출연진만 겹치면 세지 않는다.
-            if (storedUnitId == null) continue;
-            for (ArchiveFolderClassifier.UnitMembers unit : unitMembers) {
-                if (unit == null || !storedUnitId.equals(unit.unitId())) continue;
-                String key = "unit-" + unit.unitId();
-                counts.merge(key, 1, Integer::sum);
-                if (!preview.isBlank()) previews.putIfAbsent(key, preview);
-            }
-        }
-        return new FolderCounts(counts, previews);
-    }
-
-    private List<Map<String, Object>> folderCards(List<Archive> archives, List<Unit> units,
-                                                  List<ArchiveFolderClassifier.UnitMembers> unitMembers,
-                                                  List<Artist> artists) {
-        FolderCounts counted = folderCounts(archives, unitMembers);
-        int unitPhotos = 0;
-        for (Unit unit : units == null ? List.<Unit>of() : units) {
-            if (unit.getUnitId() == null) continue;
-            unitPhotos += counted.counts().getOrDefault("unit-" + unit.getUnitId(), 0);
-        }
+    private List<Map<String, Object>> folderCards(List<Artist> artists) {
         List<Map<String, Object>> folders = new ArrayList<>();
-        folders.add(folderCard("s", "tripleS", "#2f8eb4", "/archive?folder=s", counted.counts().getOrDefault("s", 0),
+        folders.add(folderCard("s", "tripleS", "#2f8eb4", "/archive?folder=s", 0,
                 "", ArchiveFolderClassifier.Kind.GROUP, true));
-        folders.add(parentCard("units", "디멘션", "#7c4dff", "/archive?folder=units", unitPhotos));
+        folders.add(parentCard("units", "디멘션", "#7c4dff", "/archive?folder=units", 0));
         for (int i = 0; i < MemberPortraitOptions.koreanOrder().size(); i++) {
             String name = MemberPortraitOptions.koreanOrder().get(i);
             String key = "s" + (i + 1);
@@ -1199,21 +1145,20 @@ public class ArchiveController {
             }
             folders.add(folderCard(key, "S" + (i + 1) + " " + name, color,
                     "/archive?folder=s&members=" + URLEncoder.encode(name, StandardCharsets.UTF_8),
-                    counted.counts().getOrDefault(key, 0), "",
+                    0, "",
                     ArchiveFolderClassifier.Kind.SOLO, false));
         }
         return folders;
     }
 
-    private List<Map<String, Object>> unitFolderCards(List<Unit> units, List<Artist> artists, FolderCounts counted) {
+    private List<Map<String, Object>> unitFolderCards(List<Unit> units, List<Artist> artists) {
         List<Map<String, Object>> folders = new ArrayList<>();
         for (Unit unit : units == null ? List.<Unit>of() : units) {
             if (unit.getUnitId() == null) continue;
             String key = "unit-" + unit.getUnitId();
             String href = "/archive?folder=unit-" + unit.getUnitId();
             String color = unitColor(unit, artists);
-            folders.add(folderCard(key, unit.getUnitName(), color, href, counted.counts().getOrDefault(key, 0),
-                    firstNonBlank(counted.previews().get(key), registeredUnitImage(unit)),
+            folders.add(folderCard(key, unit.getUnitName(), color, href, 0, registeredUnitImage(unit),
                     ArchiveFolderClassifier.Kind.UNIT, false));
         }
         return folders;
@@ -1242,13 +1187,6 @@ public class ArchiveController {
         return card;
     }
 
-    private static String archivePreview(Archive archive) {
-        if (archive.getType() == MediaType.IMAGE && archive.getFile() != null && archive.getFile().getUrl() != null) {
-            return archive.getFile().getUrl();
-        }
-        return archive.getThumbnailUrl() == null ? "" : archive.getThumbnailUrl();
-    }
-
     private static String unitColor(Unit unit, List<Artist> artists) {
         if (unit != null) {
             String folderColor = ArchiveFolderArt.unitColor(unit.getUnitName());
@@ -1260,11 +1198,6 @@ public class ArchiveController {
             }
         }
         return artists == null || artists.isEmpty() ? "#a78bfa" : safeColor(artists.get(0).getColor());
-    }
-
-    private static String firstNonBlank(String first, String second) {
-        if (first != null && !first.isBlank()) return first;
-        return second == null ? "" : second;
     }
 
     private static String registeredUnitImage(Unit unit) {
@@ -1489,9 +1422,23 @@ public class ArchiveController {
         }
     }
 
-    private void applyUploadedUnitId(Archive saved, String unitId) {
-        if (saved == null || saved.getId() == null) return;
-        archiveService.assignUnitId(saved.getId(), parseUnitId(unitId));
+    private static Set<Long> parseUnitIds(List<String> unitIds, String legacyUnitId) {
+        Set<Long> ids = new LinkedHashSet<>();
+        if (unitIds == null) {
+            Long id = parseUnitId(legacyUnitId);
+            if (id != null) ids.add(id);
+        } else {
+            for (String value : unitIds) {
+                Long id = parseUnitId(value);
+                if (id != null) ids.add(id);
+            }
+        }
+        return ids;
+    }
+
+    private void applyUploadedUnitIds(Archive saved, Set<Long> unitIds) {
+        if (saved == null || saved.getId() == null || unitIds.isEmpty()) return;
+        archiveService.assignUnitIds(saved.getId(), unitIds);
     }
 
     private String folderRedirect(MediaType type, String artistNames) {
@@ -1503,8 +1450,7 @@ public class ArchiveController {
         if (assignedUnitId != null && assignedUnitId > 0) {
             return "/archive?" + typeQuery + "folder=unit-" + assignedUnitId;
         }
-        ArchiveFolderClassifier.Match match = ArchiveFolderClassifier.classify(
-                artistNames, unitSnapshots(unitService.listVisibleForArchive()), null, null);
+        ArchiveFolderClassifier.Match match = ArchiveFolderClassifier.classify(artistNames, List.of());
         if (match.kind() == ArchiveFolderClassifier.Kind.OTHER || match.members().isEmpty()) {
             return type == MediaType.VIDEO ? "/archive?type=video" : "/archive";
         }
@@ -1550,6 +1496,7 @@ public class ArchiveController {
                                 @RequestParam("file") MultipartFile file, @RequestParam(value="artistNames", required=false) List<String> artistNames,
                                 @RequestParam("registeredOn") LocalDate registeredOn,
                                 @RequestParam("source") String source,
+                                @RequestParam(value = "unitIds", required = false) List<String> unitIds,
                                 @RequestParam(value = "unitId", required = false) String unitId,
                                 @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
                                 HttpServletRequest request, HttpSession session) throws IOException {
@@ -1561,8 +1508,9 @@ public class ArchiveController {
         try {
             String names = artistNames == null ? "" : String.join(",", artistNames);
             Archive saved = archiveService.save(file, title, type, names, requireDate(registeredOn), requireSource(source));
-            applyUploadedUnitId(saved, unitId);
-            String location = folderRedirect(type, names, parseUnitId(unitId));
+            Set<Long> assignedUnitIds = parseUnitIds(unitIds, unitId);
+            applyUploadedUnitIds(saved, assignedUnitIds);
+            String location = folderRedirect(type, names, assignedUnitIds.stream().findFirst().orElse(null));
             idempotencyService.complete(IdempotencyService.SCOPE_ARCHIVE_UPLOAD, idempotencyKey, location);
             return "redirect:" + location;
         } catch (RuntimeException | IOException error) {
@@ -1579,6 +1527,7 @@ public class ArchiveController {
                               @RequestParam(value = "imageArtistsJson", required = false) String imageArtistsJson,
                               @RequestParam("registeredOn") LocalDate registeredOn,
                               @RequestParam("source") String source,
+                              @RequestParam(value = "unitIds", required = false) List<String> unitIds,
                               @RequestParam(value = "unitId", required = false) String unitId,
                               @RequestParam(defaultValue = "0") int coverIndex,
                               @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
@@ -1606,8 +1555,9 @@ public class ArchiveController {
             } else {
                 saved = archiveService.uploadImages(uploads, safeTitle, castNames, date, archiveSource, description, coverIndex, imageArtistsJson);
             }
-            applyUploadedUnitId(saved, unitId);
-            String location = folderRedirect(MediaType.IMAGE, names, parseUnitId(unitId));
+            Set<Long> assignedUnitIds = parseUnitIds(unitIds, unitId);
+            applyUploadedUnitIds(saved, assignedUnitIds);
+            String location = folderRedirect(MediaType.IMAGE, names, assignedUnitIds.stream().findFirst().orElse(null));
             idempotencyService.complete(IdempotencyService.SCOPE_ARCHIVE_UPLOAD, idempotencyKey, location);
             return "redirect:" + location;
         } catch (RuntimeException | IOException error) {
@@ -1622,6 +1572,7 @@ public class ArchiveController {
                               @RequestParam("title") String title, @RequestParam(value="artistNames", required=false) List<String> artistNames,
                               @RequestParam("registeredOn") LocalDate registeredOn,
                               @RequestParam("source") String source,
+                              @RequestParam(value = "unitIds", required = false) List<String> unitIds,
                               @RequestParam(value = "unitId", required = false) String unitId,
                               @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
                               HttpServletRequest request, HttpSession session) throws IOException {
@@ -1633,8 +1584,9 @@ public class ArchiveController {
         try {
             String names = artistNames == null ? "" : String.join(",", artistNames);
             Archive saved = archiveService.uploadVideoOnly(file, title, MediaType.VIDEO, names, thumbnail, requireDate(registeredOn), requireSource(source));
-            applyUploadedUnitId(saved, unitId);
-            String location = folderRedirect(MediaType.VIDEO, names, parseUnitId(unitId));
+            Set<Long> assignedUnitIds = parseUnitIds(unitIds, unitId);
+            applyUploadedUnitIds(saved, assignedUnitIds);
+            String location = folderRedirect(MediaType.VIDEO, names, assignedUnitIds.stream().findFirst().orElse(null));
             idempotencyService.complete(IdempotencyService.SCOPE_ARCHIVE_UPLOAD, idempotencyKey, location);
             return "redirect:" + location;
         } catch (RuntimeException | IOException error) {
@@ -1658,6 +1610,7 @@ public class ArchiveController {
                                            @RequestParam(value = "keepImageUrlsJson", required = false) String keepImageUrlsJson,
                                            @RequestParam(value = "imageOrderJson", required = false) String imageOrderJson,
                                            @RequestParam(required = false) Integer coverIndex,
+                                           @RequestParam(value = "unitIds", required = false) List<String> unitIds,
                                            @RequestParam(value = "unitId", required = false) String unitId,
                                            HttpServletRequest request,
                                            HttpSession session) throws IOException {
@@ -1685,7 +1638,7 @@ public class ArchiveController {
                         coverIndex,
                         imageArtistsJson);
             }
-            archiveService.assignUnitId(id, parseUnitId(unitId));
+            archiveService.assignUnitIds(id, parseUnitIds(unitIds, unitId));
             return ResponseEntity.ok().build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());

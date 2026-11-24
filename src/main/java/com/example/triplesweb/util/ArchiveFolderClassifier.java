@@ -12,8 +12,7 @@ import java.util.regex.Pattern;
 /**
  * 아카이브 출연자 문자열을 전체 멤버 / 유닛 / 2·3·4명 케미 / 5명 이상 / 솔로로 나눈다.
  * 전체 멤버 폴더({@code s})는 멤버를 고르지 않으면 등록된 자료를 모두 포함한다.
- * 고른 멤버가 어떤 유닛 구성과 같으면 출연진이 완전히 같은 자료만, 아니면 그 멤버가 모두 나온 자료를 포함한다.
- * 유닛 자동 분류는 사진일({@code registeredOn})이 결성일 이전인 경우 적용하지 않는다.
+ * 고른 멤버가 유닛 구성과 같으면 그 유닛에 지정된 자료를, 그 외에는 고른 멤버가 모두 나온 자료를 포함한다.
  */
 public final class ArchiveFolderClassifier {
     public enum Kind { GROUP, UNIT, COMBO, SOLO, OTHER }
@@ -27,7 +26,7 @@ public final class ArchiveFolderClassifier {
         }
     }
 
-    public record Match(Kind kind, String key, List<String> members, Long unitId, String label) {}
+    public record Match(Kind kind, String key, List<String> members, Set<Long> unitIds, String label) {}
 
     private ArchiveFolderClassifier() {
     }
@@ -49,49 +48,39 @@ public final class ArchiveFolderClassifier {
     }
 
     public static Match classify(String artistNames, List<UnitMembers> units) {
-        return classify(artistNames, units, null, null);
+        return classify(artistNames, units, Set.of());
     }
 
     /**
-     * @param registeredOn 사진이 실제로 올라온 날짜. null이면 결성일 필터를 건너뛴다(폴더 제목 등).
+     * @param assignedUnitIds 저장된 소속 유닛. 보이는 소속 유닛이 있으면 케미 분류에서 제외한다.
      */
-    public static Match classify(String artistNames, List<UnitMembers> units, LocalDate registeredOn) {
-        return classify(artistNames, units, registeredOn, null);
-    }
-
-    /**
-     * @param assignedUnitId 저장된 소속 유닛. 있을 때만 {@link Kind#UNIT}.
-     *                       없으면 출연진이 유닛 구성과 같아도 케미({@link Kind#COMBO})로 둔다.
-     */
-    public static Match classify(String artistNames, List<UnitMembers> units, LocalDate registeredOn,
-                                 Long assignedUnitId) {
+    public static Match classify(String artistNames, List<UnitMembers> units, Set<Long> assignedUnitIds) {
         List<String> members = membersOf(artistNames);
         Set<String> unique = new LinkedHashSet<>(members);
+        Set<Long> unitIds = Set.copyOf(assignedUnitIds);
         if (unique.size() == 24 && unique.containsAll(MemberPortraitOptions.koreanOrder())) {
-            return new Match(Kind.GROUP, "s", List.copyOf(unique), null, "전체 멤버");
+            return new Match(Kind.GROUP, "s", members, unitIds, "전체 멤버");
         }
         if (unique.size() == 1) {
             String name = unique.iterator().next();
             int index = MemberPortraitOptions.memberIndex(name);
             if (index < 24) {
                 String korean = MemberPortraitOptions.koreanOrder().get(index);
-                return new Match(Kind.SOLO, "s" + (index + 1), List.of(korean), null, "S" + (index + 1) + " " + korean);
+                return new Match(Kind.SOLO, "s" + (index + 1), List.of(korean), unitIds, "S" + (index + 1) + " " + korean);
             }
         }
-        // 유닛 폴더·배지는 저장된 unitId만 본다. 출연진 일치만으로 UNIT이 되면 해제가 무시된다.
-        if (assignedUnitId != null && units != null) {
+        if (!unitIds.isEmpty() && units != null) {
             for (UnitMembers unit : units) {
-                if (unit == null || unit.members() == null || unit.members().isEmpty()) continue;
-                if (!assignedUnitId.equals(unit.unitId())) continue;
+                if (unit == null || !unitIds.contains(unit.unitId())) continue;
                 String name = unit.unitName() == null || unit.unitName().isBlank() ? "유닛" : unit.unitName();
-                return new Match(Kind.UNIT, "unit-" + unit.unitId(), List.copyOf(unique), unit.unitId(), name);
+                return new Match(Kind.UNIT, "unit-" + unit.unitId(), members, unitIds, name);
             }
         }
         if (unique.size() >= 2) {
             int min = tightestComboMin(unique.size());
-            return new Match(Kind.COMBO, "combo-" + min, List.copyOf(unique), null, comboLabel(min));
+            return new Match(Kind.COMBO, "combo-" + min, members, unitIds, comboLabel(min));
         }
-        return new Match(Kind.OTHER, "other", List.copyOf(unique), null, "기타");
+        return new Match(Kind.OTHER, "other", members, unitIds, "기타");
     }
 
     /** 사진일이 결성일 당일 이후면 true. 날짜가 없으면(미지정) 허용. */
@@ -153,37 +142,31 @@ public final class ArchiveFolderClassifier {
     }
 
     public static boolean matches(Match actual, String folder, List<String> comboMembers, List<UnitMembers> units) {
-        return matches(actual, folder, comboMembers, units, null);
-    }
-
-    public static boolean matches(Match actual, String folder, List<String> comboMembers, List<UnitMembers> units,
-                                  LocalDate registeredOn) {
         if (actual == null || folder == null || folder.isBlank()) return false;
         String key = folder.trim().toLowerCase(Locale.ROOT);
+        if (key.startsWith("unit-")) {
+            return actual.unitIds().stream().anyMatch(unitId -> key.equals("unit-" + unitId));
+        }
         if (key.equals("s")) {
             List<String> wanted = membersOf(String.join(",", comboMembers == null ? List.of() : comboMembers));
             if (wanted.isEmpty()) return true;
             Set<String> wantedSet = new LinkedHashSet<>(wanted);
             Set<String> actualSet = new LinkedHashSet<>(actual.members());
-            // 유닛 구성 멤버 폴더: 저장된 unitId로 UNIT 분류된 글만. 출연진만 같으면 제외.
+            // 유닛 구성 멤버 폴더는 저장된 유닛 소속을 사용한다.
             if (isExactUnitMemberSet(wantedSet, units)) {
-                if (actual.kind() != Kind.UNIT || actual.unitId() == null) return false;
-                Long expected = null;
                 for (UnitMembers unit : units) {
                     if (unit != null && unit.members() != null && unit.members().equals(wantedSet)) {
-                        expected = unit.unitId();
-                        break;
+                        return actual.unitIds().contains(unit.unitId());
                     }
                 }
-                return expected != null && expected.equals(actual.unitId());
             }
             return actualSet.containsAll(wantedSet);
         }
         return switch (actual.kind()) {
             case GROUP -> key.equals("s");
-            case SOLO, UNIT -> key.equals(actual.key());
+            case SOLO -> key.equals(actual.key());
             case COMBO -> matchesCombo(actual, key, comboMembers);
-            case OTHER -> false;
+            case UNIT, OTHER -> false;
         };
     }
 

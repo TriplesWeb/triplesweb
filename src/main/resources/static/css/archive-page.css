@@ -548,9 +548,10 @@ body.site-page > main.archive-page.is-folder-view {
     width: 0.38rem;
     height: 0.38rem;
 }
-.ar-card-badges {
+.ar-card-badges,
+.ar-unit-badges {
     display: flex;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     align-items: center;
     gap: 0.28rem;
     min-width: 0;
@@ -595,7 +596,8 @@ body.site-page > main.archive-page.is-folder-view {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-.ar-unit-badge[hidden] { display: none; }
+.ar-card-badges[hidden],
+.ar-unit-badges[hidden] { display: none; }
 .ar-card .ar-unit-badge {
     min-height: 1.55rem;
     padding: 0.18rem 0.55rem;

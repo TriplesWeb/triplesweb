@@ -36,6 +36,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
+import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -267,6 +268,32 @@ class ArchiveControllerTest {
         org.assertj.core.api.Assertions.assertThat(html).contains("folder&#x3D;unit-17");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("image-upload-pending");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("이미지 업로드 예정");
+    }
+
+    @Test void unitIndexHidesCountsAndArchiveCardShowsBothBadges() throws Exception {
+        Unit first = new Unit();
+        first.setUnitId(7L);
+        first.setUnitName("첫 유닛");
+        Unit second = new Unit();
+        second.setUnitId(8L);
+        second.setUnitName("둘째 유닛");
+        when(unitService.listVisibleForArchive()).thenReturn(List.of(first, second));
+
+        String index = mvc.perform(get("/archive").param("folder", "units"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        var folders = Jsoup.parse(index);
+        org.assertj.core.api.Assertions.assertThat(folders.select("a[href$=unit-7], a[href$=unit-8]")).hasSize(2);
+        org.assertj.core.api.Assertions.assertThat(folders.select(".ar-folder-count")).isEmpty();
+
+        Archive shared = photo();
+        shared.setUnitIds(Set.of(8L, 7L));
+        stubFolder(MediaType.IMAGE, shared);
+        String html = mvc.perform(get("/archive").param("folder", "unit-7"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        var card = Jsoup.parse(html).selectFirst(".ar-card[data-unit-ids='7,8']");
+        org.assertj.core.api.Assertions.assertThat(card).isNotNull();
+        org.assertj.core.api.Assertions.assertThat(card.select(".ar-unit-badge").eachText())
+                .containsExactly("첫 유닛", "둘째 유닛");
     }
 
     @Test void unitFolderOpensByStoredUnitId() throws Exception {
@@ -1067,6 +1094,24 @@ class ArchiveControllerTest {
                 eq("archive-upload-contract-1"));
         verify(idempotencyService).complete(eq(IdempotencyService.SCOPE_ARCHIVE_UPLOAD),
                 eq("archive-upload-contract-1"), eq("/archive?folder=s&members=%EC%9C%A4%EC%84%9C%EC%97%B0"));
+    }
+
+    @Test void imageUploadStillAcceptsLegacyUnitId() throws Exception {
+        MockMultipartFile file = new MockMultipartFile("file", "a.jpg", "image/jpeg", new byte[]{1, 2});
+        when(archiveService.uploadImages(anyList(), anyString(), anyString(), any(), anyString(), isNull(), eq(0)))
+                .thenReturn(photo());
+        mvc.perform(multipart("/archive/upload/image").file(file)
+                        .param("registeredOn", "2026-10-03").param("source", "COSMO_ROOM")
+                        .param("unitId", "7"))
+                .andExpect(redirectedUrl("/archive?folder=unit-7"));
+        verify(archiveService).assignUnitIds(7L, Set.of(7L));
+    }
+
+    @Test void updateAcceptsRepeatedUnitIdsAndIgnoresTheLegacyParameterWhenBothArePresent() throws Exception {
+        mvc.perform(multipart("/archive/7").param("registeredOn", "2026-10-03")
+                        .param("unitIds", "7", "8", "7", "invalid", "0").param("unitId", "99"))
+                .andExpect(status().isOk());
+        verify(archiveService).assignUnitIds(7L, Set.of(7L, 8L));
     }
 
     @Test void imageUploadReplaysCompletedIdempotencyKey() throws Exception {

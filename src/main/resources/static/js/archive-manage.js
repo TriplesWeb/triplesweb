@@ -136,11 +136,7 @@
         source.className = 'ar-source-badge';
         source.dataset.previewSource = '';
         source.hidden = true;
-        const unit = document.createElement('div');
-        unit.className = 'ar-unit-badge';
-        unit.dataset.previewUnit = '';
-        unit.hidden = true;
-        badges.append(source, unit);
+        badges.append(source);
         const meta = document.createElement('div');
         meta.className = 'ar-meta';
         meta.dataset.previewArtists = '';
@@ -148,7 +144,7 @@
         return body;
     }
 
-    function unitBadgeFromCheckbox(cb, fallbackMembers) {
+    function unitBadgeFromCheckbox(cb) {
         if (!cb) return null;
         const label = (cb.closest('label')?.querySelector('span')?.textContent || '').trim();
         if (!label) return null;
@@ -157,7 +153,7 @@
         const members = window.UnitCheckboxGroup
             ? UnitCheckboxGroup.parseMembers(cb)
             : String(cb.dataset.members || '').split(',').map(part => part.trim()).filter(Boolean);
-        const colorName = (fallbackMembers && fallbackMembers[0]) || members[0] || '';
+        const colorName = members[0] || '';
         const first = colorName
             ? document.querySelector(`.mpp-item[data-value="${CSS.escape(colorName)}"]`)
             : null;
@@ -173,12 +169,12 @@
      * 폼 미리보기 유닛 배지.
      * 체크된 유닛만 반영한다. 출연진 일치로 다시 추론하면 해제한 뒤에도 배지가 남는다.
      */
-    function matchUnitBadge(memberNames, root) {
-        const unitRoot = unitChecksRoot(root) || root?.querySelector?.('[data-unit-checks]') || null;
-        const scope = unitRoot || document;
-        const checked = scope.querySelector('input[type="checkbox"][data-members]:checked');
-        if (!checked) return null;
-        return unitBadgeFromCheckbox(checked, memberNames);
+    function matchUnitBadges(root) {
+        const unitRoot = unitChecksRoot(root);
+        const ids = window.UnitCheckboxGroup?.selectedIds(unitRoot) || [];
+        const checks = Array.from(unitRoot?.querySelectorAll('input[type="checkbox"]') || []);
+        const byId = new Map(checks.map(cb => [cb.value, cb]));
+        return ids.map(id => unitBadgeFromCheckbox(byId.get(id)) || { label: '유닛', color: '#a78bfa' });
     }
 
     function archiveSymbolLogo(frame) {
@@ -740,7 +736,7 @@
         if (kind !== 'image' || !form || !slot || !Array.isArray(slot.artists)) return;
         form._archiveApplyingSlot = true;
         try {
-            applyArtists(slotRoot(form), slot.artists.join(','));
+            applyArtists(slotRoot(form), slot.artists.join(','), { syncUnits: false });
         } finally {
             form._archiveApplyingSlot = false;
         }
@@ -1055,14 +1051,6 @@
         });
     }
 
-    /** 목록 카드 미리보기 안에 있는 출처·유닛 배지만 갱신한다. 카드 밖에는 만들지 않는다. */
-    function ensurePreviewBadgeRow(preview) {
-        const badgeRow = preview.querySelector('[data-preview-badges]');
-        const sourceBadge = preview.querySelector('[data-preview-source]');
-        const unitBadge = preview.querySelector('[data-preview-unit]');
-        return { badgeRow, sourceBadge, unitBadge };
-    }
-
     function syncPreview(form) {
         if (!form) return;
         const preview = form.querySelector('.ar-preview');
@@ -1073,7 +1061,8 @@
             const typedDescription = form.querySelector('[name="description"]')?.value.trim() || '';
             title.textContent = typedTitle || typedDescription || (kind === 'video' ? '영상 제목' : '사진');
         }
-        const { badgeRow, sourceBadge, unitBadge } = ensurePreviewBadgeRow(preview);
+        const badgeRow = preview.querySelector('[data-preview-badges]');
+        const sourceBadge = preview.querySelector('[data-preview-source]');
         if (sourceBadge) {
             const select = form.querySelector('[name="source"]');
             const value = (select?.value || '').trim();
@@ -1088,7 +1077,6 @@
             sourceBadge.textContent = label;
         }
         const meta = preview.querySelector('[data-preview-artists]');
-        let memberNames = [];
         if (meta) {
             const items = selectedMemberItems(form.closest('.ar-dialog'));
             meta.style.setProperty('--member-count', String(items.length || 1));
@@ -1096,7 +1084,6 @@
             items.forEach(button => {
                 const name = (button.dataset.value || button.dataset.name || '').trim();
                 if (name) {
-                    memberNames.push(name);
                     meta.appendChild(memberChip(button, name));
                 }
             });
@@ -1108,25 +1095,18 @@
                 time.textContent = registered.replaceAll('-', '/');
                 meta.appendChild(time);
             }
-        } else {
-            memberNames = selectedArtists(form.closest('.ar-dialog') || form);
-        }
-        if (unitBadge) {
-            const matched = matchUnitBadge(memberNames, form.closest('.ar-dialog') || form);
-            unitBadge.hidden = !matched;
-            if (matched) {
-                unitBadge.textContent = matched.label;
-                unitBadge.title = matched.label;
-                unitBadge.style.setProperty('--unit-color', matched.color || '#a78bfa');
-            } else {
-                unitBadge.textContent = '';
-                unitBadge.removeAttribute('title');
-            }
         }
         if (badgeRow) {
-            const showSource = sourceBadge && !sourceBadge.hidden;
-            const showUnit = unitBadge && !unitBadge.hidden;
-            badgeRow.hidden = !showSource && !showUnit;
+            const unitBadges = matchUnitBadges(form.closest('.ar-dialog') || form).map(({ label, color }) => {
+                const badge = document.createElement('div');
+                badge.className = 'ar-unit-badge';
+                badge.textContent = label;
+                badge.title = label;
+                badge.style.setProperty('--unit-color', color || '#a78bfa');
+                return badge;
+            });
+            badgeRow.replaceChildren(...(sourceBadge ? [sourceBadge] : []), ...unitBadges);
+            badgeRow.hidden = (!sourceBadge || sourceBadge.hidden) && !unitBadges.length;
         }
         const info = preview.querySelector('[data-preview-file]');
         const slots = slotsOf(form);
@@ -1159,17 +1139,12 @@
         return root?.querySelector?.('[data-unit-checks]') || null;
     }
 
-    function selectedUnitId(root) {
-        const checked = unitChecksRoot(root)?.querySelector('input[type="checkbox"]:checked');
-        const value = checked?.value?.trim();
-        return value || '';
-    }
-
     function appendSelectedUnit(body, root) {
-        body.set('unitId', selectedUnitId(root));
+        const ids = window.UnitCheckboxGroup?.selectedIds(unitChecksRoot(root)) || [];
+        ids.forEach(id => body.append('unitIds', id));
     }
 
-    function renderArtists(root) {
+    function renderArtists(root, { syncUnits = true } = {}) {
         if (!root) return;
         const values = selectedArtists(root);
         const count = root.querySelector('[data-picker-count]');
@@ -1193,15 +1168,17 @@
             });
             if (!values.length) chips.textContent = '멤버를 선택하면 여기에 표시됩니다.';
         }
-        window.UnitCheckboxGroup?.syncFromMembers(unitChecksRoot(root), values, {
-            registeredOn: registeredOnOf(root)
-        });
+        if (syncUnits) {
+            window.UnitCheckboxGroup?.syncFromMembers(unitChecksRoot(root), values, {
+                registeredOn: registeredOnOf(root)
+            });
+        }
         const form = root.querySelector?.('form') || root.closest?.('form');
         captureSlot(form);
         syncPreview(form);
     }
 
-    function applyArtists(root, raw, { allSlots = false } = {}) {
+    function applyArtists(root, raw, { allSlots = false, syncUnits = true } = {}) {
         if (window.MemberPortraitPicker) MemberPortraitPicker.clear(root);
         const names = (raw || "").split(",").map(part => part.trim()).filter(Boolean);
         root.querySelectorAll(".mpp-item").forEach(button => {
@@ -1210,10 +1187,10 @@
                 window.MemberPortraitPicker.setActive(button, true);
             }
         });
-        renderArtists(root);
+        renderArtists(root, { syncUnits });
         const form = root.querySelector?.('form') || root.closest?.('form');
         // 유닛 프리셋은 게시글 전체 출연진을 바꾸므로 모든 사진 슬롯을 맞춘다.
-        if (allSlots) syncAllSlotArtists(form, names);
+        if (allSlots) syncAllSlotArtists(form, selectedArtists(root));
     }
 
     function bindPicker(root) {
@@ -1967,6 +1944,7 @@
         afterUploadLocation = null;
         resetUploadIdempotencyKey();
         uploadForm.reset();
+        window.UnitCheckboxGroup?.setChecks(unitChecksRoot(uploadDialog), []);
         releaseCoverFrames(uploadForm);
         resetThumbnail(uploadForm);
         setUploadStatus("");
@@ -2174,6 +2152,7 @@
     function populateEditForm(button) {
         if (!editForm || !button) return;
         editForm.reset();
+        window.UnitCheckboxGroup?.setChecks(unitChecksRoot(editDialog), []);
         releaseCoverFrames(editForm);
         resetThumbnail(editForm, button.dataset.thumbnailUrl || '');
         editForm.dataset.id = button.dataset.id || "";
@@ -2211,11 +2190,9 @@
             registered.dispatchEvent(new Event("input", { bubbles: true }));
         }
         applyArtists(editDialog, button.dataset.artists || "");
-        const storedUnitId = (button.dataset.unitId || '').trim();
-        if (storedUnitId) {
-            window.UnitCheckboxGroup?.selectManual(unitChecksRoot(editDialog), storedUnitId);
-            syncPreview(editForm);
-        }
+        const storedUnitIds = (button.dataset.unitIds || '').split(',').filter(Boolean);
+        window.UnitCheckboxGroup?.selectManual(unitChecksRoot(editDialog), storedUnitIds);
+        syncPreview(editForm);
         const sourceSelect = editForm.querySelector("[name='source']");
         if (sourceSelect) sourceSelect.value = button.dataset.source || "";
         if (editFile) {
@@ -2416,7 +2393,7 @@
         if (kind === "video") body.set("title", title);
         else body.set("description", description);
         body.set("registeredOn", registeredOn);
-        // 피커에서 바꾼 출연진이 활성 슬롯에만 반영되게 한다. unitId는 appendSelectedUnit으로 따로 간다.
+        // 피커에서 바꾼 출연진이 활성 슬롯에만 반영되게 한다. 소속 유닛은 appendSelectedUnit으로 따로 간다.
         captureSlot(editForm);
         const liveNames = selectedArtists(editDialog);
         const editRows = kind === 'image' ? artistRows(editForm) : [];

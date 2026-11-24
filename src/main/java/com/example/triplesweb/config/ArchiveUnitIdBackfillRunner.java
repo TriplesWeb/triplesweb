@@ -20,8 +20,8 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * unit_id 컬럼 도입 전 출연진만으로 유닛 폴더에 들어가던 글을 저장 unitId 로 한 번 옮긴다.
- * 수동 해제(null) 이후에는 다시 채우지 않도록 {@code app_one_shot} 마커로 1회만 실행한다.
+ * 출연진만으로 유닛 폴더에 들어가던 글의 소속을 archive_unit에 채운다.
+ * 수동 해제 이후에는 다시 채우지 않도록 {@code app_one_shot} 마커로 1회만 실행한다.
  */
 @Slf4j
 @Component
@@ -42,9 +42,9 @@ public class ArchiveUnitIdBackfillRunner implements ApplicationRunner {
             if (!markerTableReady() || markerApplied()) return;
             int updated = archiveService.backfillUnitIdsFromExactCast(unitSnapshots(unitService.listVisibleForArchive()));
             jdbc.update("INSERT INTO app_one_shot(name) VALUES (?)", MARKER);
-            log.info("Archive unit_id exact-cast backfill applied: {} rows", updated);
+            log.info("Archive unit exact-cast backfill applied: {} rows", updated);
         } catch (RuntimeException e) {
-            log.warn("Archive unit_id backfill skipped: {}", e.getMessage());
+            log.warn("Archive unit backfill skipped: {}", e.getMessage());
         }
     }
 

@@ -80,7 +80,7 @@
         video.src = link.href;
         if (link.dataset.poster) video.poster = link.dataset.poster;
         else video.removeAttribute('poster');
-        const { id, registered, sourceLabel, source: sourceValue, unitLabel, unitColor } = card.dataset;
+        const { id, registered, sourceLabel, source: sourceValue } = card.dataset;
         if (date && dateValue) {
             date.hidden = !registered;
             dateValue.textContent = registered || '';
@@ -96,11 +96,9 @@
         }
         const unit = document.getElementById('archiveVideoUnit');
         if (unit) {
-            const label = (unitLabel || '').trim();
-            unit.hidden = !label;
-            unit.textContent = label;
-            unit.title = label;
-            unit.style.setProperty('--unit-color', (unitColor || '').trim() || '#a78bfa');
+            const badges = [...card.querySelectorAll('.ar-card-badges > .ar-unit-badge')];
+            unit.replaceChildren(...badges.map(badge => badge.cloneNode(true)));
+            unit.hidden = !badges.length;
         }
         if (meta) meta.hidden = (!date || date.hidden) && (!source || source.hidden) && (!unit || unit.hidden);
 
