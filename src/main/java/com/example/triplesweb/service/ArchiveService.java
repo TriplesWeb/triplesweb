@@ -222,8 +222,7 @@ public class ArchiveService {
     }
 
     private static List<Order> criteriaOrders(CriteriaBuilder cb, Root<Archive> root, ArchiveSort sort) {
-        LocalDate nullDate = LocalDate.of(1970, 1, 1);
-        Expression<LocalDate> date = cb.coalesce(root.get("registeredOn"), nullDate);
+        Expression<LocalDate> date = root.get("registeredOn");
         Expression<String> title = cb.coalesce(root.get("title"), "");
         return switch (sort == null ? ArchiveSort.NEWEST : sort) {
             case OLDEST -> List.of(cb.asc(date), cb.asc(root.get("id")));

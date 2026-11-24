@@ -480,7 +480,7 @@ class ArchiveControllerTest {
                 .andExpect(content().string(containsString("id=\"archiveDetail\"")))
                 .andExpect(content().string(not(containsString("더보기"))))
                 .andExpect(content().string(not(containsString("원본 열기"))))
-                .andExpect(content().string(not(containsString("archiveDetailOriginal"))))
+                .andExpect(content().string(containsString("id=\"archiveDetailOriginalLink\" target=\"_blank\" rel=\"noopener\">원본 보기</a>")))
                 .andExpect(content().string(not(containsString("class=\"ar-submit\">검색</button>"))))
                 .andExpect(content().string(containsString(">초기화</a>")))
                 .andExpect(content().string(not(containsString("ar-search-go"))))

@@ -1,6 +1,7 @@
 package com.example.triplesweb.service;
 
 import com.example.triplesweb.entity.MediaType;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -18,6 +19,25 @@ import static org.mockito.Mockito.when;
 
 class FileStorageServiceImplTest {
     @TempDir Path directory;
+
+    @Test void deletesBothGenerationsOfImageVariantsWithOriginal() throws Exception {
+        var sync = mock(UploadSyncService.class);
+        var store = mock(UploadContentStore.class);
+        var storage = new FileStorageServiceImpl(directory.toString(), sync, store, Runnable::run);
+        Files.createDirectories(directory.resolve("images"));
+        Path original = Files.createFile(directory.resolve("images/photo.jpg"));
+        Path legacy = Files.createFile(directory.resolve("images/photo.card-480.jpg"));
+        Path current = Files.createFile(directory.resolve("images/photo.card2-1600.jpg"));
+        Path unrelated = Files.createFile(directory.resolve("images/other.card2-1600.jpg"));
+
+        assertThat(storage.deleteFile("/uploads/images/photo.jpg")).isTrue();
+        assertThat(original).doesNotExist();
+        assertThat(legacy).doesNotExist();
+        assertThat(current).doesNotExist();
+        assertThat(unrelated).exists();
+        verify(sync).deleteRelative("images/photo.jpg");
+        verify(store).delete("images/photo.jpg");
+    }
 
     @ParameterizedTest
     @CsvSource({
