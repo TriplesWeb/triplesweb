@@ -1,10 +1,5 @@
 /**
- * 소속 유닛 체크박스 그룹 헬퍼.
- * - setChecks / selectedIds: 아티스트 편집 등
- * - bindMemberHelper: 아카이브 — 유닛은 출연진 프리셋(1개).
- *   유닛 먼저 → 출연진을 그 구성으로 채움.
- *   멤버 먼저 → 유닛만 체크(출연진 유지, 수동 선택 유지).
- *   멤버 완전 일치 → 유닛 자동 체크(결성일 이후만). 유닛 해제 → 유닛만 끄고 멤버는 유지.
+ * 소속 유닛 체크박스 그룹. 아카이브에서는 출연진을 유닛 구성으로 채울 수 있다.
  */
 (function () {
   function rootEl(root) {
@@ -39,84 +34,78 @@
   }
 
   function membersKey(names) {
-    // Set·배열 모두 허용. syncFromMembers는 Set을 넘긴다.
     return Array.from(new Set(Array.from(names || [], String)))
       .sort()
       .join("\0");
   }
 
-  function suppressedSet(el) {
-    if (!el._unitCheckSuppressed) el._unitCheckSuppressed = new Set();
-    return el._unitCheckSuppressed;
-  }
+  const states = new WeakMap();
 
-  function clearManual(el) {
-    if (el) delete el._unitCheckManualId;
-  }
-
-  function setManual(el, id) {
-    if (!el) return;
-    el._unitCheckManualId = String(id);
+  function memberState(el) {
+    if (!states.has(el)) {
+      states.set(el, { manual: new Set(), suppressed: new Set(), memberKey: null, automaticKey: null });
+    }
+    return states.get(el);
   }
 
   function setChecks(root, selectedIds) {
     const el = rootEl(root);
-    clearManual(el);
+    if (!el) return;
+    states.delete(el);
     const selected = new Set((selectedIds || []).map(String));
-    checkboxes(root).forEach((cb) => {
+    checkboxes(el).forEach((cb) => {
       cb.checked = selected.has(String(cb.value));
     });
   }
 
-  /** 출연진과 달라도 유지되는 수동 유닛 선택. */
-  function selectManual(root, unitId) {
+  /** 저장된 소속을 복원하고 현재 출연진의 자동 추정을 억제한다. */
+  function selectManual(root, unitIds) {
     const el = rootEl(root);
-    const id = unitId == null || String(unitId).trim() === "" ? "" : String(unitId).trim();
-    clearManual(el);
-    checkboxes(root).forEach((cb) => {
-      cb.checked = Boolean(id) && String(cb.value) === id;
+    if (!el) return;
+    const state = memberState(el);
+    state.manual = new Set((unitIds || []).map(String));
+    state.suppressed.clear();
+    state.automaticKey = null;
+    checkboxes(el).forEach((cb) => {
+      const id = String(cb.value);
+      cb.checked = state.manual.has(id);
+      if (!cb.checked) state.suppressed.add(id);
     });
-    if (id) setManual(el, id);
   }
 
   function selectedIds(root) {
-    return checkboxes(root)
-      .filter((cb) => cb.checked)
-      .map((cb) => cb.value);
+    const el = rootEl(root);
+    if (!el) return [];
+    const checks = checkboxes(el);
+    const values = new Set(checks.map((cb) => String(cb.value)));
+    const selected = checks.filter((cb) => cb.checked).map((cb) => String(cb.value));
+    // 관리 화면에 보이지 않는 유닛도 기존 글을 편집할 때 보존한다.
+    for (const id of states.get(el)?.manual || []) {
+      if (!values.has(id)) selected.push(id);
+    }
+    return selected;
   }
 
   /**
-   * 출연 멤버와 구성이 완전히 같은 유닛을 체크.
-   * 결성일 이전(registeredOn &lt; formationDate)이면 자동 체크하지 않는다.
-   * 수동으로 고른 유닛이 있으면 멤버·결성일 불일치여도 그 선택을 유지한다.
-   * @param {Element|string} root
-   * @param {string[]} memberNames
-   * @param {{ registeredOn?: string }} [options]
+   * 수동 선택을 유지하며 출연진과 정확히 일치하는 결성된 유닛을 자동 체크한다.
+   * 유닛 선택으로 출연진을 채운 동안에는 체크박스 선택을 그대로 유지한다.
    */
   function syncFromMembers(root, memberNames, options) {
     const el = rootEl(root);
+    if (!el) return;
+    const state = memberState(el);
     const selected = new Set((memberNames || []).map(String));
-    const registeredOn = options && options.registeredOn != null ? String(options.registeredOn) : "";
     const key = membersKey(selected);
-    if (el) {
-      // 멤버 구성이 바뀌면 수동 해제 억제를 풀고, 수동 유닛도 멤버 변경에 맞춰 재평가한다.
-      // 사진일만 바뀐 경우에는 수동 선택을 유지한다.
-      if (el._unitCheckMembersKey !== key) {
-        el._unitCheckSuppressed = new Set();
-        el._unitCheckMembersKey = key;
-        clearManual(el);
-      }
+    if (state.automaticKey === key) return;
+    state.automaticKey = null;
+    if (state.memberKey !== key) {
+      state.suppressed.clear();
+      state.memberKey = key;
     }
-    const suppressed = el ? suppressedSet(el) : new Set();
-    const manualId = el && el._unitCheckManualId ? String(el._unitCheckManualId) : "";
-    checkboxes(root).forEach((cb) => {
+    checkboxes(el).forEach((cb) => {
       const id = String(cb.value);
-      if (manualId && id === manualId && !suppressed.has(id)) {
-        cb.checked = true;
-        return;
-      }
-      const match = sameMemberSet(parseMembers(cb), selected) && formedByRegisteredOn(cb, registeredOn);
-      cb.checked = match && !suppressed.has(id);
+      const match = sameMemberSet(parseMembers(cb), selected) && formedByRegisteredOn(cb, options?.registeredOn);
+      cb.checked = state.manual.has(id) || (match && !state.suppressed.has(id));
     });
   }
 
@@ -139,30 +128,26 @@
     el.addEventListener("change", (event) => {
       const cb = event.target;
       if (!(cb instanceof HTMLInputElement) || cb.type !== "checkbox") return;
-      const members = parseMembers(cb);
+      const state = memberState(el);
+      const id = String(cb.value);
+      const current = membersKey(hooks.getMembers());
       if (cb.checked) {
-        // 한 유닛만: 다른 체크 해제
-        suppressedSet(el).clear();
-        checkboxes(el).forEach((other) => {
-          if (other !== cb) other.checked = false;
-        });
-        const current = (hooks.getMembers() || []).map(String).filter(Boolean);
-        if (!current.length) {
-          // 유닛 먼저: 출연진을 그 유닛 구성으로 채움
-          clearManual(el);
-          hooks.applyMembers(members);
-        } else {
-          // 멤버 먼저: 유닛만 체크하고 출연진은 유지
-          setManual(el, cb.value);
-          if (typeof hooks.onChange === "function") hooks.onChange();
-        }
-        return;
+        state.manual.add(id);
+        state.suppressed.delete(id);
+      } else {
+        state.manual.delete(id);
+        state.suppressed.add(id);
       }
-      // 해제: 유닛만 끄고 출연진은 유지. 같은 구성으로 다시 자동 체크되지 않게 억제.
-      clearManual(el);
-      suppressedSet(el).add(String(cb.value));
-      el._unitCheckMembersKey = membersKey(hooks.getMembers());
-      if (typeof hooks.onChange === "function") hooks.onChange();
+      if (!current || state.automaticKey === current) {
+        const members = [...new Set(checkboxes(el).filter((option) => option.checked).flatMap(parseMembers))];
+        state.automaticKey = membersKey(members);
+        state.memberKey = state.automaticKey;
+        hooks.applyMembers(members);
+      } else {
+        state.automaticKey = null;
+        state.memberKey = current;
+        hooks.onChange?.();
+      }
     });
   }
 

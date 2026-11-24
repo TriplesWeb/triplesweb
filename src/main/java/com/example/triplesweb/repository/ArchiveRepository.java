@@ -1,13 +1,16 @@
 package com.example.triplesweb.repository;
 
 import com.example.triplesweb.entity.Archive;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import com.example.triplesweb.entity.MediaType;
@@ -27,6 +30,16 @@ public interface ArchiveRepository extends JpaRepository<Archive, Long>, JpaSpec
             group by a.file.mediaType
             """)
     List<Object[]> countGroupByMediaType();
+
+    @Query("select a.id, unitId from Archive a join a.unitIds unitId")
+    List<Object[]> findFolderIndexUnitIds();
+
+    @Query("select distinct a from Archive a left join fetch a.unitIds where a.id in :ids")
+    List<Archive> findWithUnitIdsByIdIn(@Param("ids") List<Long> ids);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select a from Archive a where a.id = :id")
+    Optional<Archive> findByIdForUnitAssignment(@Param("id") long id);
 
     List<Archive> findTop2000ByFile_MediaTypeOrderByIdDesc(MediaType type);
 

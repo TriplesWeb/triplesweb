@@ -74,12 +74,9 @@
             source.textContent = label;
         }
         if (unit) {
-            const label = (card.dataset.unitLabel || '').trim();
-            const color = (card.dataset.unitColor || '').trim() || '#a78bfa';
-            unit.hidden = !label;
-            unit.textContent = label;
-            unit.title = label;
-            unit.style.setProperty('--unit-color', color);
+            const badges = [...card.querySelectorAll('.ar-card-badges > .ar-unit-badge')];
+            unit.replaceChildren(...badges.map(badge => badge.cloneNode(true)));
+            unit.hidden = !badges.length;
         }
         if (meta) {
             const unitHidden = !unit || unit.hidden;
@@ -99,7 +96,7 @@
             button.dataset.images = card.dataset.images || '';
             button.dataset.registered = card.dataset.registered || '';
             button.dataset.source = card.dataset.source || '';
-            button.dataset.unitId = card.dataset.unitId || '';
+            button.dataset.unitIds = card.dataset.unitIds || '';
         });
     }
 

@@ -5,6 +5,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 /**
  * 아카이브(미디어 자료) 엔티티. {@link SavedMeta} 임베드로 파일 보관.
@@ -31,8 +33,11 @@ public class Archive {
     private String artistNames;
 
     /** 수동 선택한 소속 유닛. 출연진이 유닛 구성과 달라도 배지에 쓴다. */
-    @Column(name = "unit_id")
-    private Long unitId;
+    @ElementCollection
+    @CollectionTable(name = "archive_unit", joinColumns = @JoinColumn(name = "archive_id"))
+    @Column(name = "unit_id", nullable = false)
+    @ToString.Exclude
+    private Set<Long> unitIds = new LinkedHashSet<>();
 
     @Column(name = "thumbnail_url", length = 500)
     private String thumbnailUrl;

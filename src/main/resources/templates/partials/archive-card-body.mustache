@@ -3,7 +3,7 @@
     {{#hasBadgeRow}}
     <div class="ar-card-badges">
         {{#hasSource}}<div class="ar-source-badge" data-source="{{sourceValue}}" style="--source-color: {{sourceColor}}">{{sourceLabel}}</div>{{/hasSource}}
-        {{#hasUnitBadge}}<div class="ar-unit-badge" style="--unit-color: {{unitBadgeColor}}" title="{{unitBadgeLabel}}">{{unitBadgeLabel}}</div>{{/hasUnitBadge}}
+        {{#unitBadges}}<div class="ar-unit-badge" style="--unit-color: {{color}}" title="{{label}}">{{label}}</div>{{/unitBadges}}
     </div>
     {{/hasBadgeRow}}
     <div class="ar-meta" style="--member-count: {{memberCount}}" title="{{memberNames}}">
