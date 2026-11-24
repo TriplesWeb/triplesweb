@@ -1,0 +1,109 @@
+<!-- Lucian UX/UI Prompt #025 · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/#025 -->
+<!-- Lucian UX/UI Prompt #297 · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/#297 -->
+<!-- Lucian UX/UI Prompt #033 · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/#033 -->
+<!-- Lucian UX/UI Prompt #436 · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/#436 -->
+<!-- Lucian UX/UI Prompt #479 · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/#479 -->
+<dialog class="ux tab-manager" data-tab-manager aria-modal="true">
+    <header class="tab-manager-head">
+        <h2 data-manager-title></h2>
+        <button type="button" class="site-btn site-btn--ghost site-btn--sm" data-manager-close>닫기</button>
+    </header>
+    <form class="tab-manager-add">
+        <div class="tab-manager-add-fields u025">
+            <div class="u025-f">
+                <div class="u025-box">
+                    <input class="tab-manager-input u025-in" name="name" type="text" required>
+                    <span class="u025-line" aria-hidden="true"><i class="l"></i><i class="g"></i><i class="r"></i></span>
+                    <label class="u025-lab">구분 이름</label>
+                </div>
+            </div>
+        </div>
+        <div class="tab-manager-add-actions">
+            <details class="tab-manager-add-color" hidden>
+                <summary><span>배지 색</span><span class="tab-manager-swatch" aria-hidden="true"></span></summary>
+            </details>
+            <button type="submit" class="site-btn site-btn--primary site-btn--sm">추가</button>
+        </div>
+    </form>
+    <p class="tab-manager-error" role="alert" data-manager-error hidden></p>
+    <p class="tab-manager-empty" data-manager-empty></p>
+    <p class="tab-manager-status" role="status" data-manager-status></p>
+    <ul class="u297-ls" data-manager-list></ul>
+    <template data-manager-row>
+        <li class="u297-bl">
+            <div class="u297-wf">
+                <div class="tab-manager-row-main">
+                    <div class="u033">
+                        <div class="u033-row">
+                            <button type="button" class="site-btn site-btn--ghost site-btn--sm u033-view"></button>
+                            <button type="button" class="site-btn site-btn--ghost site-btn--sm u033-pen" aria-label="이름 수정" tabindex="-1"><svg viewBox="0 0 18 18" aria-hidden="true"><path d="M11.5 3.5l3 3L6 15H3v-3z"/></svg></button>
+                            <div class="u033-edit" inert>
+                                <input class="u033-in" type="text" aria-label="이름 수정" required>
+                                <button type="button" class="site-btn site-btn--primary site-btn--sm u033-act ok" aria-label="이름 저장"><svg viewBox="0 0 18 18" aria-hidden="true"><path d="M4 9.5l3.2 3.2L14 5.5"/></svg></button>
+                                <button type="button" class="site-btn site-btn--ghost site-btn--sm u033-act no" aria-label="이름 수정 취소"><svg viewBox="0 0 18 18" aria-hidden="true"><path d="M5 5l8 8M13 5l-8 8"/></svg></button>
+                                <span class="u033-line" aria-hidden="true"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-manager-fixed-name u056-nm" hidden>
+                        <b>
+                            <span data-fixed-name></span>
+                            <em data-fixed-badge></em>
+                        </b>
+                        <small class="tab-manager-fixed-hint">공연/이벤트 페이지에서 수정</small>
+                    </div>
+                    <div class="u297-ac">
+                        <button type="button" class="site-btn site-btn--ghost site-btn--sm" data-move="-1" aria-label="위로"><svg viewBox="0 0 9 9" aria-hidden="true"><path d="M2 6l2.5-2.5L7 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                        <button type="button" class="site-btn site-btn--ghost site-btn--sm" data-move="1" aria-label="아래로"><svg viewBox="0 0 9 9" aria-hidden="true"><path d="M2 3l2.5 2.5L7 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                        <button type="button" class="site-btn site-btn--danger site-btn--sm" data-manager-delete>삭제</button>
+                    </div>
+                </div>
+                <div class="tab-manager-row-meta" hidden>
+                    <details class="tab-manager-row-color" hidden>
+                        <summary><span>배지 색</span><span class="tab-manager-swatch" aria-hidden="true"></span></summary>
+                        <button type="button" class="site-btn site-btn--primary site-btn--sm" data-save-color>색 저장</button>
+                    </details>
+                </div>
+            </div>
+        </li>
+    </template>
+    <template data-color-template>
+<div class="u479">
+  <section class="u479-c">
+    <div class="u479-sv"><span class="u479-h" role="slider" tabindex="0" aria-label="채도와 명도" aria-valuemin="0" aria-valuemax="100"></span></div>
+    <div class="u479-hue"><span class="u479-h" role="slider" tabindex="0" aria-label="색상" aria-valuemin="0" aria-valuemax="360"></span></div>
+    <div class="u479-row">
+      <span class="u479-pv" role="img" aria-label="미리보기">Aa</span>
+      <label class="u479-hx"><span aria-hidden="true">#</span><input type="text" maxlength="7" spellcheck="false" autocomplete="off" aria-label="HEX 색상 코드"></label>
+    </div>
+    <div class="u479-footer">
+      <ul class="u479-sws" aria-label="견본">
+        <li><button type="button" class="u479-sw" style="--u479-s:#FF5A5F" data-hex="FF5A5F" aria-label="#FF5A5F"></button></li>
+        <li><button type="button" class="u479-sw" style="--u479-s:#FFB020" data-hex="FFB020" aria-label="#FFB020"></button></li>
+        <li><button type="button" class="u479-sw" style="--u479-s:#16C784" data-hex="16C784" aria-label="#16C784"></button></li>
+        <li><button type="button" class="u479-sw" style="--u479-s:#2F80ED" data-hex="2F80ED" aria-label="#2F80ED"></button></li>
+      </ul>
+    </div>
+  </section>
+</div>
+    </template>
+</dialog>
+<dialog class="ux tab-manager-confirm u436" data-tab-confirm role="alertdialog" aria-modal="true">
+    <div class="u436-d">
+        <div class="u436-ic" aria-hidden="true">
+            <svg viewBox="0 0 32 32">
+                <defs><clipPath><rect x="-10" y="-30" width="52" height="40.5"/></clipPath></defs>
+                <g data-trash-clip><g class="doc"><path d="M12.5 -1.5h5l3 3v8h-8z"/><path d="M14.5 3.5h3.5M14.5 6h3.5" stroke-width="1.2"/></g></g>
+                <g class="lid"><path d="M5.5 9.5h21"/><path d="M12.5 9V7a1.5 1.5 0 0 1 1.5-1.5h4A1.5 1.5 0 0 1 19.5 7v2"/></g>
+                <g class="bd"><path d="M8 10.5l1.3 14.6a2.4 2.4 0 0 0 2.4 2.2h8.6a2.4 2.4 0 0 0 2.4-2.2L24 10.5"/><path d="M13.5 15v7.5M18.5 15v7.5"/></g>
+            </svg>
+        </div>
+        <h3>삭제할까요?</h3>
+        <p data-confirm-copy></p>
+        <p class="tab-manager-error" role="alert" data-confirm-error hidden></p>
+        <div class="u436-bs">
+            <button type="button" class="site-btn site-btn--ghost site-btn--sm u436-no">취소</button>
+            <button type="button" class="site-btn site-btn--danger site-btn--sm u436-ok">삭제</button>
+        </div>
+    </div>
+</dialog>

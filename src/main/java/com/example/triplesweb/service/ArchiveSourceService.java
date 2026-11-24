@@ -2,19 +2,29 @@ package com.example.triplesweb.service;
 
 import com.example.triplesweb.dto.ArchiveSourceDto;
 import com.example.triplesweb.entity.ArchiveSource;
+import com.example.triplesweb.entity.MediaType;
 import com.example.triplesweb.repository.ArchiveRepository;
 import com.example.triplesweb.repository.ArchiveSourceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
@@ -22,9 +32,10 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class ArchiveSourceService {
 
-    private static final Pattern CODE_PATTERN = Pattern.compile("^[A-Z][A-Z0-9_]{0,31}$");
     private static final Pattern COLOR_PATTERN = Pattern.compile("^#[0-9a-fA-F]{6}$");
     private static final String DEFAULT_COLOR = "#00f5d4";
+    private static final Comparator<ArchiveSource> SOURCE_ORDER = Comparator
+            .comparingInt(ArchiveSource::getSortOrder).thenComparing(ArchiveSource::getId);
     private static final long CACHE_TTL_MS = 30_000L;
 
     private final ArchiveSourceRepository archiveSourceRepository;
@@ -34,11 +45,21 @@ public class ArchiveSourceService {
 
     private record CachedCatalog(List<ArchiveSource> all, long at) {}
 
+    public record SourceTab(ArchiveSourceDto source, boolean hasPosts) {}
+
     @Transactional(readOnly = true)
-    public List<ArchiveSourceDto> listVisible() {
+    public List<SourceTab> listTabs(MediaType type, boolean includeEmpty) {
+        return listTabs(archiveRepository.findSourceCodesWithPosts(type), includeEmpty);
+    }
+
+    @Transactional(readOnly = true)
+    public List<SourceTab> listTabs(Collection<String> sourceCodesWithPosts, boolean includeEmpty) {
+        Set<String> used = new HashSet<>();
+        sourceCodesWithPosts.forEach(code -> used.add(code.toUpperCase(Locale.ROOT)));
+        if (used.contains("TEASER")) used.add("TEASER_BEHIND");
         return loadAll().stream()
-                .filter(ArchiveSource::isVisible)
-                .map(ArchiveSourceDto::from)
+                .map(source -> new SourceTab(ArchiveSourceDto.from(source), used.contains(source.getCode().toUpperCase(Locale.ROOT))))
+                .filter(tab -> includeEmpty || tab.hasPosts())
                 .toList();
     }
 
@@ -47,16 +68,6 @@ public class ArchiveSourceService {
         return loadAll().stream().map(ArchiveSourceDto::from).toList();
     }
 
-    @Transactional(readOnly = true)
-    public ArchiveSource requireVisible(String raw) {
-        ArchiveSource source = requireExisting(raw);
-        if (!source.isVisible()) {
-            throw new IllegalArgumentException("숨긴 출처는 선택할 수 없습니다.");
-        }
-        return source;
-    }
-
-    /** 업로드·수정 공통. 숨긴 출처도 기존 값 유지용으로 허용한다. */
     @Transactional(readOnly = true)
     public ArchiveSource requireExisting(String raw) {
         ArchiveSource source = resolve(raw);
@@ -88,36 +99,76 @@ public class ArchiveSourceService {
     }
 
     @Transactional
-    public ArchiveSourceDto create(String code, String label, String color, Integer sortOrder, Boolean visible) {
-        String normalized = normalizeNewCode(code);
-        if ("TEASER".equals(normalized)) {
-            throw new IllegalArgumentException("TEASER는 TEASER_BEHIND로 통합됐습니다. TEASER_BEHIND를 쓰세요.");
-        }
-        if (archiveSourceRepository.existsByCodeIgnoreCase(normalized)) {
-            throw new IllegalArgumentException("이미 있는 출처 코드입니다.");
-        }
+    public ArchiveSourceDto create(String label, String color, Integer sortOrder) {
         ArchiveSource source = new ArchiveSource();
-        source.setCode(normalized);
         source.setLabel(requireLabel(label));
+        source.setCode(nextSourceCode());
         source.setColor(normalizeColor(color));
         source.setSortOrder(sortOrder == null ? nextSortOrder() : sortOrder);
-        source.setVisible(visible == null || visible);
         ArchiveSource saved = archiveSourceRepository.save(source);
         invalidate();
         return ArchiveSourceDto.from(saved);
     }
 
     @Transactional
-    public ArchiveSourceDto update(long id, String label, String color, Integer sortOrder, Boolean visible) {
+    public ArchiveSourceDto update(long id, String label, String color, Integer sortOrder) {
         ArchiveSource source = archiveSourceRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("출처를 찾을 수 없습니다."));
         if (label != null) source.setLabel(requireLabel(label));
         if (color != null && !color.isBlank()) source.setColor(normalizeColor(color));
         if (sortOrder != null) source.setSortOrder(sortOrder);
-        if (visible != null) source.setVisible(visible);
         ArchiveSource saved = archiveSourceRepository.save(source);
         invalidate();
         return ArchiveSourceDto.from(saved);
+    }
+
+    @Transactional
+    public List<ArchiveSourceDto> move(long id, int direction) {
+        if (direction != -1 && direction != 1) {
+            throw new IllegalArgumentException("이동 방향은 -1 또는 1이어야 합니다.");
+        }
+        List<ArchiveSource> sources = new ArrayList<>(archiveSourceRepository.findAllForReorder());
+        int index = 0;
+        while (index < sources.size() && sources.get(index).getId() != id) {
+            index++;
+        }
+        if (index == sources.size()) {
+            throw new IllegalArgumentException("출처를 찾을 수 없습니다.");
+        }
+        int neighborIndex = index + direction;
+        if (neighborIndex >= 0 && neighborIndex < sources.size()) {
+            ArchiveSource source = sources.get(index);
+            ArchiveSource neighbor = sources.get(neighborIndex);
+            int order = source.getSortOrder();
+            source.setSortOrder(neighbor.getSortOrder());
+            neighbor.setSortOrder(order);
+            Collections.swap(sources, index, neighborIndex);
+            ensureSortOrder(sources);
+            // 행 잠금이 풀려 다른 요청이 변경을 읽을 수 있을 때 캐시를 비운다.
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    invalidate();
+                }
+            });
+        }
+        return sources.stream().map(ArchiveSourceDto::from).toList();
+    }
+
+    private void ensureSortOrder(List<ArchiveSource> sources) {
+        for (int i = 1; i < sources.size(); i++) {
+            ArchiveSource previous = sources.get(i - 1);
+            ArchiveSource current = sources.get(i);
+            if (SOURCE_ORDER.compare(previous, current) <= 0) continue;
+            // 동점인 경우에만 후속 순서값을 올려 실제 조회 순서와 일치시킨다.
+            if (previous.getSortOrder() == Integer.MAX_VALUE) {
+                for (int j = 0; j < sources.size(); j++) {
+                    sources.get(j).setSortOrder(j + 1);
+                }
+                return;
+            }
+            current.setSortOrder(previous.getSortOrder() + 1);
+        }
     }
 
     @Transactional
@@ -174,14 +225,13 @@ public class ArchiveSourceService {
         return loadAll().stream().mapToInt(ArchiveSource::getSortOrder).max().orElse(0) + 10;
     }
 
-    private static String normalizeNewCode(String raw) {
-        if (raw == null || raw.isBlank()) {
-            throw new IllegalArgumentException("출처 코드를 입력하세요.");
-        }
-        String code = raw.trim().toUpperCase(Locale.ROOT).replace('-', '_').replace(' ', '_');
-        if (!CODE_PATTERN.matcher(code).matches()) {
-            throw new IllegalArgumentException("출처 코드는 영문 대문자·숫자·밑줄만 쓸 수 있습니다.");
-        }
+    private String nextSourceCode() {
+        // Base 36 keeps the entire UUID within 25 characters and leaves room for the prefix.
+        String code;
+        do {
+            String hex = UUID.randomUUID().toString().replace("-", "");
+            code = "SOURCE_" + new BigInteger(hex, 16).toString(36).toUpperCase(Locale.ROOT);
+        } while (archiveSourceRepository.existsByCodeIgnoreCase(code));
         return code;
     }
 

@@ -48,6 +48,12 @@ public interface ArchiveRepository extends JpaRepository<Archive, Long>, JpaSpec
     long countBySourceIgnoreCase(String source);
 
     @Query("""
+            select distinct upper(a.source) from Archive a
+            where a.file.mediaType = :type and a.source is not null
+            """)
+    List<String> findSourceCodesWithPosts(@Param("type") MediaType type);
+
+    @Query("""
             select a from Archive a
             where a.file.mediaType = :type and locate(lower(:keyword), lower(a.title)) > 0
             order by a.registeredOn desc, a.id desc

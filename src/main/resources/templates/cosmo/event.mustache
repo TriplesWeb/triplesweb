@@ -1,4 +1,5 @@
 {{>layout/head-open}}
+<link rel="stylesheet" href="{{#asset}}/css/site-tab-manager.css{{/asset}}">
 
 <link rel="stylesheet" href="{{#asset}}/css/about-admin.css{{/asset}}">
     <title>트리플에스 커뮤니티 - 역대 이벤트</title>
@@ -12,12 +13,12 @@
             <h2 class="text-2xl font-bold text-[#e3e2e8] flex items-center gap-2 m-0 min-w-0">
                 <span class="w-2.5 h-2.5 rounded-full bg-[#00f5d4]"></span> 역대 공연 행사
             </h2>
-            <div class="about-admin-toolbar">
-                <button type="button" id="eventSectionBtn" hidden class="about-mode-btn about-admin-only is-active btn btn-sm btn-outline btn-primary btn-active">구분 관리</button>
-                <button type="button" id="eventAddBtn" hidden class="about-mode-btn about-admin-only is-active btn btn-sm btn-outline btn-primary btn-active">이벤트 추가</button>
+            <div class="about-admin-toolbar tab-manager-toolbar">
+                <button type="button" id="eventSectionBtn" hidden class="site-btn site-btn--ghost site-btn--sm">구분 관리</button>
+                <button type="button" id="eventAddBtn" hidden class="site-btn site-btn--primary site-btn--sm">이벤트 추가</button>
             </div>
         </div>
-        <p id="eventAdminHint" class="about-admin-hint hidden mb-4">관리자 모드: 구분을 만들고 이벤트를 배정하거나, 카드의 수정 버튼으로 편집할 수 있어요.</p>
+        <p id="eventAdminHint" class="about-admin-hint tab-manager-hint hidden">관리자 모드: 구분을 만들고 이벤트를 배정하거나, 카드의 수정 버튼으로 편집할 수 있어요.</p>
 
         <ul class="site-section-tabs nav nav-tabs{{^eventSections}} hidden{{/eventSections}}" id="eventSectionTabs" role="tablist">
             {{#eventSections}}
@@ -51,13 +52,16 @@
             {{/eventSections}}
         </div>
 
-        {{^eventSections}}
-        <p class="text-sm text-[#b9cac4]/70 py-8 text-center" role="status">등록된 이벤트가 없습니다.</p>
-        {{/eventSections}}
+        <div id="eventSectionEmpty">
+            {{^eventSections}}
+            <p class="text-sm text-[#b9cac4]/70 py-8 text-center" role="status">등록된 이벤트가 없습니다.</p>
+            {{/eventSections}}
+        </div>
     </div>
 </main>
 {{>cosmo/partials/event-admin-modals}}
 <script src="{{#asset}}/js/about-tabs.js{{/asset}}" defer></script>
 <script src="{{#asset}}/js/about-modal.js{{/asset}}" defer></script>
+<script src="{{#asset}}/js/site-tab-manager.js{{/asset}}" defer></script>
 <script src="{{#asset}}/js/event.js{{/asset}}" defer></script>
 {{>layout/page-end}}

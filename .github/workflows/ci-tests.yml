@@ -158,6 +158,7 @@ jobs:
           node scripts/tests/archive-manage-preview.browser.cjs
           node scripts/tests/archive-carousel.browser.cjs
           node scripts/tests/modal-navigation.browser.cjs
+          node scripts/tests/site-tab-manager.browser.cjs
           node scripts/tests/date-calendar-scope.cjs
           node scripts/tests/objekt-grid-cols.browser.cjs
           node scripts/tests/profile-ownership-tabs.browser.cjs

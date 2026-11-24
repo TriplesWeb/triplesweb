@@ -177,34 +177,6 @@
     return out;
   }
 
-  function renderSectionList() {
-    const list = document.getElementById("eventSectionList");
-    if (!list) return;
-    if (!sectionOptions.length) {
-      list.innerHTML = '<li class="text-sm text-[#b9cac4]/70 py-2">등록된 구분이 없습니다.</li>';
-      return;
-    }
-    list.innerHTML = sectionOptions.map((s, i) => `
-      <li class="flex flex-wrap items-center gap-2 border border-[#3a4a46]/40 rounded-lg p-2" data-section-id="${s.sectionId}">
-        <input type="text" class="section-name-input flex-1 min-w-[8rem] bg-[#0d0e12] border border-[#3a4a46]/50 rounded px-2 py-1 text-sm" value="${escapeAttr(s.name)}" maxlength="120" aria-label="구분명">
-        <button type="button" class="about-mode-btn section-rename" title="이름 저장">저장</button>
-        <button type="button" class="about-mode-btn section-up" ${i === 0 ? "disabled" : ""} title="위로">↑</button>
-        <button type="button" class="about-mode-btn section-down" ${i === sectionOptions.length - 1 ? "disabled" : ""} title="아래로">↓</button>
-        <button type="button" class="about-mode-btn about-btn-danger section-delete" title="삭제">삭제</button>
-      </li>`).join("");
-  }
-
-  async function openSectionModal() {
-    if (!isAdmin) { openLoginModal(); return; }
-    const err = document.getElementById("eventSectionError");
-    if (err) { err.hidden = true; err.textContent = ""; }
-    const nameInput = document.getElementById("eventSectionNewName");
-    if (nameInput) nameInput.value = "";
-    await loadOptions();
-    renderSectionList();
-    openModal("eventSectionModal");
-  }
-
   async function openEditModal(eventId) {
     if (!isAdmin) { openLoginModal(); return; }
     const err = document.getElementById("eventEditError");
@@ -244,25 +216,48 @@
     openModal("eventEditModal");
   }
 
-  function bindUi() {
-    document.querySelectorAll(".event-edit-close").forEach((el) => {
-      el.addEventListener("click", () => closeModal("eventEditModal"));
-    });
-    document.querySelectorAll(".event-section-close").forEach((el) => {
-      el.addEventListener("click", () => {
-        closeModal("eventSectionModal");
-        location.reload();
-      });
-    });
-
-    document.getElementById("eventAddBtn")?.addEventListener("click", () => openEditModal(null));
-    document.getElementById("eventSectionBtn")?.addEventListener("click", () => openSectionModal());
+  function bindEditButtons() {
     document.querySelectorAll("[data-event-edit]").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
         openEditModal(btn.getAttribute("data-event-edit"));
       });
+    });
+  }
+
+  function bindUi() {
+    document.querySelectorAll(".event-edit-close").forEach((el) => {
+      el.addEventListener("click", () => closeModal("eventEditModal"));
+    });
+    document.getElementById("eventAddBtn")?.addEventListener("click", () => openEditModal(null));
+    bindEditButtons();
+    const manager = window.SiteTabManager;
+    const sectionApi = API + "/sections";
+    const updateTabs = manager?.bindPageSections({
+      prefix: "event",
+      apiBase: sectionApi,
+      emptyText: "이 구분에 등록된 이벤트이 없습니다.",
+      onRender: bindSectionTabs,
+      onCardsReplaced: () => {
+        bindEditButtons();
+        setAdminUi();
+      },
+    });
+    manager?.create({
+      id: "eventSectionModal",
+      trigger: "#eventSectionBtn",
+      apiBase: sectionApi,
+      title: "구분 관리",
+      placeholder: "예: 콘서트, 팬미팅",
+      emptyText: "등록된 구분이 없습니다.",
+      deleteCopy: (name) => `「${name}」 구분을 삭제하시겠습니까? 소속 이벤트는 「기타」로 이동합니다.`,
+      fetch: apiFetch,
+      onChange: (rows, detail) => {
+        sectionOptions = rows;
+        fillSectionSelect(document.getElementById("eventEditSectionId")?.value);
+        return updateTabs(rows, detail);
+      },
     });
 
     document.getElementById("eventAddStopBtn")?.addEventListener("click", () => {
@@ -274,84 +269,6 @@
 
     document.getElementById("eventEditStops")?.addEventListener("click", (e) => {
       if (e.target.closest(".stop-remove")) e.target.closest(".event-stop-row")?.remove();
-    });
-
-    document.getElementById("eventSectionAddForm")?.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const err = document.getElementById("eventSectionError");
-      const name = document.getElementById("eventSectionNewName")?.value?.trim();
-      if (!name) {
-        if (err) { err.hidden = false; err.textContent = "구분 이름을 입력해 주세요."; }
-        return;
-      }
-      if (!await window.SiteFeedback.confirm("이 구분을 추가하시겠습니까?")) return;
-      const doneBusy = window.SiteFeedback.beginBusy();
-      try {
-        const res = await apiFetch(API + "/sections", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name })
-        });
-        if (!res.ok) throw new Error(await readError(res, "추가 실패"));
-        document.getElementById("eventSectionNewName").value = "";
-        sectionOptions = await (await apiFetch(API + "/sections")).json();
-        renderSectionList();
-      } catch (ex) {
-        if (err) { err.hidden = false; err.textContent = ex.message || "추가 실패"; }
-      } finally {
-        doneBusy();
-      }
-    });
-
-    document.getElementById("eventSectionList")?.addEventListener("click", async (e) => {
-      const row = e.target.closest("[data-section-id]");
-      if (!row) return;
-      const id = row.getAttribute("data-section-id");
-      const err = document.getElementById("eventSectionError");
-      try {
-        if (e.target.closest(".section-rename")) {
-          const name = row.querySelector(".section-name-input")?.value?.trim();
-          if (!name) throw new Error("구분 이름을 입력해 주세요.");
-          if (!await window.SiteFeedback.confirm("이 구분 이름을 수정하시겠습니까?")) return;
-          const doneRename = window.SiteFeedback.beginBusy();
-          try {
-            const res = await apiFetch(API + "/sections/" + id, {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ name })
-            });
-            if (!res.ok) throw new Error(await readError(res, "저장 실패"));
-            sectionOptions = await (await apiFetch(API + "/sections")).json();
-            renderSectionList();
-          } finally {
-            doneRename();
-          }
-        } else if (e.target.closest(".section-up")) {
-          const res = await apiFetch(API + "/sections/" + id + "/move?direction=-1", { method: "POST" });
-          if (!res.ok) throw new Error(await readError(res, "순서 변경 실패"));
-          sectionOptions = await res.json();
-          renderSectionList();
-        } else if (e.target.closest(".section-down")) {
-          const res = await apiFetch(API + "/sections/" + id + "/move?direction=1", { method: "POST" });
-          if (!res.ok) throw new Error(await readError(res, "순서 변경 실패"));
-          sectionOptions = await res.json();
-          renderSectionList();
-        } else if (e.target.closest(".section-delete")) {
-          if (!await window.SiteFeedback.confirm("이 구분을 삭제하시겠습니까? 소속 이벤트는 「기타」로 이동합니다.")) return;
-          const doneDelete = window.SiteFeedback.beginBusy();
-          try {
-            const res = await apiFetch(API + "/sections/" + id, { method: "DELETE" });
-            if (!res.ok) throw new Error(await readError(res, "삭제 실패"));
-            sectionOptions = await (await apiFetch(API + "/sections")).json();
-            renderSectionList();
-          } finally {
-            doneDelete();
-          }
-        }
-        if (err) { err.hidden = true; err.textContent = ""; }
-      } catch (ex) {
-        if (err) { err.hidden = false; err.textContent = ex.message || "요청 실패"; }
-      }
     });
 
     document.getElementById("eventEditForm")?.addEventListener("submit", async (e) => {

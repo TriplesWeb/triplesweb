@@ -16,7 +16,6 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -39,12 +38,14 @@ class ArchiveSourceApiControllerTest {
     @MockitoBean AboutAdminAuth aboutAdminAuth;
 
     @Test
-    void listVisibleDoesNotRequireAdmin() throws Exception {
-        when(archiveSourceService.listVisible()).thenReturn(List.of(
-                new ArchiveSourceDto(1L, "COSMO_ROOM", "cosmo_room", "코스모룸", "#00f5d4", 10, true)));
-        mvc.perform(get("/api/archive/sources"))
+    void listingSourcesWithPostsUsesTheRequestedTypeWithoutAdmin() throws Exception {
+        var source = new ArchiveSourceDto(1L, "COSMO_ROOM", "cosmo_room", "코스모룸", "#00f5d4", 10);
+        when(archiveSourceService.listTabs(com.example.triplesweb.entity.MediaType.VIDEO, false))
+                .thenReturn(List.of(new ArchiveSourceService.SourceTab(source, true)));
+        mvc.perform(get("/api/archive/sources").param("type", "video"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].code").value("COSMO_ROOM"));
+                .andExpect(jsonPath("$[0].code").value("COSMO_ROOM"))
+                .andExpect(jsonPath("$[0].visible").doesNotExist());
         verifyNoInteractions(aboutAdminAuth);
     }
 
@@ -57,31 +58,54 @@ class ArchiveSourceApiControllerTest {
     }
 
     @Test
-    void createRequiresAdmin() throws Exception {
-        when(archiveSourceService.create(eq("FAN_MEET"), eq("팬미팅"), eq("#abcdef"), isNull(), anyBoolean()))
-                .thenReturn(new ArchiveSourceDto(9L, "FAN_MEET", "fan_meet", "팬미팅", "#abcdef", 80, true));
+    void createRequiresAdminAndIgnoresLegacyCodeInput() throws Exception {
+        when(archiveSourceService.create(eq("팬미팅"), eq("#abcdef"), isNull()))
+                .thenReturn(new ArchiveSourceDto(9L, "SOURCE_GENERATED", "source_generated", "팬미팅", "#abcdef", 80));
         mvc.perform(post("/api/archive/sources")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"code":"FAN_MEET","label":"팬미팅","color":"#abcdef","visible":true}
+                                {"code":"FAN_MEET","label":"팬미팅","color":"#abcdef"}
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value("FAN_MEET"));
+                .andExpect(jsonPath("$.code").value("SOURCE_GENERATED"));
         verify(aboutAdminAuth).requireAdmin(any(), any());
     }
 
     @Test
     void updateRequiresAdmin() throws Exception {
-        when(archiveSourceService.update(eq(3L), eq("공식"), eq("#111111"), eq(15), eq(false)))
-                .thenReturn(new ArchiveSourceDto(3L, "OFFICIAL_SNS", "official_sns", "공식", "#111111", 15, false));
+        when(archiveSourceService.update(eq(3L), eq("공식"), eq("#111111"), eq(15)))
+                .thenReturn(new ArchiveSourceDto(3L, "OFFICIAL_SNS", "official_sns", "공식", "#111111", 15));
         mvc.perform(put("/api/archive/sources/3")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"label":"공식","color":"#111111","sortOrder":15,"visible":false}
+                                {"label":"공식","color":"#111111","sortOrder":15}
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.visible").value(false));
+                .andExpect(jsonPath("$.visible").doesNotExist());
         verify(aboutAdminAuth).requireAdmin(any(), any());
+    }
+
+    @Test
+    void moveReturnsTheOrderedCatalog() throws Exception {
+        when(archiveSourceService.move(3L, -1)).thenReturn(List.of(
+                new ArchiveSourceDto(3L, "FIRST", "first", "첫째", "#00f5d4", 10),
+                new ArchiveSourceDto(1L, "SECOND", "second", "둘째", "#123456", 20)));
+
+        mvc.perform(post("/api/archive/sources/3/move").param("direction", "-1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(3))
+                .andExpect(jsonPath("$[1].id").value(1));
+        verify(aboutAdminAuth).requireAdmin(any(), any());
+    }
+
+    @Test
+    void moveWithoutAdminDoesNotMutate() throws Exception {
+        doThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "관리자만 가능합니다."))
+                .when(aboutAdminAuth).requireAdmin(any(), any());
+
+        mvc.perform(post("/api/archive/sources/3/move").param("direction", "1"))
+                .andExpect(status().isForbidden());
+        verifyNoInteractions(archiveSourceService);
     }
 
     @Test
@@ -89,7 +113,8 @@ class ArchiveSourceApiControllerTest {
         doThrow(new ResponseStatusException(HttpStatus.CONFLICT, "사용 중"))
                 .when(archiveSourceService).delete(anyLong());
         mvc.perform(delete("/api/archive/sources/1"))
-                .andExpect(status().isConflict());
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("사용 중"));
         verify(aboutAdminAuth).requireAdmin(any(), any());
     }
 }

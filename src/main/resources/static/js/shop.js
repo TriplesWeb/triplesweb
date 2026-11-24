@@ -643,41 +643,6 @@
     if (eventRes.ok) eventOptions = await eventRes.json();
   }
 
-  function renderSectionList() {
-    const list = document.getElementById("shopSectionList");
-    if (!list) return;
-    if (!sectionOptions.length) {
-      list.innerHTML = '<li class="text-sm text-[#b9cac4]/70">등록된 구분이 없습니다.</li>';
-      return;
-    }
-    list.innerHTML = sectionOptions.map((s) => {
-      const fromEvent = Boolean(s.fromEvent);
-      const nameControl = fromEvent
-        ? `<span class="flex-1 min-w-[8rem] text-sm">${escapeAttr(s.name)}</span>
-           <span class="text-xs text-[#7eb8a8] shrink-0">공연</span>`
-        : `<input type="text" class="section-name-input flex-1 min-w-[8rem] bg-transparent border border-[#3a4a46]/40 rounded px-2 py-1 text-sm" value="${escapeAttr(s.name)}" maxlength="120">
-           <button type="button" class="section-rename about-mode-btn btn btn-xs btn-outline btn-primary">이름</button>`;
-      const deleteBtn = fromEvent
-        ? ""
-        : `<button type="button" class="section-delete about-mode-btn btn btn-xs btn-error">삭제</button>`;
-      return `
-      <li class="flex flex-wrap items-center gap-2 p-2 rounded-lg border border-[#3a4a46]/40" data-section-id="${s.sectionId}" data-from-event="${fromEvent ? "1" : "0"}">
-        ${nameControl}
-        <button type="button" class="section-up about-mode-btn btn btn-xs btn-outline btn-primary" title="위로">↑</button>
-        <button type="button" class="section-down about-mode-btn btn btn-xs btn-outline btn-primary" title="아래로">↓</button>
-        ${deleteBtn}
-      </li>`;
-    }).join("");
-  }
-
-  async function openSectionModal() {
-    await loadOptions();
-    const err = document.getElementById("shopSectionError");
-    if (err) { err.hidden = true; err.textContent = ""; }
-    renderSectionList();
-    openModal("shopSectionModal");
-  }
-
   async function openEditModal(id) {
     await loadOptions();
     const err = document.getElementById("shopEditError");
@@ -729,25 +694,49 @@
     openModal("shopEditModal");
   }
 
-  function bindUi() {
-    document.querySelectorAll(".shop-edit-close").forEach((el) => {
-      el.addEventListener("click", () => closeModal("shopEditModal"));
-    });
-    document.querySelectorAll(".shop-section-close").forEach((el) => {
-      el.addEventListener("click", () => {
-        closeModal("shopSectionModal");
-        location.reload();
-      });
-    });
-
-    document.getElementById("shopAddBtn")?.addEventListener("click", () => openEditModal(null));
-    document.getElementById("shopSectionBtn")?.addEventListener("click", () => openSectionModal());
+  function bindEditButtons() {
     document.querySelectorAll("[data-shop-edit]").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
         openEditModal(btn.getAttribute("data-shop-edit"));
       });
+    });
+  }
+
+  function bindUi() {
+    document.querySelectorAll(".shop-edit-close").forEach((el) => {
+      el.addEventListener("click", () => closeModal("shopEditModal"));
+    });
+    document.getElementById("shopAddBtn")?.addEventListener("click", () => openEditModal(null));
+    bindEditButtons();
+    const manager = window.SiteTabManager;
+    const sectionApi = API + "/sections";
+    const updateTabs = manager?.bindPageSections({
+      prefix: "shop",
+      apiBase: sectionApi,
+      emptyText: "이 구분에 등록된 굿즈이 없습니다.",
+      onRender: bindSectionTabs,
+      onCardsReplaced: () => {
+        bindEditButtons();
+        setAdminUi();
+      },
+    });
+    manager?.create({
+      id: "shopSectionModal",
+      trigger: "#shopSectionBtn",
+      apiBase: sectionApi,
+      title: "구분 관리",
+      placeholder: "샵 전용 구분명 (예: MD 단독, 팝업)",
+      emptyText: "등록된 구분이 없습니다.",
+      deleteCopy: (name) => `「${name}」 구분을 삭제하시겠습니까? 소속 항목은 「기타」로 이동합니다.`,
+      fixedName: (row) => row.fromEvent ? "공연" : "",
+      fetch: apiFetch,
+      onChange: (rows, detail) => {
+        sectionOptions = rows;
+        fillSectionSelect(document.getElementById("shopEditSectionId")?.value);
+        return updateTabs(rows, detail);
+      },
     });
 
     document.getElementById("shopEditImage")?.addEventListener("change", (e) => {
@@ -891,84 +880,6 @@
       } finally {
         input.value = "";
         mdPhotoTarget = null;
-      }
-    });
-
-    document.getElementById("shopSectionAddForm")?.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const err = document.getElementById("shopSectionError");
-      const name = document.getElementById("shopSectionNewName")?.value?.trim();
-      if (!name) {
-        if (err) { err.hidden = false; err.textContent = "구분 이름을 입력해 주세요."; }
-        return;
-      }
-      if (!await window.SiteFeedback.confirm("이 구분을 추가하시겠습니까?")) return;
-      const doneBusy = window.SiteFeedback.beginBusy();
-      try {
-        const res = await apiFetch(API + "/sections", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name })
-        });
-        if (!res.ok) throw new Error(await readError(res, "추가 실패"));
-        document.getElementById("shopSectionNewName").value = "";
-        sectionOptions = await (await apiFetch(API + "/sections")).json();
-        renderSectionList();
-      } catch (ex) {
-        if (err) { err.hidden = false; err.textContent = ex.message || "추가 실패"; }
-      } finally {
-        doneBusy();
-      }
-    });
-
-    document.getElementById("shopSectionList")?.addEventListener("click", async (e) => {
-      const row = e.target.closest("[data-section-id]");
-      if (!row) return;
-      const id = row.getAttribute("data-section-id");
-      const err = document.getElementById("shopSectionError");
-      try {
-        if (e.target.closest(".section-rename")) {
-          const name = row.querySelector(".section-name-input")?.value?.trim();
-          if (!name) throw new Error("구분 이름을 입력해 주세요.");
-          if (!await window.SiteFeedback.confirm("이 구분 이름을 수정하시겠습니까?")) return;
-          const doneRename = window.SiteFeedback.beginBusy();
-          try {
-            const res = await apiFetch(API + "/sections/" + id, {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ name })
-            });
-            if (!res.ok) throw new Error(await readError(res, "저장 실패"));
-            sectionOptions = await (await apiFetch(API + "/sections")).json();
-            renderSectionList();
-          } finally {
-            doneRename();
-          }
-        } else if (e.target.closest(".section-up")) {
-          const res = await apiFetch(API + "/sections/" + id + "/move?direction=-1", { method: "POST" });
-          if (!res.ok) throw new Error(await readError(res, "순서 변경 실패"));
-          sectionOptions = await res.json();
-          renderSectionList();
-        } else if (e.target.closest(".section-down")) {
-          const res = await apiFetch(API + "/sections/" + id + "/move?direction=1", { method: "POST" });
-          if (!res.ok) throw new Error(await readError(res, "순서 변경 실패"));
-          sectionOptions = await res.json();
-          renderSectionList();
-        } else if (e.target.closest(".section-delete")) {
-          if (!await window.SiteFeedback.confirm("이 구분을 삭제하시겠습니까? 소속 항목은 「기타」로 이동합니다.")) return;
-          const doneDelete = window.SiteFeedback.beginBusy();
-          try {
-            const res = await apiFetch(API + "/sections/" + id, { method: "DELETE" });
-            if (!res.ok) throw new Error(await readError(res, "삭제 실패"));
-            sectionOptions = await (await apiFetch(API + "/sections")).json();
-            renderSectionList();
-          } finally {
-            doneDelete();
-          }
-        }
-        if (err) { err.hidden = true; err.textContent = ""; }
-      } catch (ex) {
-        if (err) { err.hidden = false; err.textContent = ex.message || "요청 실패"; }
       }
     });
 

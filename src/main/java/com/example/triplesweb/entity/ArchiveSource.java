@@ -36,7 +36,8 @@ public class ArchiveSource {
     @Column(name = "sort_order", nullable = false)
     private int sortOrder;
 
-    @Column(nullable = false)
+    /** 기존 DB 값을 보존하는 레거시 컬럼. 출처 표시와 편집에 쓰지 않는다. */
+    @Column(nullable = false, updatable = false)
     private boolean visible = true;
 
     public String getSlug() {

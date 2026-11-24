@@ -118,11 +118,12 @@ public class ArchiveController {
                                 @RequestParam(required = false) Integer go,
                                 @RequestParam(required = false) List<String> members,
                                 @RequestParam(required = false) String sort,
+                                @RequestParam(required = false) String source,
                                 HttpServletRequest request, HttpServletResponse response, HttpSession session, Model model) {
         response.addHeader(HttpHeaders.VARY, FILTER_HEADER);
         String jump = pageJumpRedirect(go, request);
         if (jump != null) return jump;
-        return renderArchive("image", page, size, q, from, to, on, members, null, null, null, null, sort,
+        return renderArchive("image", page, size, q, from, to, on, members, null, null, source, null, sort,
                 true, request, session, model);
     }
 
@@ -284,16 +285,18 @@ public class ArchiveController {
         boolean needsBrowseUnits = !browse && (!folderKey.equalsIgnoreCase("s") || !selectedMembers.isEmpty());
         List<ArchiveFolderClassifier.UnitMembers> units = needsBrowseUnits
                 ? unitSnapshots(allVisibleUnits) : List.of();
-        ArchiveService.FolderBrowse folderBrowse = null;
         Page<Archive> archives;
+        Set<String> availableSources;
         if (browse) {
             archives = archiveService.pageByType(type, page, safeSize, q, selectedMembers, fromDate, toDate,
-                    null, false, false, sort);
+                    source, false, false, sort);
+            availableSources = archiveService.availableSources(type, q, selectedMembers, fromDate, toDate);
         } else {
-            folderBrowse = archiveService.browseFolder(type, page, safeSize, q,
+            var folderBrowse = archiveService.browseFolder(type, page, safeSize, q,
                     memberSuperset ? List.of() : selectedMembers, fromDate, toDate,
                     source, false, folderKey, memberSuperset ? selectedMembers : List.of(), units, sort);
             archives = folderBrowse.page();
+            availableSources = folderBrowse.availableSources();
         }
 
         List<Artist> artists = artistSnapshot.findAll();
@@ -408,15 +411,11 @@ public class ArchiveController {
             model.addAttribute("archiveHomePath",
                     joinHref("/archive", folderQuery(folderKey, "") + membersQuery + typeQuery));
         }
-        // 출처 탭: 폴더는 한 번 스캔한 결과, 전체 보기는 source 컬럼만 distinct 조회.
-        Set<String> availableSources = browse
-                ? archiveService.availableSources(type, q, selectedMembers, fromDate, toDate)
-                : folderBrowse.availableSources();
         String keptFilters = (type == MediaType.VIDEO ? "&type=video" : "") + folderQuery(folderKey, "")
                 + (q == null || q.isBlank() ? "" : "&q=" + URLEncoder.encode(q.trim(), StandardCharsets.UTF_8))
                 + memberQuery(selectedMembers) + dateQuery;
         model.addAttribute("sourceTabs", sourceTabs(browse ? "/archive/all" : "/archive",
-                keptFilters + sizeQuery + sortQuery, sourceKey, availableSources));
+                keptFilters + sizeQuery + sortQuery, sourceKey, archiveSourceService.listTabs(availableSources, isAdmin)));
         model.addAttribute("externalSource", externalView);
         return filterOnly ? "archive/filter" : "archive/archive";
     }
@@ -522,7 +521,7 @@ public class ArchiveController {
     }
 
     private String requireSource(String source) {
-        return archiveSourceService.requireVisible(source).getCode();
+        return archiveSourceService.requireExisting(source).getCode();
     }
 
     private static String memberQuery(List<String> selected) {
@@ -987,56 +986,39 @@ public class ArchiveController {
     }
 
     private List<Map<String, Object>> sourceOptions(ArchiveSource selected) {
-        List<Map<String, Object>> options = new ArrayList<>();
         String selectedCode = selected == null ? null : selected.getCode();
-        Set<String> seen = new LinkedHashSet<>();
-        for (var dto : archiveSourceService.listVisible()) {
-            options.add(sourceOption(dto, selectedCode, false));
-            seen.add(dto.code().toUpperCase(Locale.ROOT));
-        }
-        // 숨긴 출처도 편집 폼에서 기존 값을 고를 수 있게 남긴다(업로드는 requireVisible로 거절).
-        for (var dto : archiveSourceService.listAll()) {
-            if (seen.contains(dto.code().toUpperCase(Locale.ROOT))) continue;
-            options.add(sourceOption(dto, selectedCode, true));
-        }
-        return options;
+        return archiveSourceService.listAll().stream()
+                .map(source -> sourceOption(source, selectedCode))
+                .toList();
     }
 
-    private static Map<String, Object> sourceOption(ArchiveSourceDto dto, String selectedCode, boolean hidden) {
+    private static Map<String, Object> sourceOption(ArchiveSourceDto dto, String selectedCode) {
         Map<String, Object> option = new LinkedHashMap<>();
         option.put("value", dto.code());
         option.put("slug", dto.slug());
-        option.put("label", hidden ? dto.label() + " (숨김)" : dto.label());
+        option.put("label", dto.label());
         option.put("color", dto.color());
         option.put("selected", selectedCode != null && selectedCode.equalsIgnoreCase(dto.code()));
         return option;
     }
 
-    private List<Map<String, Object>> sourceTabs(String path, String extraQuery, String sourceSlug, Set<String> availableSources) {
+    private List<Map<String, Object>> sourceTabs(String path, String extraQuery, String sourceSlug,
+                                                 List<ArchiveSourceService.SourceTab> sources) {
         List<Map<String, Object>> tabs = new ArrayList<>();
         String current = sourceSlug == null ? "" : sourceSlug.trim();
-        tabs.add(sourceTab("전체", joinHref(path, extraQuery), current.isBlank()));
-        Set<String> available = new LinkedHashSet<>();
-        if (availableSources != null) {
-            for (String code : availableSources) {
-                if (code != null && !code.isBlank()) available.add(code.toUpperCase(Locale.ROOT));
-            }
-        }
-        for (var dto : archiveSourceService.listVisible()) {
-            if (!available.contains(dto.code().toUpperCase(Locale.ROOT))) continue;
-            tabs.add(sourceTab(dto.label(),
-                    joinHref(path, extraQuery + "&source=" + dto.slug()),
-                    current.equalsIgnoreCase(dto.slug()) || current.equalsIgnoreCase(dto.code())));
+        tabs.add(sourceTab("전체", joinHref(path, extraQuery), current.isBlank(), false));
+        for (var tab : sources) {
+            var source = tab.source();
+            tabs.add(sourceTab(source.label(),
+                    joinHref(path, extraQuery + "&source=" + source.slug()),
+                    current.equalsIgnoreCase(source.slug()) || current.equalsIgnoreCase(source.code()),
+                    !tab.hasPosts()));
         }
         return tabs;
     }
 
-    private static Map<String, Object> sourceTab(String label, String href, boolean active) {
-        Map<String, Object> tab = new LinkedHashMap<>();
-        tab.put("label", label);
-        tab.put("href", href);
-        tab.put("active", active);
-        return tab;
+    private static Map<String, Object> sourceTab(String label, String href, boolean active, boolean empty) {
+        return Map.of("label", label, "href", href, "active", active, "empty", empty);
     }
 
     private List<ArchiveFolderClassifier.UnitMembers> unitSnapshots(List<Unit> units) {

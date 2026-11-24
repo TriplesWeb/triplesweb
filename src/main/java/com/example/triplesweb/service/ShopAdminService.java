@@ -32,6 +32,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ShopAdminService {
 
+    private static final Set<String> MIRRORED_EVENT_SECTION_NAMES = Set.of("콘서트", "팬콘", "팬미팅");
+
     private final ShopRepository shopRepository;
     private final ShopSectionRepository shopSectionRepository;
     private final EventRepository eventRepository;
@@ -47,8 +49,7 @@ public class ShopAdminService {
     }
 
     /**
-     * 공연 목록 구분을 샵 섹션에 이름으로 맞춘 뒤 반환한다.
-     * 공연에만 있는 이름은 자동 추가하고, 샵 전용 구분은 그대로 둔다.
+     * 콘서트·팬콘·팬미팅 이벤트 구분을 샵에 맞춘 뒤 구분 목록을 반환한다.
      */
     @Transactional
     public List<ShopSectionDto> listSections() {
@@ -62,25 +63,21 @@ public class ShopAdminService {
     /** 공연 구분 추가·개명 직후 샵 쪽 미러를 맞출 때 호출한다. */
     @Transactional
     public void ensureEventSectionsMirrored() {
-        List<EventSection> eventSections = eventSectionRepository.findAllByOrderBySortOrderAscSectionIdAsc();
-        if (eventSections.isEmpty()) {
-            return;
-        }
-        int nextOrder = shopSectionRepository.findAll().stream()
-                .mapToInt(ShopSection::getSortOrder)
-                .max()
-                .orElse(-1) + 1;
+        List<EventSection> eventSections = eventSectionRepository.findAllByOrderBySortOrderAscSectionIdAsc().stream()
+                .filter(section -> isMirroredEventName(section.getName()))
+                .toList();
+        if (eventSections.isEmpty()) return;
+
+        List<ShopSection> shopSections = shopSectionRepository.findAll();
+        Set<String> shopNames = shopSections.stream()
+                .map(section -> sectionNameKey(section.getName()))
+                .collect(Collectors.toCollection(HashSet::new));
+        int nextOrder = shopSections.stream().mapToInt(ShopSection::getSortOrder).max().orElse(-1) + 1;
         boolean created = false;
         for (EventSection eventSection : eventSections) {
-            String name = eventSection.getName();
-            if (!StringUtils.hasText(name)) {
-                continue;
-            }
-            String trimmed = name.trim();
-            if (shopSectionRepository.findByNameIgnoreCase(trimmed).isPresent()) {
-                continue;
-            }
-            shopSectionRepository.save(new ShopSection(null, trimmed, nextOrder++));
+            String name = eventSection.getName().trim();
+            if (!shopNames.add(sectionNameKey(name))) continue;
+            shopSectionRepository.save(new ShopSection(null, name, nextOrder++));
             created = true;
         }
         if (created) {
@@ -88,25 +85,25 @@ public class ShopAdminService {
         }
     }
 
-    /** 공연 구분명 변경 시 같은 이름의 샵 구분도 따라 바꾼다. */
+    /** 새 이름이 연동 대상이면 기존 샵 구분과 배정된 굿즈를 함께 유지한다. */
     @Transactional
     public void renameMirroredSection(String oldName, String newName) {
-        if (!StringUtils.hasText(oldName) || !StringUtils.hasText(newName)) {
-            return;
-        }
-        String from = oldName.trim();
-        String to = newName.trim();
-        if (from.equalsIgnoreCase(to)) {
-            return;
-        }
-        shopSectionRepository.findByNameIgnoreCase(from).ifPresent(section -> {
-            if (shopSectionRepository.findByNameIgnoreCase(to).isPresent()) {
-                return;
-            }
-            section.setName(to);
-            shopSectionRepository.save(section);
-            shopService.invalidateListCache();
-        });
+        if (!StringUtils.hasText(oldName) || !isMirroredEventName(newName)) return;
+
+        String from = sectionNameKey(oldName);
+        String to = sectionNameKey(newName);
+        if (from.equals(to)) return;
+
+        List<ShopSection> sections = shopSectionRepository.findAll();
+        if (sections.stream().anyMatch(section -> sectionNameKey(section.getName()).equals(to))) return;
+        sections.stream()
+                .filter(section -> sectionNameKey(section.getName()).equals(from))
+                .findFirst()
+                .ifPresent(section -> {
+                    section.setName(newName.trim());
+                    shopSectionRepository.save(section);
+                    shopService.invalidateListCache();
+                });
     }
 
     @Transactional(readOnly = true)
@@ -195,10 +192,9 @@ public class ShopAdminService {
     public ShopSectionDto createSection(String name) {
         ensureEventSectionsMirrored();
         String trimmed = requireText(name, "구분명은 필수입니다.");
-        shopSectionRepository.findByNameIgnoreCase(trimmed).ifPresent(other -> {
-            throw new IllegalArgumentException("이미 사용 중인 구분명입니다: " + trimmed);
-        });
-        int nextOrder = shopSectionRepository.findAll().stream()
+        List<ShopSection> sections = shopSectionRepository.findAll();
+        validateSectionName(sections, trimmed, null);
+        int nextOrder = sections.stream()
                 .mapToInt(ShopSection::getSortOrder)
                 .max()
                 .orElse(-1) + 1;
@@ -219,11 +215,7 @@ public class ShopAdminService {
         }
         if (StringUtils.hasText(name)) {
             String trimmed = name.trim();
-            shopSectionRepository.findByNameIgnoreCase(trimmed).ifPresent(other -> {
-                if (!Objects.equals(other.getSectionId(), sectionId)) {
-                    throw new IllegalArgumentException("이미 사용 중인 구분명입니다: " + trimmed);
-                }
-            });
+            validateSectionName(shopSectionRepository.findAll(), trimmed, sectionId);
             section.setName(trimmed);
         }
         if (sortOrder != null) {
@@ -232,6 +224,13 @@ public class ShopAdminService {
         ShopSectionDto dto = toSectionDto(shopSectionRepository.save(section), eventNames);
         shopService.invalidateListCache();
         return dto;
+    }
+
+    private static void validateSectionName(List<ShopSection> sections, String name, Long currentId) {
+        boolean duplicate = sections.stream()
+                .filter(other -> currentId == null || !currentId.equals(other.getSectionId()))
+                .anyMatch(other -> name.equalsIgnoreCase(other.getName().trim()));
+        if (duplicate) throw new IllegalArgumentException("이미 사용 중인 구분명입니다: " + name);
     }
 
     @Transactional
@@ -445,18 +444,23 @@ public class ShopAdminService {
     }
 
     private Set<String> eventSectionNamesLower() {
-        Set<String> names = new HashSet<>();
-        for (EventSection section : eventSectionRepository.findAll()) {
-            if (StringUtils.hasText(section.getName())) {
-                names.add(section.getName().trim().toLowerCase(Locale.ROOT));
-            }
-        }
-        return names;
+        return eventSectionRepository.findAll().stream()
+                .map(EventSection::getName)
+                .map(ShopAdminService::sectionNameKey)
+                .filter(MIRRORED_EVENT_SECTION_NAMES::contains)
+                .collect(Collectors.toSet());
     }
 
     private static boolean isFromEvent(String name, Set<String> eventNamesLower) {
-        return StringUtils.hasText(name)
-                && eventNamesLower.contains(name.trim().toLowerCase(Locale.ROOT));
+        return eventNamesLower.contains(sectionNameKey(name));
+    }
+
+    private static boolean isMirroredEventName(String name) {
+        return MIRRORED_EVENT_SECTION_NAMES.contains(sectionNameKey(name));
+    }
+
+    private static String sectionNameKey(String name) {
+        return name == null ? "" : name.trim().toLowerCase(Locale.ROOT);
     }
 
     private void deleteManagedImage(String imageUrl) {
