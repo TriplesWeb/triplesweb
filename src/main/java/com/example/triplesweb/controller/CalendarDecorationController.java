@@ -36,6 +36,42 @@ public class CalendarDecorationController {
         return service.findAll();
     }
 
+    /** 등록된 기념일을 조회 기간에 맞춰 반환한다. 매년 반복 항목은 최초 등록일 이후 매년 표시한다. */
+    @GetMapping("/events")
+    public List<Map<String, Object>> decorationEvents(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
+        if (end.isBefore(start) || ChronoUnit.DAYS.between(start, end) > 400) {
+            throw new IllegalArgumentException("기념일 조회 기간은 400일 이내여야 합니다.");
+        }
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (CalendarDecorationDto item : service.findAll()) {
+            int firstYear = item.eventDate().getYear();
+            int lastYear = item.repeatYearly() ? end.getYear() : firstYear;
+            for (int year = firstYear; year <= lastYear; year++) {
+                try {
+                    LocalDate occurrence = item.eventDate().withYear(year);
+                    if (occurrence.isBefore(start) || occurrence.isAfter(end)) continue;
+                    result.add(Map.of(
+                            "id", "decoration-" + item.id() + "-" + year,
+                            "title", item.title(),
+                            "start", occurrence.toString(),
+                            "kind", item.kind(),
+                            "unitName", item.unitName() == null ? "" : item.unitName(),
+                            "description", item.description() == null ? "" : item.description(),
+                            "imageUrl", item.imageUrl() == null ? "" : item.imageUrl(),
+                            "color", item.color(),
+                            "repeatYearly", item.repeatYearly(),
+                            "categoryLabel", item.kind().equals("UNIT") ? "유닛" : "기념일"
+                    ));
+                } catch (DateTimeException ignored) {
+                    // 2월 29일은 윤년이 아닌 해에 표시하지 않는다.
+                }
+            }
+        }
+        return result;
+    }
+
     /** Artist.birthDate에서 월/일을 추출해 조회 범위에 맞는 매년 반복 생일을 반환한다. */
     @GetMapping("/birthdays")
     public List<Map<String, Object>> birthdays(
