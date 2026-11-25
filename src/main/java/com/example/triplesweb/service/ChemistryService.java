@@ -81,6 +81,16 @@ public class ChemistryService {
                                MultipartFile image, List<MultipartFile> images,
                                String keepImageUrlsJson, boolean clearImage,
                                String linksJson, String labelTone) {
+        return upsert(member1, member2, label, labelEn, description, descriptionEn,
+                image, images, keepImageUrlsJson, "", clearImage, linksJson, labelTone);
+    }
+
+    @Transactional
+    public ChemistryDto upsert(String member1, String member2, String label, String labelEn,
+                               String description, String descriptionEn,
+                               MultipartFile image, List<MultipartFile> images,
+                               String keepImageUrlsJson, String imageOrderJson, boolean clearImage,
+                               String linksJson, String labelTone) {
         Artist[] pair = normalizePair(member1, member2);
         if (!StringUtils.hasText(label)) {
             throw new IllegalArgumentException("케미명은 필수입니다.");
@@ -109,7 +119,7 @@ public class ChemistryService {
         entity.setLinksJson(normalizeLinksJson(linksJson));
         entity.setLabelTone(tone);
 
-        applyImages(entity, image, images, keepImageUrlsJson, clearImage);
+        applyImages(entity, image, images, keepImageUrlsJson, imageOrderJson, clearImage);
 
         ChemistryDto saved = toDto(chemistryRepository.save(entity));
         invalidateListCache();
@@ -117,20 +127,22 @@ public class ChemistryService {
     }
 
     private void applyImages(Chemistry entity, MultipartFile image, List<MultipartFile> images,
-                             String keepImageUrlsJson, boolean clearImage) {
+                             String keepImageUrlsJson, String imageOrderJson, boolean clearImage) {
         List<String> previous = ChemistryImages.resolve(entity.getImagesJson(), entity.getImageUrl(), objectMapper);
         List<MultipartFile> uploads = ChemistryImages.collectUploads(image, images);
         try {
-            ChemistryImages.Result merged = ChemistryImages.merge(
+            ChemistryImages.Result merged = ChemistryImages.mergeInOrder(
                     previous,
                     keepImageUrlsJson,
+                    imageOrderJson,
                     uploads,
                     clearImage,
                     objectMapper,
                     file -> {
                         SavedMeta meta = fileStorageService.saveWithMeta(file, "chemistry");
                         return meta.getUrl();
-                    });
+                    },
+                    ChemistryImages.MAX_IMAGES);
             entity.setImagesJson(ChemistryImages.write(merged.urls(), objectMapper));
             entity.setImageUrl(ChemistryImages.primary(merged.urls()));
             for (String removed : merged.removed()) {

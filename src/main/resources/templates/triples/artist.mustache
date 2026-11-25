@@ -207,10 +207,12 @@
             <label class="artist-edit-label">소개 본문
                 <textarea id="artistGroupBody" rows="6"></textarea>
             </label>
-            <label class="artist-edit-label">이미지
-                <input type="file" id="artistGroupImage" accept="image/*">
-            </label>
-            <img id="artistGroupImagePreview" class="artist-preview hidden" alt="그룹 이미지 미리보기">
+            <div class="artist-edit-label">
+                <label for="artistGroupImage">이미지</label>
+                <div class="file-drop" data-file-drop="single" data-file-label="그룹 이미지">
+                    <input type="file" id="artistGroupImage" accept="image/*">
+                </div>
+            </div>
             <label class="artist-edit-check">
                 <input type="checkbox" id="artistGroupClearImage"> 이미지를 기본값으로 되돌리기
             </label>
@@ -274,17 +276,21 @@
                     <input type="text" id="artistEditColor" required maxlength="7" placeholder="#22aeff">
                 </label>
             </div>
-            <label class="artist-edit-label">프로필 사진
-                <input type="file" id="artistEditImage" accept="image/*">
-            </label>
-            <img id="artistEditImagePreview" class="artist-preview hidden" alt="프로필 미리보기">
+            <div class="artist-edit-label">
+                <label for="artistEditImage">프로필 사진</label>
+                <div class="file-drop" data-file-drop="single" data-file-label="프로필 사진">
+                    <input type="file" id="artistEditImage" accept="image/*">
+                </div>
+            </div>
             <label class="artist-edit-check">
                 <input type="checkbox" id="artistEditClearImage"> 프로필 사진 제거
             </label>
-            <label class="artist-edit-label">싸인 이미지
-                <input type="file" id="artistEditSignatureImage" accept="image/*">
-            </label>
-            <img id="artistEditSignaturePreview" class="artist-preview hidden" alt="싸인 미리보기">
+            <div class="artist-edit-label">
+                <label for="artistEditSignatureImage">싸인 이미지</label>
+                <div class="file-drop" data-file-drop="single" data-file-label="사인 이미지">
+                    <input type="file" id="artistEditSignatureImage" accept="image/*">
+                </div>
+            </div>
             <label class="artist-edit-check">
                 <input type="checkbox" id="artistEditClearSignatureImage"> 싸인 이미지 제거
             </label>

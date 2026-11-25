@@ -58,6 +58,7 @@ public class ChemistryApiController {
             @RequestParam(required = false) MultipartFile image,
             @RequestParam(required = false) List<MultipartFile> images,
             @RequestParam(required = false, defaultValue = "") String keepImageUrlsJson,
+            @RequestParam(required = false, defaultValue = "") String imageOrderJson,
             @RequestParam(required = false, defaultValue = "false") boolean clearImage,
             @RequestParam(required = false, defaultValue = "") String linksJson,
             @RequestParam(required = false, defaultValue = "NONE") String labelTone,
@@ -68,7 +69,7 @@ public class ChemistryApiController {
         try {
             return chemistryService.upsert(
                     member1, member2, label, labelEn, description, descriptionEn,
-                    image, images, keepImageUrlsJson, clearImage, linksJson, labelTone);
+                    image, images, keepImageUrlsJson, imageOrderJson, clearImage, linksJson, labelTone);
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }
@@ -112,6 +113,7 @@ public class ChemistryApiController {
             @RequestParam(required = false) MultipartFile image,
             @RequestParam(required = false) List<MultipartFile> images,
             @RequestParam(required = false, defaultValue = "") String keepImageUrlsJson,
+            @RequestParam(required = false, defaultValue = "") String imageOrderJson,
             @RequestParam(required = false, defaultValue = "false") boolean clearImage,
             @RequestParam(required = false, defaultValue = "") String linksJson,
             @RequestParam(required = false, defaultValue = "NONE") String labelTone,
@@ -122,7 +124,7 @@ public class ChemistryApiController {
         try {
             return chemistryGroupService.upsert(
                     members, label, labelEn, description, descriptionEn,
-                    image, images, keepImageUrlsJson, clearImage, linksJson, labelTone);
+                    image, images, keepImageUrlsJson, imageOrderJson, clearImage, linksJson, labelTone);
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }

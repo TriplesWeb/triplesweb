@@ -156,6 +156,7 @@ jobs:
           node scripts/tests/archive-folder-home.browser.cjs
           node scripts/tests/archive-detail-ui.browser.cjs
           node scripts/tests/archive-manage-preview.browser.cjs
+          node scripts/tests/file-picker-single.browser.cjs
           node scripts/tests/archive-carousel.browser.cjs
           node scripts/tests/modal-navigation.browser.cjs
           node scripts/tests/site-tab-manager.browser.cjs

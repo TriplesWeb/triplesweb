@@ -70,6 +70,7 @@
     if (!modal) return;
     modal.classList.add("hidden");
     modal.classList.remove("flex");
+    modal.querySelectorAll('[data-file-drop] input[type="file"]').forEach((input) => window.FilePicker?.reset(input));
     const anyOpen = document.querySelector(".artist-modal.flex");
     if (!anyOpen) document.body.style.overflow = "";
   }
@@ -318,29 +319,9 @@
       renderLinkRows("artistEditSoloLinks", data.soloLinks || []);
       renderLinkRows("artistEditBroadcastLinks", data.broadcastLinks || []);
       document.getElementById("artistEditClearImage").checked = false;
-      document.getElementById("artistEditImage").value = "";
-      const preview = document.getElementById("artistEditImagePreview");
-      if (preview) {
-        if (data.profileImage) {
-          preview.src = data.profileImage;
-          preview.classList.remove("hidden");
-        } else {
-          preview.removeAttribute("src");
-          preview.classList.add("hidden");
-        }
-      }
       document.getElementById("artistEditClearSignatureImage").checked = false;
-      document.getElementById("artistEditSignatureImage").value = "";
-      const sigPreview = document.getElementById("artistEditSignaturePreview");
-      if (sigPreview) {
-        if (data.signatureImage) {
-          sigPreview.src = data.signatureImage;
-          sigPreview.classList.remove("hidden");
-        } else {
-          sigPreview.removeAttribute("src");
-          sigPreview.classList.add("hidden");
-        }
-      }
+      window.FilePicker?.setOriginal(document.getElementById("artistEditImage"), data.profileImage || "");
+      window.FilePicker?.setOriginal(document.getElementById("artistEditSignatureImage"), data.signatureImage || "");
       setUnitChecks(data.unitIds || []);
       document.getElementById("artistEditTitle").textContent = "멤버 수정 — " + (data.name || "");
       openModal("artistEditModal");
@@ -361,16 +342,21 @@
     document.getElementById("artistGroupTitle").value = (titleEl && titleEl.textContent) || "";
     document.getElementById("artistGroupBody").value = (bodyEl && bodyEl.textContent) || "";
     document.getElementById("artistGroupClearImage").checked = false;
-    document.getElementById("artistGroupImage").value = "";
-    const preview = document.getElementById("artistGroupImagePreview");
-    if (preview && imgEl) {
-      preview.src = imgEl.getAttribute("src") || "";
-      preview.classList.toggle("hidden", !preview.src);
-    }
+    window.FilePicker?.setOriginal(document.getElementById("artistGroupImage"), imgEl?.getAttribute("src") || "");
     openModal("artistGroupModal");
   }
 
   function bindAdminUi() {
+    for (const [inputId, clearId] of [
+      ["artistGroupImage", "artistGroupClearImage"],
+      ["artistEditImage", "artistEditClearImage"],
+      ["artistEditSignatureImage", "artistEditClearSignatureImage"]
+    ]) {
+      document.getElementById(inputId)?.addEventListener("file-picker:change", (event) => {
+        if (event.detail.files.length) document.getElementById(clearId).checked = false;
+      });
+    }
+
     document.querySelectorAll(".artist-edit-close").forEach((btn) => {
       btn.addEventListener("click", () => closeModal("artistEditModal"));
     });

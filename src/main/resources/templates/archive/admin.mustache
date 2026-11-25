@@ -32,12 +32,10 @@
                     <textarea name="description" rows="3" placeholder="사진 설명을 입력하세요"></textarea>
                 </label>
                 <div class="ar-field">사진 파일
-                    <span class="ar-file">
+                    <div class="file-drop" data-file-drop="multi" data-sortable data-primary data-selectable data-file-label="사진">
                         <input type="file" id="archiveUploadFile" name="file" accept="image/*,.jpg,.jpeg,.jfif,.png,.webp,.gif,.bmp" multiple required>
-                        <label for="archiveUploadFile" class="ar-file-pick">파일 선택</label>
-                        <span class="ar-file-name" data-file-name>선택된 파일 없음</span>
-                    </span>
-                    <span class="ar-field-hint">드래그로 순서 변경 · 파일 선택 또는 붙여넣기(Ctrl/⌘+V)</span>
+                    </div>
+                    <span class="ar-field-hint">손잡이를 끌거나 ↑↓ 버튼으로 순서 변경 · 이름을 누르면 아래에서 미리보기·편집 · 파일 선택, 끌어다 놓기 또는 붙여넣기(Ctrl/⌘+V)</span>
                 </div>
                 <div class="ar-preview" id="uploadPreview" hidden>
                     <p class="ar-preview-info" data-preview-file></p>
@@ -93,12 +91,10 @@
                     <textarea name="description" rows="3" placeholder="사진 설명을 입력하세요"></textarea>
                 </label>
                 <div class="ar-field">파일 교체 (선택)
-                    <span class="ar-file">
+                    <div class="file-drop" data-file-drop="multi" data-sortable data-primary data-selectable data-file-label="사진">
                         <input type="file" id="archiveEditFile" name="file" accept="image/*,.jpg,.jpeg,.jfif,.png,.webp,.gif,.bmp" multiple>
-                        <label for="archiveEditFile" class="ar-file-pick">파일 선택</label>
-                        <span class="ar-file-name" data-file-name>선택된 파일 없음</span>
-                    </span>
-                    <span class="ar-field-hint">드래그로 순서 변경 · 파일 선택 또는 붙여넣기(Ctrl/⌘+V)</span>
+                    </div>
+                    <span class="ar-field-hint">손잡이를 끌거나 ↑↓ 버튼으로 순서 변경 · 이름을 누르면 아래에서 미리보기·편집 · 파일 선택, 끌어다 놓기 또는 붙여넣기(Ctrl/⌘+V)</span>
                 </div>
                 <div class="ar-preview" id="editPreview" hidden>
                     <p class="ar-preview-info" data-preview-file></p>
@@ -165,11 +161,13 @@
                     </div>
                 </div>
                 <div class="ar-field">영상 파일
-                    <span class="ar-file">
-                        <input type="file" id="archiveUploadFile" name="file" accept="video/*" required>
-                        <label for="archiveUploadFile" class="ar-file-pick">파일 선택</label>
-                        <span class="ar-file-name" data-file-name>선택된 파일 없음</span>
-                    </span>
+                    <div class="file-drop" data-file-drop="single" data-dnd-only data-file-label="영상">
+                        <span class="ar-file">
+                            <input type="file" id="archiveUploadFile" name="file" accept="video/*" required>
+                            <label for="archiveUploadFile" class="ar-file-pick">파일 선택</label>
+                            <span class="ar-file-name" data-file-name>선택된 파일 없음</span>
+                        </span>
+                    </div>
                 </div>
                 {{>partials/archive-cover-picker}}
                 <div class="ar-preview" id="uploadPreview" hidden>
@@ -209,11 +207,13 @@
                     </div>
                 </div>
                 <div class="ar-field">파일 교체 (선택)
-                    <span class="ar-file">
-                        <input type="file" id="archiveEditFile" name="file" accept="video/*">
-                        <label for="archiveEditFile" class="ar-file-pick">파일 선택</label>
-                        <span class="ar-file-name" data-file-name>선택된 파일 없음</span>
-                    </span>
+                    <div class="file-drop" data-file-drop="single" data-dnd-only data-file-label="영상">
+                        <span class="ar-file">
+                            <input type="file" id="archiveEditFile" name="file" accept="video/*">
+                            <label for="archiveEditFile" class="ar-file-pick">파일 선택</label>
+                            <span class="ar-file-name" data-file-name>선택된 파일 없음</span>
+                        </span>
+                    </div>
                 </div>
                 <input type="hidden" name="clearThumbnail" value="false">
                 {{>partials/archive-cover-picker}}

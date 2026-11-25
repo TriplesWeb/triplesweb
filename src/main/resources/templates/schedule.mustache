@@ -238,9 +238,14 @@
                         <div><label class="site-label" for="decorationDescription">설명</label><textarea id="decorationDescription" name="description" class="site-field" rows="3" maxlength="500"></textarea></div>
                         <div class="grid grid-cols-2 items-end gap-3">
                             <div><label class="site-label" for="decorationColor">표시 색상</label><input id="decorationColor" name="color" type="color" value="#00f5d4" class="site-field h-11"></div>
-                            <div><label class="site-label" for="decorationImage">스티커 이미지</label><input id="decorationImage" name="image" type="file" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" class="site-field"></div>
+                            <div>
+                                <label class="site-label" for="decorationImage">스티커 이미지</label>
+                                <div class="file-drop" data-file-drop="single" data-file-label="스티커 이미지">
+                                    <input id="decorationImage" name="image" type="file" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" class="site-field">
+                                </div>
+                                <p id="decorationImageStatus" role="status"></p>
+                            </div>
                         </div>
-                        <img id="decorationPreview" class="hidden max-h-40 rounded-xl object-contain" alt="업로드 이미지 미리보기">
                         <label class="flex items-center gap-2 text-sm text-[#b9cac4]"><input id="decorationClearImage" type="checkbox"> 기존 이미지 제거</label>
                     </div>
                     <div class="site-modal-footer">
@@ -267,31 +272,30 @@
             const modal = document.getElementById('decorationModal');
             const form = document.getElementById('decorationForm');
             const imageInput = document.getElementById('decorationImage');
-            const preview = document.getElementById('decorationPreview');
+            const clearImage = document.getElementById('decorationClearImage');
+            const imageStatus = document.getElementById('decorationImageStatus');
             const list = document.getElementById('decorationList');
-            let previewUrl;
-
-            function showPreview(url) {
-                if (previewUrl) URL.revokeObjectURL(previewUrl);
-                previewUrl = url?.startsWith('blob:') ? url : undefined;
-                preview.classList.toggle('hidden', !url);
-                if (url) preview.src = url;
-                else preview.removeAttribute('src');
-            }
+            let originalImage = '';
 
             document.getElementById('openDecorationManager').addEventListener('click', () => {
+                window.FilePicker?.setOriginal(imageInput, originalImage);
                 scheduleModal(modal).show();
                 loadDecorations();
+            });
+            modal.addEventListener('site-modal:hidden', () => {
+                window.FilePicker?.reset(imageInput);
             });
 
             function decorationHeaders() {
                 const headers = {};
                 return window.AboutAdminAuth?.applyAuthHeaders(headers) || headers;
             }
-            function resetDecorationForm() {
+            function resetDecorationForm(imageUrl = '') {
                 form.reset();
                 document.getElementById('decorationId').value = '';
-                showPreview();
+                originalImage = imageUrl;
+                window.FilePicker?.setOriginal(imageInput, originalImage);
+                imageStatus.textContent = '';
             }
             async function loadDecorations() {
                 try {
@@ -316,7 +320,7 @@
                 } catch(error) { list.textContent=error.message; }
             }
             function editDecoration(item) {
-                resetDecorationForm();
+                resetDecorationForm(item.imageUrl || '');
                 document.getElementById('decorationId').value=item.id;
                 document.getElementById('decorationTitle').value=item.title;
                 document.getElementById('decorationKind').value=item.kind;
@@ -324,7 +328,6 @@
                 document.getElementById('decorationUnit').value=item.unitName||'';
                 document.getElementById('decorationDescription').value=item.description||'';
                 document.getElementById('decorationColor').value=item.color||'#00f5d4';
-                showPreview(item.imageUrl);
             }
             async function deleteDecoration(id) {
                 if(!confirm('이 항목을 삭제할까요?')) return;
@@ -341,21 +344,23 @@
                     console.error(error);
                 }
             }
-            document.getElementById('decorationReset').addEventListener('click',resetDecorationForm);
-            imageInput.addEventListener('change', () => {
-                const file = imageInput.files[0];
+            document.getElementById('decorationReset').addEventListener('click', () => resetDecorationForm());
+            imageInput.addEventListener('file-picker:change', event => {
+                imageStatus.textContent = '';
+                const [file] = event.detail.files;
                 if (file && file.size > 10 * 1024 * 1024) {
-                    alert('이미지는 10MB 이하만 가능합니다.');
-                    imageInput.value = '';
+                    window.FilePicker.reset(imageInput);
+                    imageStatus.textContent = '이미지는 10MB 이하만 가능합니다.';
+                    return;
                 }
-                showPreview(imageInput.files[0] ? URL.createObjectURL(file) : undefined);
+                if (file) clearImage.checked = false;
             });
             form.addEventListener('submit', async event => {
                 event.preventDefault();
                 const id = document.getElementById('decorationId').value;
                 const data = new FormData(form);
                 if (!imageInput.files[0]) data.delete('image');
-                data.set('clearImage', String(document.getElementById('decorationClearImage').checked));
+                data.set('clearImage', String(clearImage.checked));
                 const submit = form.querySelector('button[type="submit"]');
                 submit.disabled = true;
                 try {

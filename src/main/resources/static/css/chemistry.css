@@ -2025,58 +2025,6 @@ a.chem-highlight:hover {
     text-decoration: underline;
 }
 
-.chem-edit-image-preview {
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
-}
-
-.chem-edit-image-preview.hidden {
-    display: none;
-}
-
-.chem-edit-image-thumbs {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
-    gap: 0.55rem;
-}
-
-.chem-edit-thumb {
-    position: relative;
-    aspect-ratio: 1;
-    border-radius: 0.65rem;
-    overflow: hidden;
-    border: 1px solid rgba(58, 74, 70, 0.55);
-    background: #0d0e12;
-}
-
-.chem-edit-thumb img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-}
-
-.chem-edit-thumb-remove {
-    position: absolute;
-    top: 0.25rem;
-    right: 0.25rem;
-    width: 1.45rem;
-    height: 1.45rem;
-    padding: 0;
-    border: none;
-    border-radius: 9999px;
-    background: rgba(13, 14, 18, 0.78);
-    color: #fff;
-    font-size: 1rem;
-    line-height: 1;
-    cursor: pointer;
-}
-
-.chem-edit-thumb-remove:hover {
-    background: #ef4444;
-}
-
 .chem-edit-check {
     display: flex;
     align-items: center;

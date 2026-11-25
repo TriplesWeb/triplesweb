@@ -1501,110 +1501,40 @@
     }
   }
 
-  function revokeEditFilePreviews() {
-    editImageItems.forEach((item) => {
-      if (item.kind === "file" && item.preview) {
-        try {
-          URL.revokeObjectURL(item.preview);
-        } catch (_) {
-          /* ignore */
-        }
-      }
-    });
-  }
-
+  // 사진 목록은 공통 업로드 칸(FilePicker)이 가진다. 저장된 사진·새 사진·순서를 모두 그 목록에서 받아 온다.
   function setEditImages(urls) {
-    revokeEditFilePreviews();
-    editImageItems = (urls || [])
+    const list = (urls || [])
       .map((u) => String(u || "").trim())
       .filter(Boolean)
-      .slice(0, CHEM_MAX_IMAGES)
-      .map((url, i) => ({ id: "u-" + i + "-" + url, kind: "url", url: url }));
+      .slice(0, CHEM_MAX_IMAGES);
+    editImageItems = list.map((url) => ({ kind: "url", url }));
     const clearCb = document.getElementById("chemEditClearImage");
     if (clearCb) clearCb.checked = false;
     const input = document.getElementById("chemEditImage");
-    if (input) input.value = "";
-    renderEditImageThumbs();
+    if (input && window.FilePicker) {
+      window.FilePicker.setExisting(input, list);
+      window.FilePicker.reset(input);
+    }
   }
 
   function clearEditImages() {
-    revokeEditFilePreviews();
     editImageItems = [];
     const input = document.getElementById("chemEditImage");
-    if (input) input.value = "";
-    renderEditImageThumbs();
-  }
-
-  function renderEditImageThumbs() {
-    const wrap = document.getElementById("chemEditImagePreviewWrap");
-    const box = document.getElementById("chemEditImageThumbs");
-    if (!wrap || !box) return;
-    if (!editImageItems.length) {
-      box.innerHTML = "";
-      wrap.classList.add("hidden");
-      return;
+    if (input && window.FilePicker) {
+      window.FilePicker.setExisting(input, []);
+      window.FilePicker.reset(input);
     }
-    wrap.classList.remove("hidden");
-    box.innerHTML = editImageItems
-      .map((item, index) => {
-        const src =
-          item.kind === "file"
-            ? item.preview || ""
-            : encodeUploadUrl(item.url) || item.url || "";
-        return (
-          '<div class="chem-edit-thumb" data-idx="' +
-          index +
-          '">' +
-          '<img src="' +
-          escapeHtml(src) +
-          '" alt="">' +
-          '<button type="button" class="chem-edit-thumb-remove" data-remove-idx="' +
-          index +
-          '" aria-label="사진 삭제">×</button>' +
-          "</div>"
-        );
-      })
-      .join("");
   }
 
-  function addEditImageFiles(fileList) {
-    const files = Array.from(fileList || []).filter((f) => f && f.type && f.type.startsWith("image/"));
-    if (!files.length) return;
+  function syncEditImagesFromPicker(detail) {
+    const files = (detail && detail.files) || [];
+    const order = (detail && detail.order) || [];
+    let fileIndex = 0;
+    editImageItems = order
+      .map((token) => (token ? { kind: "url", url: token } : { kind: "file", file: files[fileIndex++] }))
+      .filter((item) => item.kind === "url" || item.file);
     const clearCb = document.getElementById("chemEditClearImage");
-    if (clearCb) clearCb.checked = false;
-    const room = CHEM_MAX_IMAGES - editImageItems.length;
-    if (room <= 0) {
-      window.SiteFeedback.alert("사진은 최대 " + CHEM_MAX_IMAGES + "장까지 등록할 수 있습니다.");
-      return;
-    }
-    files.slice(0, room).forEach((file, i) => {
-      editImageItems.push({
-        id: "f-" + Date.now() + "-" + i,
-        kind: "file",
-        file: file,
-        preview: URL.createObjectURL(file)
-      });
-    });
-    if (files.length > room) {
-      window.SiteFeedback.alert("사진은 최대 " + CHEM_MAX_IMAGES + "장까지 등록할 수 있습니다.");
-    }
-    renderEditImageThumbs();
-  }
-
-  function removeEditImageAt(index) {
-    const item = editImageItems[index];
-    if (!item) return;
-    if (item.kind === "file" && item.preview) {
-      try {
-        URL.revokeObjectURL(item.preview);
-      } catch (_) {
-        /* ignore */
-      }
-    }
-    editImageItems.splice(index, 1);
-    const clearCb = document.getElementById("chemEditClearImage");
-    if (clearCb && !editImageItems.length) clearCb.checked = true;
-    renderEditImageThumbs();
+    if (clearCb && editImageItems.length) clearCb.checked = false;
   }
 
   function setEditModeUi(mode, members) {
@@ -1805,7 +1735,6 @@
     modal.classList.add("hidden");
     modal.classList.remove("flex");
     document.body.style.overflow = "";
-    revokeEditFilePreviews();
     editImageItems = [];
   }
 
@@ -2131,24 +2060,14 @@
 
     const editImageInput = document.getElementById("chemEditImage");
     if (editImageInput) {
-      editImageInput.addEventListener("change", () => {
-        addEditImageFiles(editImageInput.files);
-        editImageInput.value = "";
+      editImageInput.addEventListener("file-picker:change", (e) => {
+        syncEditImagesFromPicker(e.detail);
       });
     }
     const clearImageCb = document.getElementById("chemEditClearImage");
     if (clearImageCb) {
       clearImageCb.addEventListener("change", () => {
         if (clearImageCb.checked) clearEditImages();
-      });
-    }
-    const thumbsBox = document.getElementById("chemEditImageThumbs");
-    if (thumbsBox) {
-      thumbsBox.addEventListener("click", (e) => {
-        const btn = e.target.closest("[data-remove-idx]");
-        if (!btn) return;
-        e.preventDefault();
-        removeEditImageAt(Number(btn.getAttribute("data-remove-idx")));
       });
     }
 
@@ -2190,6 +2109,10 @@
         const clearingAll = editImageItems.length === 0;
         fd.append("clearImage", clearingAll ? "true" : "false");
         fd.append("keepImageUrlsJson", JSON.stringify(keepUrls));
+        fd.append(
+          "imageOrderJson",
+          JSON.stringify(editImageItems.map((item) => (item.kind === "url" ? item.url : "")))
+        );
         fd.append("linksJson", collectLinksJson());
         editImageItems.forEach((item) => {
           if (item.kind === "file" && item.file) fd.append("images", item.file);

@@ -65,6 +65,7 @@
     if (!modal) return;
     modal.classList.add("hidden");
     modal.classList.remove("flex");
+    window.FilePicker?.reset(document.getElementById("unitEditImage"));
     if (!document.querySelector(".about-modal.flex")) document.body.style.overflow = "";
   }
 
@@ -126,12 +127,10 @@
     document.getElementById("unitEditDebut").value = "";
     document.getElementById("unitEditVisible").checked = true;
     document.getElementById("unitEditClearImage").checked = false;
-    document.getElementById("unitEditImage").value = "";
+    const imageInput = document.getElementById("unitEditImage");
+    let originalImage = "";
     const imageUrlInput = document.getElementById("unitEditImageUrl");
     if (imageUrlInput) imageUrlInput.value = "";
-    const preview = document.getElementById("unitEditImagePreview");
-    preview.classList.add("hidden");
-    preview.removeAttribute("src");
 
     await ensureOptions();
 
@@ -152,14 +151,12 @@
       if (imageUrlInput && data.unitImage && /^https?:\/\//i.test(data.unitImage)) {
         imageUrlInput.value = data.unitImage;
       }
-      if (data.unitImage) {
-        preview.src = data.unitImage;
-        preview.classList.remove("hidden");
-      }
+      originalImage = data.unitImage || "";
     } else {
       fillParentSelect(null, null);
       fillArtistChecks([]);
     }
+    window.FilePicker?.setOriginal(imageInput, originalImage);
     openModal("unitEditModal");
   }
 
@@ -221,6 +218,9 @@
   }
 
   function bindUi() {
+    document.getElementById("unitEditImage")?.addEventListener("file-picker:change", (event) => {
+      if (event.detail.files.length) document.getElementById("unitEditClearImage").checked = false;
+    });
     document.querySelectorAll(".unit-edit-close").forEach((el) => el.addEventListener("click", () => closeModal("unitEditModal")));
     document.getElementById("unitAddBtn")?.addEventListener("click", () => openEditModal(null));
     document.querySelectorAll("[data-unit-edit]").forEach((btn) => {

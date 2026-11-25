@@ -42,14 +42,16 @@
                 <input type="text" id="albumEditMusicVideo" maxlength="200" placeholder="영상 ID 또는 URL" autocomplete="off" title="공식 유튜브 영상 ID 또는 watch URL">
                 <span class="text-xs text-gray-400">입력하면 앨범 상세 커버 아래에 플레이어가 표시됩니다.</span>
             </label>
-            <label class="about-edit-label">커버 이미지
-                <input type="file" id="albumEditImage" accept="image/*">
-            </label>
+            <div class="about-edit-label">
+                <label for="albumEditImage">커버 이미지</label>
+                <div class="file-drop" data-file-drop="single" data-file-label="앨범 커버">
+                    <input type="file" id="albumEditImage" accept="image/*">
+                </div>
+            </div>
             <label class="about-edit-label">외부 이미지 URL
                 <input type="url" id="albumEditImageUrl" placeholder="https://example.com/cover.jpg" maxlength="1000" pattern="https?://.+">
                 <span class="text-xs text-gray-400">이미지 파일 대신 사용할 링크를 입력하세요. 파일을 선택하면 파일이 우선 적용됩니다.</span>
             </label>
-            <img id="albumEditImagePreview" class="about-preview hidden" alt="커버 미리보기">
             <label class="about-edit-check">
                 <input type="checkbox" id="albumEditClearImage"> 커버 이미지 제거
             </label>
