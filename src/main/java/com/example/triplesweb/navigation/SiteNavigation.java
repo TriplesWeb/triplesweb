@@ -38,7 +38,7 @@ public final class SiteNavigation {
         ), List.of()),
         new Section("info", "정보", List.of(
             link("공연/이벤트", "/cosmo/event"), link("굿즈리스트", "/shop"),
-            link("총공", "/activities/voting"), link("기사/그외", "/article/info")
+            link("총공", "/activities/voting")
         ), List.of()),
         new Section("schedule", "일정", List.of(), List.of(), "/schedule")
     );

@@ -196,8 +196,6 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   .article-board-row>.article-board-subject{grid-column:1/-1!important;white-space:normal;overflow-wrap:anywhere;font-size:.95rem}
   .article-board-row>.article-board-author,
   .article-board-row>.article-board-date{font-size:.75rem}
-  .article-board-row>.article-board-likes{grid-column:1/-1!important;color:#8decd9;font-size:.75rem}
-  .article-board-likes::before{content:"추천 ";color:#a6b6b1;font-size:.7rem}
   .article-board-row.is-market{grid-template-columns:minmax(7.25rem,.9fr) minmax(0,1.45fr)!important}
   .article-board-row.is-market>.article-board-swap{grid-column:1!important}
   .article-board-row.is-market>.article-board-subject{grid-column:2!important;font-size:.95rem}

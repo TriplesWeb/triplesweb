@@ -41,9 +41,7 @@ MVC의 M은 “모델/데이터”이지 “반드시 `*Service` 클래스”가
 | 조건 | 예 |
 |------|-----|
 | 쓰기 + 도메인 규칙 | 회원가입(중복·암호화·role), 프로필 수정 |
-| 여러 Repository / 카운트 동기화 | 좋아요 = `Article` + `ArticleLike` |
-| **같은 로직이 두 곳 이상** | 인기글·좋아요가 Popular와 Article에 각각 존재 |
-| `@Transactional`이 필요한 변경 | 좋아요 토글, 상품 등록+이미지 |
+| `@Transactional`이 필요한 변경 | 게시글 저장·파일 연결, 상품 등록+이미지 |
 
 ### 2.2 Controller → Repository로 충분할 수 있는 쪽 (Optional)
 
@@ -122,25 +120,7 @@ flowchart TB
 
 ---
 
-## 5. Must — 반드시 손댈 것
-
-### 5.1 `PopularArticleController` (중복·불일치)
-
-| 기능 | Popular 쪽 | Article 쪽 (`ArticleService`) |
-|------|------------|-------------------------------|
-| 인기글 | Repo: likesCount ≥ 5 | `findPopularArticles(...)` |
-| 좋아요 | **추가만** (`already`) | `toggleLike` (**있으면 취소**) |
-| URL | `POST /{category}/{id}/like` | `POST /article/{category}/{id}/like` |
-
-문제의 본질은 “Service를 안 써서”가 아니라 **같은 도메인이 두 갈래**인 점이다.
-
-**해결**
-
-1. 목록 → `articleService.findPopularArticles(null, limit)`  
-2. like API → **삭제**하거나 Article 엔드포인트/Service로 위임  
-3. Controller는 인기글 **뷰 조립만** 담당
-
-이게 이 문서에서 말하는 유일한 **Must** 리팩터다.
+## 5. Must — 현재 필수 리팩터 없음
 
 ---
 
@@ -196,7 +176,6 @@ flowchart TB
 
 1. Popular 목록 → `ArticleService`  
 2. Popular like 중복 제거 / Article로 단일화  
-3. (가능하면) 좋아요 허용 카테고리 등 규칙을 Article 한곳에만 둠  
 
 ### Phase Should (여유 시)
 
@@ -218,7 +197,7 @@ flowchart TB
 
 | 항목 | DoD |
 |------|-----|
-| Must | Popular와 Article의 인기글·좋아요 진입점이 **하나** |
+| Must | 현재 없음 |
 | Should | 회원 가입·프로필이 `MemberService`(또는 동일 역할)에 모임 |
 | Optional | 문서상 “유지 가능”으로 남는 직접 Repo 호출은 **허용** |
 | 금지하지 않음 | 읽기 전용 Controller → Repository |
@@ -231,7 +210,6 @@ flowchart TB
 
 | 등급 | 파일 |
 |------|------|
-| Must | `controller/PopularArticleController.java` ↔ `service/ArticleServiceImpl.java` |
 | Should | `controller/LoginController.java`, `MyPageController.java` |
 | Optional | `TriplesController`, `MyPostController`, `MyCommentController`, `SearchController`, `ShopController`(상세·카트), `ScheduleController`(상세), `MainController`(일정) |
 | OK | `ArticleController`, `CommentApiController`, `ArchiveController`, `MediaArchiveController` |

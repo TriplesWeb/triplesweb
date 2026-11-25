@@ -285,14 +285,6 @@ public class SiteSearchService {
             hits.add(new DatedHit(hit(card.getEventName(), "/shop/" + card.getId(), "굿즈",
                     blankTo(card.getSalesPeriod(), "굿즈")), firstDate(card.getSalesPeriod())));
         }
-        for (Article article : latestArticleHits("info", query)) {
-            hits.add(new DatedHit(hit(article.getTitle(), "/article/info/" + article.getId(), "기사/그외",
-                    blankTo(article.getUserId(), "정보")), article.getFormattedCreatedAt()));
-        }
-        for (Article article : latestArticleHits("notice", query)) {
-            hits.add(new DatedHit(hit(article.getTitle(), "/article/notice/" + article.getId(), "공지",
-                    blankTo(article.getFormattedDate(), "공지")), article.getFormattedCreatedAt()));
-        }
         return newest(hits, INFO_SCHEDULE_LIMIT);
     }
 
@@ -305,10 +297,6 @@ public class SiteSearchService {
                     blankTo(names, dateRange(schedule))), dateTime(schedule.getStart())));
         }
         return newest(hits, INFO_SCHEDULE_LIMIT);
-    }
-
-    private List<Article> latestArticleHits(String category, String query) {
-        return safeList(() -> articles.searchLatestByCategory(category, query, INFO_SCHEDULE_LIMIT));
     }
 
     private static LocalDateTime dateTime(LocalDate date) {

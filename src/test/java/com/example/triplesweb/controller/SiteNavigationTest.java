@@ -47,7 +47,7 @@ class SiteNavigationTest {
             .containsExactly("/archive", "/media");
         assertThat(SiteNavigation.PRIMARY.get(2).items().get(0).isNested()).isFalse();
         assertThat(SiteNavigation.PRIMARY.get(3).items()).extracting(SiteNavigation.Item::label)
-            .containsExactly("공연/이벤트", "굿즈리스트", "총공", "기사/그외");
+            .containsExactly("공연/이벤트", "굿즈리스트", "총공");
         mvc.perform(get("/sitemap")).andExpect(status().isNotFound());
         mvc.perform(get("/media/drive")).andExpect(status().isNotFound());
         mvc.perform(get("/community/suggestions")).andExpect(status().isNotFound());

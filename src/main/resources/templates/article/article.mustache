@@ -13,7 +13,7 @@
         <div class="absolute -inset-1 rounded-3xl bg-gradient-to-b from-primary-container/20 via-transparent to-secondary-container/30 blur-xl opacity-75 pointer-events-none"></div>
 
         <!-- 메인 컨테이너 카드 -->
-        <div class="article-board-shell {{#hideRecommendations}}article-board-no-likes{{/hideRecommendations}} relative bg-surface-container/95 border border-outline-variant/50 rounded-3xl p-6 sm:p-10 backdrop-blur-2xl shadow-2xl">
+        <div class="article-board-shell relative bg-surface-container/95 border border-outline-variant/50 rounded-3xl p-6 sm:p-10 backdrop-blur-2xl shadow-2xl">
 
             <!-- 상단 헤더 타이틀 -->
             <div class="article-board-title flex items-center justify-between gap-3 mb-8 pb-4 border-b border-outline-variant/30">
@@ -325,18 +325,17 @@
             <div class="article-board-list w-full overflow-hidden rounded-2xl border border-outline-variant/40 bg-surface-container-lowest/40 mb-8">
 
                 <!-- 테이블 헤더 -->
-                <div class="article-board-heading{{#hideRecommendations}} is-no-likes{{/hideRecommendations}} px-6 py-3.5 bg-surface-container-high/60 border-b border-outline-variant/40 text-on-surface-variant font-semibold text-sm text-center">
+                <div class="article-board-heading px-6 py-3.5 bg-surface-container-high/60 border-b border-outline-variant/40 text-on-surface-variant font-semibold text-sm text-center">
                     <div class="article-board-num">번호</div>
                     <div class="article-board-subject">제목</div>
                     <div class="article-board-author">작성자</div>
                     <div class="article-board-date">날짜</div>
-                    {{^hideRecommendations}}<div class="article-board-likes">추천</div>{{/hideRecommendations}}
                 </div>
 
                 <!-- 테이블 바디 (게시글 목록 루프) -->
                 <div class="divide-y divide-outline-variant/20">
                     {{#articleList}}
-                        <div class="article-board-row{{#hideRecommendations}} is-no-likes{{/hideRecommendations}} px-6 py-4 items-center text-center text-sm text-on-surface hover:bg-surface-container-highest/30 transition-colors">
+                        <div class="article-board-row px-6 py-4 items-center text-center text-sm text-on-surface hover:bg-surface-container-highest/30 transition-colors">
                             <div class="article-board-num text-outline font-mono">{{displayId}}</div>
                             <div class="article-board-subject text-left font-medium">
                                 <a href="{{boardBase}}/{{id}}" class="article-board-subject-link hover:text-primary-container transition-colors">
@@ -345,10 +344,8 @@
                             </div>
                             <div class="article-board-author text-on-surface-variant truncate">{{userId}}</div>
                             <div class="article-board-date text-xs text-outline">{{formattedDate}}</div>
-                            {{^hideRecommendations}}<div class="article-board-likes text-primary-container font-semibold">{{likesCount}}</div>{{/hideRecommendations}}
                         </div>
                     {{/articleList}}
-
                     {{^articleList}}
                         <div class="py-16 text-center">
                             <span class="material-symbols-outlined text-outline text-4xl mb-2" data-icon="inbox">inbox</span>

@@ -30,7 +30,7 @@ flowchart TB
 | 도메인 | 한 줄 역할 | 사용자에게 보이는 것 |
 |--------|------------|----------------------|
 | [회원·인증](#1-회원인증) | 계정·세션·권한 | 로그인, 가입, 마이페이지 |
-| [게시판](#2-게시판-글댓글좋아요검색) | 팬 커뮤니티 글·소통 | 잡담/교환/거래/정보/공지, 댓글, 좋아요 |
+| [게시판](#2-게시판-글댓글검색) | 팬 커뮤니티 글·소통 | 교환/거래/분철, 댓글, 검색 |
 | [tripleS 소개](#3-triples-소개-아티스트유닛앨범) | 그룹 메타 정보 조회 | 멤버·유닛·앨범·트랙·케미 |
 | [공식 미디어](#4-공식-미디어-youtube-카탈로그) | 공식 영상 큐레이션 | MV, SIGNAL, 비하인드 등 탭 |
 | [아카이브](#5-파일-아카이브) | 유저/운영 업로드 미디어 보관 | 사진·영상 아카이브 |
@@ -93,23 +93,21 @@ Service 없이 Controller → Repository. 가입·프로필은 규칙이 있어 
 
 ---
 
-## 2. 게시판 (글·댓글·좋아요·검색)
+## 2. 게시판 (글·댓글·검색)
 
 ### 역할
 
 팬이 **정보를 올리고 소통**하는 핵심 커뮤니티 도메인.  
-카테고리별로 게시판을 나누고, 첨부·댓글·좋아요를 제공한다.
+교환·거래·분철 게시판에서 글과 첨부를 관리하고 댓글과 검색을 제공한다.
 
 ### 기능
 
 | 기능 | 설명 |
 |------|------|
 | 글 CRUD | `/article/{category}` — 목록·작성·상세·수정·삭제 |
-| 카테고리 | `chat`(잡담), `trade`(교환), `sell`(거래), `info`(정보), `notice`(공지, ADMIN), `free`(자유) |
+| 카테고리 | `trade`(교환), `sell`(거래), `group-orders`(분철) |
 | 첨부파일 | 업로드 API + 본문 HTML에서 미디어 추출해 `ArticleFile` 연결 |
 | 댓글 | REST `/api/articles/{id}/comments` — 목록/작성/수정/삭제 |
-| 좋아요 | 카테고리 제한(`free`, `chat`, `info`), 토글 시 `likesCount` 동기화 |
-| 인기글 | 좋아요 수 기준 목록 (`/popular`, 메인 위젯) |
 | 검색 | 제목·내용·작성자 부분 일치 (`/search`) |
 | 내 글·내 댓글 | 마이페이지 연계 조회 |
 
@@ -164,7 +162,6 @@ flowchart TB
   MyP --> AR
   MyC --> CR[(CommentRepository)]
   AS --> AR
-  AS --> ALR[(ArticleLikeRepository)]
   AFS --> AFR[(ArticleFileRepository)]
   AFS --> FS
   CS --> CR
@@ -174,7 +171,7 @@ flowchart TB
 
 | 종류 | 이름 |
 |------|------|
-| Entity | `Article`, `ArticleFile`, `ArticleLike`, `Comment` |
+| Entity | `Article`, `ArticleFile`, `Comment` |
 | Service | `ArticleService`(+Impl), `ArticleFileService`(+Impl), `CommentService`, `DateTimeFormatService` |
 | Controller | `ArticleController`, `CommentApiController`, `ArticleUploadController`, `PopularArticleController`, `SearchController`, `MyPostController`, `MyCommentController` |
 | 뷰 | `templates/article/*`, `templates/comment/*` |

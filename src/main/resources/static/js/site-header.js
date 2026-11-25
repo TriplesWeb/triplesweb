@@ -413,21 +413,7 @@
       });
       body.appendChild(list);
     }
-    const notices = Array.isArray(data.notices) ? data.notices : [];
-    if (notices.length) {
-      const list = document.createElement("ul");
-      list.className = "site-header-popover__list";
-      notices.forEach((item) => {
-        const li = document.createElement("li");
-        const link = document.createElement("a");
-        link.href = item && item.href ? String(item.href) : "/article/notice";
-        link.textContent = item && item.title ? String(item.title) : "공지";
-        li.appendChild(link);
-        list.appendChild(li);
-      });
-      body.appendChild(list);
-    }
-    if (!objekts.length && !notices.length) {
+    if (!objekts.length) {
       const empty = document.createElement("p");
       empty.className = "site-header-popover__empty";
       empty.textContent = "새로 출시된 오브젝트가 없습니다.";

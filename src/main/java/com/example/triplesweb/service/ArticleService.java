@@ -8,8 +8,8 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- * 게시글({@link Article}) 생성·조회·삭제 및 카테고리별 최신·인기 목록 계약.
- * 첨부 포함 조회, 좋아요 카운터 증가·집계를 포함한다.
+ * 게시글({@link Article}) 생성·조회·삭제 및 카테고리별 목록 계약.
+ * 첨부 포함 조회를 제공한다.
  */
 public interface ArticleService {
     Article create(Article article);
@@ -27,13 +27,7 @@ public interface ArticleService {
     List<Article> searchByCategory(String category, String type, String keyword, int limit);
     List<Article> searchLatestByCategory(String category, String keyword, int limit);
     List<Article> findCategoryBatchBefore(String category, String type, String keyword, long beforeId, int size);
-    long getLikesCount(Long articleId);
     Article delete(Long id);
-    /** 사용자별 이력 없음 — 항상 false */
-    boolean isLikedByUser(Long articleId, String userId);
-    /** likesCount +1 (토글 아님). 성공 시 true */
-    boolean toggleLike(Long articleId, String userId);
 
     Article showWithFiles(Long id);
-    List<Article> findPopularArticles(String category, int limit);
 }

@@ -47,7 +47,7 @@ class SearchControllerTest {
         var media = new SiteSearchService.Tab("media", "미디어",
                 "/search?keyword=323&tab=media", "/archive/image_archive?q=323", empty, false);
         var info = new SiteSearchService.Tab("info", "정보",
-                "/search?keyword=323&tab=info", "/article/info?type=title&keyword=323", empty, false);
+                "/search?keyword=323&tab=info", "", empty, false);
         var schedule = new SiteSearchService.Tab("schedule", "일정",
                 "/search?keyword=323&tab=schedule", "/schedule", empty, false);
         var members = List.of(new SiteSearchService.Member("지연", "JiYeon",

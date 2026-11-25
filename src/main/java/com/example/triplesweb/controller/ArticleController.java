@@ -22,11 +22,13 @@ import com.example.triplesweb.util.MemberPortraitOptions;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
+import org.springframework.http.HttpStatus;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -55,9 +57,8 @@ public class ArticleController {
     private final ArtistSnapshotService artistSnapshot;
 
     private static final Set<String> ALLOWED_CATEGORIES = Set.of(
-            "trade", "sell", "info", "notice"
+            "trade", "sell"
     );
-    private static final Set<String> LIKE_ALLOWED_CATEGORIES = Set.of("info");
 
     private static boolean isObjektBoard(String category) {
         return Set.of("trade", "sell").contains(category);
@@ -73,6 +74,13 @@ public class ArticleController {
 
     private boolean isInvalidCategory(String category) {
         return !ALLOWED_CATEGORIES.contains(category);
+    }
+
+    private String invalidCategoryTarget(String category) {
+        if ("info".equals(category) || "notice".equals(category)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+        return "redirect:/trade";
     }
 
     @InitBinder("article")
@@ -98,7 +106,7 @@ public class ArticleController {
                                   @RequestParam(value = "sellListingSide", required = false) String sellListingSide,
                                   @RequestParam(value = "objektSide", required = false) String objektSide,
                                   Model model) {
-        if (isInvalidCategory(category)) return "redirect:/trade";
+        if (isInvalidCategory(category)) return invalidCategoryTarget(category);
 
         // 로그인 체크 및 관리자 체크 제거 (누구나 작성 가능)
         model.addAttribute("category", category);
@@ -126,7 +134,7 @@ public class ArticleController {
                                 @RequestParam(value = "selectedHaveObjektIds", required = false) List<String> selectedHaveObjektIds,
                                 @RequestParam(value = "selectedWantObjektIds", required = false) List<String> selectedWantObjektIds,
                                 @RequestParam(value = "sellListingSide", required = false) String sellListingSide) throws IOException {
-        if (isInvalidCategory(category)) return "redirect:/trade";
+        if (isInvalidCategory(category)) return invalidCategoryTarget(category);
 
         String cleanedContent = ArticleHtmlCleaner.clean(form.getContent());
         form.setContent(cleanedContent);
@@ -361,8 +369,6 @@ public class ArticleController {
         return switch (category) {
             case "trade" -> "교환";
             case "sell" -> "거래";
-            case "info" -> "정보";
-            case "notice" -> "공지사항";
             default -> "게시판";
         };
     }
@@ -382,9 +388,7 @@ public class ArticleController {
             @RequestParam(name = "season", required = false, defaultValue = "") String season,
             @RequestParam(name = "class", required = false, defaultValue = "") String objektClass) {
 
-        if (isInvalidCategory(category)) {
-            return "redirect:/trade";
-        }
+        if (isInvalidCategory(category)) return invalidCategoryTarget(category);
 
         boolean marketBoard = isObjektBoard(category);
 
@@ -453,7 +457,6 @@ public class ArticleController {
                     .formattedDate(
                             dateTimeFormatService.formatKst(
                                     art.getFormattedCreatedAt()))
-                    .likesCount(art.getLikesCount())
                     .build();
             if (marketBoard) {
                 String cleaned = ArticleHtmlCleaner.clean(
@@ -486,10 +489,6 @@ public class ArticleController {
             addMarketSeasonClassFilter(model, selectedSeason, selectedClass);
         }
         model.addAttribute("articleList", articleViewList);
-        // 교환/거래/분철: 추천 컬럼·인기글 조회 제거. popularList는 템플릿 미사용.
-        model.addAttribute("hideRecommendations", isObjektBoard(category));
-        model.addAttribute("popularList", List.of());
-
         // 검색 폼에서 사용하는 Mustache 변수
         model.addAttribute("searchKeyword", searchKeyword);
         model.addAttribute("isSearchTitle", "title".equals(searchType));
@@ -518,10 +517,9 @@ public class ArticleController {
     @GetMapping("/{id:[0-9]+}")
     public String showArticle(@PathVariable("category") String category,
                               @PathVariable("id") Long id,
-                              @RequestParam(required = false) String notice,
                               Model model) {
 
-        if (isInvalidCategory(category)) return "redirect:/trade";
+        if (isInvalidCategory(category)) return invalidCategoryTarget(category);
         // 교환/거래는 피드에서 바로 보고, 글 상세 페이지는 쓰지 않는다.
         if (isObjektBoard(category)) return "redirect:" + boardPath(category);
         Article article = articleService.showWithFiles(id);
@@ -565,38 +563,22 @@ public class ArticleController {
         model.addAttribute("isOwner", true); // 로그인 제거: 누구나 수정/삭제 가능
         model.addAttribute("isLoggedIn", true);
         model.addAttribute("userId", "익명");
-        model.addAttribute("likeCount", articleService.getLikesCount(id));
-        model.addAttribute("liked", false);
 
         List<ArticleFileDto> fileDtos = toFileDtos(article);
 
         ArticleViewDto view = ArticleViewMapper.toView(article, fileDtos, dateTimeFormatService);
         model.addAttribute("files", fileDtos);
         model.addAttribute("formattedDate", view.getFormattedDate());
-        model.addAttribute("isLikeAllowed", LIKE_ALLOWED_CATEGORIES.contains(category));
-        if ("delete-failed".equals(notice)) {
-            model.addAttribute("errorMessage", "글을 삭제하지 못했습니다. 잠시 후 다시 시도해 주세요.");
-        }
-
         return "article/article_detail";
     }
 
-    @PostMapping("/{id}/like")
-    @ResponseBody
-    public boolean toggleLike(@PathVariable("category") String category,
-                              @PathVariable("id") Long id) {
-        if (!LIKE_ALLOWED_CATEGORIES.contains(category)) {
-            return false;
-        }
-        return articleService.toggleLike(id, "anonymous");
-    }
 
     /** 수정 폼 */
     @GetMapping("/{id}/edit")
     public String editArticle(@PathVariable("category") String category,
                               @PathVariable("id") Long id,
                               Model model) {
-        if (isInvalidCategory(category)) return "redirect:/trade";
+        if (isInvalidCategory(category)) return invalidCategoryTarget(category);
         Article article = articleService.showWithFiles(id);
         if (article == null) return "redirect:" + boardPath(category);
 
@@ -628,7 +610,7 @@ public class ArticleController {
                                 @RequestParam(value = "selectedWantObjektIds", required = false) List<String> selectedWantObjektIds,
                                 @RequestParam(value = "sellListingSide", required = false) String sellListingSide,
                                 Model model) throws IOException {
-        if (isInvalidCategory(category)) return "redirect:/trade";
+        if (isInvalidCategory(category)) return invalidCategoryTarget(category);
 
         Article article = articleService.showWithFiles(id);
         if (article == null) return "redirect:" + boardPath(category);
@@ -721,7 +703,7 @@ public class ArticleController {
     @PostMapping("/{id}/delete")
     public String deleteArticle(@PathVariable("id") Long id,
                                 @PathVariable("category") String category) {
-        if (isInvalidCategory(category)) return "redirect:/trade";
+        if (isInvalidCategory(category)) return invalidCategoryTarget(category);
         Article article = articleService.showWithFiles(id);
         if (article == null) return "redirect:" + boardPath(category);
 

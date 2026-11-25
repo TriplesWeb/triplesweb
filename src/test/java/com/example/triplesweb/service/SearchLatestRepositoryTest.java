@@ -47,23 +47,23 @@ class SearchLatestRepositoryTest {
 
     @Test
     void articleSearchUsesDateBeforeLimitAndPlacesMissingDatesLast() {
-        articles.save(article("WAV newest", "info", LocalDateTime.of(2026, 5, 1, 1, 0)));
-        articles.save(article("wav middle", "info", LocalDateTime.of(2026, 3, 1, 1, 0)));
-        articles.save(article("wav oldest", "info", LocalDateTime.of(2025, 1, 1, 1, 0)));
-        Article missing = articles.save(article("wav missing", "info", LocalDateTime.of(2024, 1, 1, 1, 0)));
-        articles.save(article("wav notice", "notice", LocalDateTime.of(2028, 1, 1, 1, 0)));
-        articles.save(article("literal w%v", "info", LocalDateTime.of(2028, 1, 1, 1, 0)));
+        articles.save(article("WAV newest", "trade", LocalDateTime.of(2026, 5, 1, 1, 0)));
+        articles.save(article("wav middle", "trade", LocalDateTime.of(2026, 3, 1, 1, 0)));
+        articles.save(article("wav oldest", "trade", LocalDateTime.of(2025, 1, 1, 1, 0)));
+        Article missing = articles.save(article("wav missing", "trade", LocalDateTime.of(2024, 1, 1, 1, 0)));
+        articles.save(article("wav other category", "sell", LocalDateTime.of(2028, 1, 1, 1, 0)));
+        articles.save(article("literal w%v", "trade", LocalDateTime.of(2028, 1, 1, 1, 0)));
         entityManager.flush();
         entityManager.createNativeQuery("update article set formatted_created_at = null where id = :id")
                 .setParameter("id", missing.getId()).executeUpdate();
         entityManager.clear();
         ArticleService service = new ArticleServiceImpl(articles, mock(ArticleFileService.class));
 
-        assertThat(service.searchLatestByCategory("INFO", "WaV", 2))
+        assertThat(service.searchLatestByCategory("TRADE", "WaV", 2))
                 .extracting(Article::getTitle).containsExactly("WAV newest", "wav middle");
-        assertThat(service.searchLatestByCategory("info", "wav", 8))
+        assertThat(service.searchLatestByCategory("trade", "wav", 8))
                 .extracting(Article::getTitle).containsExactly("WAV newest", "wav middle", "wav oldest", "wav missing");
-        assertThat(service.searchLatestByCategory("info", "w%v", 8))
+        assertThat(service.searchLatestByCategory("trade", "w%v", 8))
                 .extracting(Article::getTitle).containsExactly("literal w%v");
     }
 

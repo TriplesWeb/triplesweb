@@ -3,7 +3,7 @@ const {chromium}=require('playwright');
 const root=path.resolve(__dirname,'../..');
 const alertsWithDrops={
  catalogSig:'sig-1',catalogCount:2,dropWindow:true,
- notices:[{id:9,title:'공지 테스트',href:'/article/notice/9',at:'2026-11-10'}],
+
  objekts:[
   {label:'Cream02 334Z 새 오브젝트 출시',href:'/cosmo/objekt?kind=334z',collectionId:'cc334',createdAt:'2026-11-15'},
   {label:'Cream02 336Z 새 오브젝트 출시',href:'/cosmo/objekt?kind=336z',collectionId:'cc336',createdAt:'2026-11-15'},
@@ -11,7 +11,7 @@ const alertsWithDrops={
   {label:'Cream02 335Z 새 오브젝트 출시',href:'/cosmo/objekt?kind=335z',collectionId:'cc335',createdAt:'2026-11-15'}
  ]
 };
-const emptyAlerts={catalogSig:'sig-empty',catalogCount:2,dropWindow:false,notices:[],objekts:[]};
+const emptyAlerts={catalogSig:'sig-empty',catalogCount:2,dropWindow:false,objekts:[]};
 (async()=>{
  let alertsPayload=alertsWithDrops;
  const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH||(fs.existsSync('/usr/bin/chromium')?'/usr/bin/chromium':undefined),args:['--no-sandbox']});
@@ -92,13 +92,12 @@ const emptyAlerts={catalogSig:'sig-empty',catalogCount:2,dropWindow:false,notice
     await barAlerts.click();
     await page.getByText('오브젝트 드롭시간입니다').waitFor();
     assert.equal(await page.getByText('오브젝트 드롭시간입니다').isVisible(),true);
-    assert.equal(await page.getByText('공지 테스트').isVisible(),true);
     assert.equal(await page.getByText('Cream02 334Z 새 오브젝트 출시').isVisible(),true);
     assert.equal(await page.getByText('Cream02 336Z 새 오브젝트 출시').isVisible(),true);
     assert.equal(await page.getByText('Cream02 337Z 새 오브젝트 출시').isVisible(),true);
     assert.equal(await page.getByText('Cream02 335Z 새 오브젝트 출시').count(),0);
     assert.equal(await page.locator('.site-header-popover__title').filter({hasText:'알림'}).count(),0);
-    assert.equal(await page.getByText('새 공지가 없습니다.').count(),0);
+    assert.equal(await page.locator('[data-alerts-panel] a[href*="/article/notice"]').count(),0);
     await page.keyboard.press('Escape');
     await page.waitForFunction(()=>document.querySelector('[data-alerts-panel]').hidden);
     await page.locator('#mobile-menu-btn').click();
@@ -253,7 +252,7 @@ const emptyAlerts={catalogSig:'sig-empty',catalogCount:2,dropWindow:false,notice
   assert.equal(await page.getByText('오브젝트 드롭시간입니다').count(),0);
   assert.equal(await page.getByText('새로 출시된 오브젝트가 없습니다.').isVisible(),true);
   assert.equal(await page.locator('.site-header-popover__title').filter({hasText:'알림'}).count(),0);
-  assert.equal(await page.getByText('새 공지가 없습니다.').count(),0);
+  assert.equal(await page.locator('[data-alerts-panel] a[href*="/article/notice"]').count(),0);
   assert.deepEqual(errors,[]);console.log('PASS: chromium header 320/360/390/1024/1040/1280/1440px, keyboard, navigation, community removed, outside click, search, alerts, cosmo id');
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exit(1)});

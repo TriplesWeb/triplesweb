@@ -101,9 +101,10 @@ class GroupOrdersControllerTest {
                     .andExpect(content().string(not(containsString(">Have</a>"))))
                     .andExpect(content().string(not(containsString(">Want</a>"))));
             }
-            verify(articles, never()).findPopularArticles(eq(category), anyInt());
         }
-        mvc.perform(get("/article/info")).andExpect(status().isOk())
+        mvc.perform(get("/info")).andExpect(status().isNotFound());
+        mvc.perform(get("/notice")).andExpect(status().isNotFound());
+        mvc.perform(get("/article/info")).andExpect(status().isNotFound())
             .andExpect(content().string(not(containsString("class=\"market-tabs\""))));
         for (String category : List.of("free", "chat", "all")) {
             mvc.perform(get("/article/" + category)).andExpect(redirectedUrl("/trade"));
@@ -332,11 +333,8 @@ class GroupOrdersControllerTest {
             .andExpect(model().attribute("errorMessage", "오브젝트를 1개 이상 선택해주세요."));
     }
 
-    @Test void noticeBoardIsAllowed() throws Exception {
-        when(articles.findRecentByCategory("notice",10)).thenReturn(List.of(article("notice")));
-        mvc.perform(get("/article/notice")).andExpect(status().isOk())
-            .andExpect(content().string(containsString("공지사항 게시판")))
-            .andExpect(content().string(not(containsString("class=\"market-tabs\""))));
+    @Test void noticeBoardIsNotFound() throws Exception {
+        mvc.perform(get("/article/notice")).andExpect(status().isNotFound());
     }
 
     @Test void tradeCreateRequiresHaveAndWantThenStoresBoth() throws Exception {
