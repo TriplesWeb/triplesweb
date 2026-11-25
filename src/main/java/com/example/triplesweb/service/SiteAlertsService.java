@@ -1,6 +1,5 @@
 package com.example.triplesweb.service;
 
-import com.example.triplesweb.entity.Article;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -14,14 +13,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** 헤더 종 패널용. 세션 없이 오늘 출시된 오브젝트 드롭과 최신 공지를 돌려 준다. */
+/** 헤더 종 패널용. 세션 없이 오늘 출시된 오브젝트 드롭을 돌려 준다. */
 @Service
 @RequiredArgsConstructor
 public class SiteAlertsService {
 
-    static final int NOTICE_LIMIT = 8;
-
-    private final ArticleService articles;
     private final ObjektService objekts;
     private final ObjektLiveSettings live;
 
@@ -31,26 +27,8 @@ public class SiteAlertsService {
         body.put("catalogSig", objekts.catalogSignature());
         body.put("catalogCount", objekts.catalogCount());
         body.put("dropWindow", live.dropWindow() && !drops.isEmpty());
-        body.put("notices", notices());
         body.put("objekts", drops);
         return body;
-    }
-
-    private List<Map<String, Object>> notices() {
-        List<Map<String, Object>> rows = new ArrayList<>();
-        try {
-            for (Article article : articles.findRecentByCategory("notice", NOTICE_LIMIT)) {
-                Map<String, Object> row = new LinkedHashMap<>();
-                row.put("id", article.getId());
-                row.put("title", article.getTitle() == null ? "" : article.getTitle());
-                row.put("href", "/article/notice/" + article.getId());
-                row.put("at", article.getFormattedDate());
-                rows.add(row);
-            }
-        } catch (RuntimeException ignored) {
-            return List.of();
-        }
-        return rows;
     }
 
     private List<Map<String, Object>> dropAlerts() {

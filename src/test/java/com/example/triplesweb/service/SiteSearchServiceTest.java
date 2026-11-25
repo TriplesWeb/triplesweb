@@ -180,13 +180,6 @@ class SiteSearchServiceTest {
         goods.setTitle("서연 키링");
         goods.setSalesPeriod("");
         when(shop.listCards()).thenReturn(List.of(new ShopListCard(goods)));
-        Article info = new Article();
-        info.setId(11L);
-        info.setTitle("서연 인터뷰");
-        info.setUserId("admin");
-        info.setCategory("info");
-        when(articles.searchLatestByCategory(eq("info"), eq("서연"), eq(5)))
-                .thenReturn(List.of(info));
         Schedule schedule = new Schedule("서연 생일", LocalDate.of(2026, 8, 6), LocalDate.of(2026, 8, 6));
         when(schedules.findAll()).thenReturn(List.of(schedule));
 
@@ -195,10 +188,10 @@ class SiteSearchServiceTest {
                 .contains("/archive?q=%EC%84%9C%EC%97%B0%20%EC%A7%81%EC%BA%A0",
                         "/media/mv/abcdefghijk");
         assertThat(tab(mediaPage, "info").getHits()).extracting(SiteSearchService.Hit::getHref)
-                .contains("/shop/5", "/article/info/11");
+                .containsExactly("/shop/5");
         SiteSearchService.Page infoPage = search.search("서연", "info");
         assertThat(tab(infoPage, "info").getHits()).extracting(SiteSearchService.Hit::getHref)
-                .contains("/shop/5", "/article/info/11");
+                .containsExactly("/shop/5");
         SiteSearchService.Page schedulePage = search.search("서연", "schedule");
         assertThat(tab(schedulePage, "schedule").getHits()).extracting(SiteSearchService.Hit::getHref)
                 .contains("/schedule");
@@ -232,7 +225,6 @@ class SiteSearchServiceTest {
         when(shop.listCards()).thenReturn(List.of(new ShopListCard(goods)));
         Article article = new Article(); article.setId(3L); article.setTitle("지연 공지");
         article.setFormattedCreatedAt(LocalDateTime.of(2026, 4, 2, 10, 0));
-        when(articles.searchLatestByCategory("notice", "지연", 5)).thenReturn(List.of(article));
         when(schedules.findAll()).thenReturn(List.of(
                 new Schedule("지연 1", LocalDate.of(2020, 1, 1), null),
                 new Schedule("지연 2", LocalDate.of(2022, 1, 1), null),
@@ -242,7 +234,7 @@ class SiteSearchServiceTest {
                 new Schedule("지연 6", LocalDate.of(2026, 1, 1), null)));
         var page = search.search("지연", null);
         assertThat(tab(page, "info").getHits()).extracting(SiteSearchService.Hit::getLabel)
-                .containsExactly("지연 굿즈", "지연 공지", "지연 행사");
+                .containsExactly("지연 굿즈", "지연 행사");
         assertThat(tab(page, "schedule").getHits()).extracting(SiteSearchService.Hit::getLabel)
                 .containsExactly("지연 6", "지연 5", "지연 4", "지연 3", "지연 2");
     }

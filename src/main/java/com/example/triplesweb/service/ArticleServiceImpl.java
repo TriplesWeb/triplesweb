@@ -12,8 +12,7 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- * {@link ArticleService} 구현체. 게시글 CRUD와 카테고리별 최신·인기 조회를 수행한다.
- * 좋아요는 {@code likesCount} 카운터만 사용한다.
+ * {@link ArticleService} 구현체. 게시글 CRUD와 카테고리별 최신 조회를 수행한다.
  */
 @Service
 @RequiredArgsConstructor
@@ -112,36 +111,6 @@ public class ArticleServiceImpl implements ArticleService {
             case "writer", "userid", "author" -> articleRepository.findByCategoryIgnoreCaseAndUserIdContainingIgnoreCaseAndIdLessThanOrderByIdDesc(category, query, beforeId, page);
             default -> articleRepository.findByCategoryIgnoreCaseAndTitleContainingIgnoreCaseAndIdLessThanOrderByIdDesc(category, query, beforeId, page);
         };
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<Article> findPopularArticles(String category, int limit) {
-        return articleRepository.findPopularByCategory(category, PageRequest.of(0, limit));
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public long getLikesCount(Long articleId) {
-        return articleRepository.findById(articleId)
-                .map(a -> (long) a.getLikesCount())
-                .orElse(0L);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public boolean isLikedByUser(Long articleId, String userId) {
-        // 사용자별 좋아요 이력 테이블을 두지 않음
-        return false;
-    }
-
-    @Override
-    public boolean toggleLike(Long articleId, String userId) {
-        Article article = articleRepository.findById(articleId)
-                .orElseThrow(() -> new IllegalArgumentException("게시글 없음"));
-        article.incrementLikes();
-        articleRepository.save(article);
-        return true;
     }
 
     @Override

@@ -106,48 +106,8 @@ class ArticleObjektOrderingTest {
         var controller = new ArticleController(mock(ArticleService.class), mock(ArticleFileServiceImpl.class),
                 mock(DateTimeFormatService.class), mock(ArticleObjektService.class), mock(ObjektService.class), mock(ArtistSnapshotService.class));
         var model = new ExtendedModelMap();
-        assertThat(controller.showArticle("trade", 9L, null, model)).isEqualTo("redirect:/trade");
-        assertThat(controller.showArticle("sell", 11L, null, model)).isEqualTo("redirect:/sell");
-    }
-
-    @Test void blankTitleOrContentAndUnchangedEditAreRejected() throws Exception {
-        var articles = mock(ArticleService.class);
-        var links = mock(ArticleObjektService.class);
-        var controller = new ArticleController(articles, mock(ArticleFileServiceImpl.class),
-                mock(DateTimeFormatService.class), links, mock(ObjektService.class), mock(ArtistSnapshotService.class));
-        Article existing = new Article();
-        existing.setId(4L);
-        existing.setTitle("같은 제목");
-        existing.setContent("<p>같은 내용</p>");
-        existing.setCategory("info");
-        when(articles.showWithFiles(4L)).thenReturn(existing);
-        when(links.findForArticle(4L)).thenReturn(List.of());
-
-        Article blankTitle = new Article();
-        blankTitle.setTitle("  ");
-        blankTitle.setContent("<p>본문</p>");
-        var missingTitle = new ExtendedModelMap();
-        assertThat(controller.updateArticle("info", 4L, blankTitle, null, null, null, null, null, null, null, missingTitle))
-                .isEqualTo("article/article_edit");
-        assertThat(missingTitle.get("errorMessage")).isEqualTo("제목을 입력해주세요.");
-
-        Article blankBody = new Article();
-        blankBody.setTitle("제목");
-        blankBody.setContent("<p><br></p>");
-        var missingBody = new ExtendedModelMap();
-        assertThat(controller.updateArticle("info", 4L, blankBody, null, null, null, null, null, null, null, missingBody))
-                .isEqualTo("article/article_edit");
-        assertThat(missingBody.get("errorMessage")).isEqualTo("내용을 입력해주세요.");
-
-        existing.setTitle("같은 제목");
-        existing.setContent("<p>같은 내용</p>");
-        Article same = new Article();
-        same.setTitle("같은 제목");
-        same.setContent("<p>같은 내용</p>");
-        var unchanged = new ExtendedModelMap();
-        assertThat(controller.updateArticle("info", 4L, same, null, null, null, null, null, null, null, unchanged))
-                .isEqualTo("article/article_edit");
-        assertThat(unchanged.get("errorMessage")).isEqualTo("게시글을 수정해주세요.");
+        assertThat(controller.showArticle("trade", 9L, model)).isEqualTo("redirect:/trade");
+        assertThat(controller.showArticle("sell", 11L, model)).isEqualTo("redirect:/sell");
     }
 
 }

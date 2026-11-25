@@ -135,7 +135,6 @@ com.example.triplesweb/
 │   ├── MemberRepository.java          → Members
 │   ├── ArticleRepository.java         → Article
 │   ├── ArticleFileRepository.java     → ArticleFile
-│   ├── ArticleLikeRepository.java     → ArticleLike
 │   ├── CommentRepository.java         → Comment
 │   ├── ArtistRepository.java          → Artist
 │   ├── UnitRepository.java            → Unit
@@ -145,7 +144,7 @@ com.example.triplesweb/
 │   └── ShopItemRepository.java        → Shop
 │
 ├── entity/
-│   ├── Members, Article, ArticleFile, ArticleLike, Comment
+│   ├── Members, Article, ArticleFile, Comment
 │   ├── Artist, Unit, UnitMember, Album, Track
 │   ├── Archive, Shop, ShopImage, Schedule
 │   ├── SavedMeta (@Embeddable), MediaType (enum)
@@ -183,7 +182,7 @@ flowchart TB
 
 | 모듈          | Controller                 | Service                                                                                         | Repository                                                            | Entity / 저장소                            | 패턴                          |
 | ----------- | -------------------------- | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | --------------------------------------- | --------------------------- |
-| 게시판         | `ArticleController`        | `ArticleService`(+Impl), `ArticleFileService`(+Impl), `CommentService`, `DateTimeFormatService` | `ArticleRepository`, `ArticleLikeRepository`, `ArticleFileRepository` | `Article`, `ArticleFile`, `ArticleLike` | **정상**                      |
+| 게시판         | `ArticleController`        | `ArticleService`(+Impl), `ArticleFileService`(+Impl), `CommentService`, `DateTimeFormatService` | `ArticleRepository`, `ArticleFileRepository` | `Article`, `ArticleFile` | **정상**                      |
 | 댓글 API      | `CommentApiController`     | `CommentService`                                                                                | `CommentRepository`, `ArticleRepository`                              | `Comment`, `Article`                    | **정상**                      |
 | 파일 업로드 API  | `ArticleUploadController`  | `FileStorageService`                                                                            | —                                                                     | `./uploads`                             | Service만 (DB 없음)            |
 | 아카이브        | `ArchiveController`        | `ArchiveService` (+ `FileStorageService`)                                                       | `ArchiveRepository`                                                   | `Archive` (+ embed `SavedMeta`)         | **정상**                      |
@@ -198,7 +197,6 @@ flowchart TB
 | 내 글         | `MyPostController`         | —                                                                                               | `ArticleRepository`                                                   | `Article`                               | **[직접]**                    |
 | 내 댓글        | `MyCommentController`      | —                                                                                               | `CommentRepository`                                                   | `Comment`                               | **[직접]**                    |
 | 검색          | `SearchController`         | —                                                                                               | `ArticleRepository`                                                   | `Article`                               | **[직접]**                    |
-| 인기글         | `PopularArticleController` | —                                                                                               | `ArticleRepository`, `ArticleLikeRepository`                          | `Article`, `ArticleLike`                | **[직접]**                    |
 | 시드          | `DataInitializer` (config) | —                                                                                               | Artist/Album/Unit Repo                                                | Artist, Unit, Album, Track              | **[직접]**                    |
 | 보안          | `SecurityConfig` 등         | —                                                                                               | `MemberRepository`                                                    | `Members`                               | **[직접]**                    |
 
@@ -211,12 +209,10 @@ flowchart LR
   AC --> AFS[ArticleFileServiceImpl]
   AC --> CS[CommentService]
   AS --> AR[ArticleRepository]
-  AS --> ALR[ArticleLikeRepository]
   AFS --> AFR[ArticleFileRepository]
   AFS --> FS[FileStorageServiceImpl]
   CS --> CR[CommentRepository]
   AR --> Article
-  ALR --> ArticleLike
   AFR --> ArticleFile
   CR --> Comment
   FS --> Uploads["./uploads"]
@@ -273,7 +269,7 @@ flowchart LR
 ### 3.4 인수 시 레이어 관점 메모
 
 1. **게시판·댓글·아카이브**는 Service 레이어가 갖춰져 있어 확장/테스트하기 비교적 수월합니다.
-2. **회원·검색·인기글·내 글/댓글·Triples**는 Controller에 쿼리/매핑이 몰려 있어, 나중에 Service로 옮기면 중복(좋아요·카테고리명 등)을 줄일 수 있습니다.
+2. **회원·검색·내 글/댓글·Triples**는 Controller에 쿼리/매핑이 몰려 있어, 나중에 Service로 옮기면 중복을 줄일 수 있습니다.
 3. **Shop / Schedule / Main**은 일부만 Service를 쓰고 Repository도 함께 주입하는 **혼합형**입니다.
 4. **Media**는 DB Entity가 없고 JSON + YouTube Infra 조합입니다.
 
@@ -287,7 +283,7 @@ flowchart LR
 | 도메인 | 역할 요약 | 상세 |
 |--------|-----------|------|
 | 회원·인증 | 계정, 세션, ADMIN 권한 | [§1](./DOMAINS.md#1-회원인증) |
-| 게시판 | 글·댓글·좋아요·검색 | [§2](./DOMAINS.md#2-게시판-글댓글좋아요검색) |
+| 게시판 | 글·댓글·검색 | [§2](./DOMAINS.md#2-게시판-글댓글검색) |
 | tripleS 소개 | 아티스트·유닛·앨범 조회 | [§3](./DOMAINS.md#3-triples-소개-아티스트유닛앨범) |
 | 공식 미디어 | YouTube 탭 카탈로그(JSON) | [§4](./DOMAINS.md#4-공식-미디어-youtube-카탈로그) |
 | 파일 아카이브 | 사진·영상 파일 보관 | [§5](./DOMAINS.md#5-파일-아카이브) |
@@ -314,7 +310,7 @@ flowchart LR
 | `/login`, `/signup`, `/logout` | `LoginController`          | 인증                   |
 | `/mypage`, `/mypage_edit`      | `MyPageController`         | 마이페이지                |
 | `/myposts`, `/mycomments`      | `MyPost` / `MyComment`     | 내 글·댓글               |
-| `/article/{category}/**`       | `ArticleController`        | 게시판 CRUD·좋아요         |
+| `/article/{category}/**`       | `ArticleController`        | 교환·거래 게시판 CRUD      |
 | `/popular`                     | `PopularArticleController` | 인기글                  |
 | `/triples/**`                  | `TriplesController`        | 아티스트·앨범·유닛           |
 | `/media`, `/media_new`, …      | `MediaArchiveController`   | 공식 미디어               |
@@ -412,7 +408,7 @@ Spring Boot start
 
 | Service                       | 주요 Repository / 외부                            |
 | ----------------------------- | --------------------------------------------- |
-| `ArticleService` / `Impl`     | `ArticleRepository`, `ArticleLikeRepository`  |
+| `ArticleService` / `Impl`     | `ArticleRepository`  |
 | `ArticleFileService` / `Impl` | `ArticleFileRepository`, `FileStorageService` |
 | `CommentService`              | `CommentRepository`, `ArticleRepository`      |
 | `FileStorageService` / `Impl` | 로컬 디스크 (`uploads/`)                           |
@@ -424,7 +420,7 @@ Spring Boot start
 
 
 리포지토리 목록:  
-`Member`, `Article`, `ArticleFile`, `ArticleLike`, `Comment`, `Artist`, `Unit`, `Album`, `Archive`, `Schedule`, `ShopItem`
+`Member`, `Article`, `ArticleFile`, `Comment`, `Artist`, `Unit`, `Album`, `Archive`, `Schedule`, `ShopItem`
 
 ---
 
@@ -486,10 +482,8 @@ JPA 매핑 기준으로 관계를 단순화한 다이어그램입니다. embed �
 erDiagram
   Members ||--o{ Article : "작성(userId)"
   Members ||--o{ Comment : "작성(userId)"
-  Members ||--o{ ArticleLike : "좋아요(userId)"
 
   Article ||--o{ Comment : has
-  Article ||--o{ ArticleLike : has
   Article ||--o{ ArticleFile : has
 
   Article {
@@ -498,7 +492,6 @@ erDiagram
     String title
     String content
     String category
-    int likesCount
     datetime formattedCreatedAt
   }
   Comment {
@@ -507,11 +500,6 @@ erDiagram
     String userId
     String body
     datetime formattedCreatedAt
-  }
-  ArticleLike {
-    Long id PK
-    Long article_id FK
-    String userId
   }
   ArticleFile {
     Long id PK

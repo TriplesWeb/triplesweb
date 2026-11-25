@@ -35,9 +35,6 @@ public class Article {
     @Column(nullable = false)
     private String category;
 
-    /** 좋아요 수(별도 like 테이블 없이 카운터만 유지) */
-    @Column(nullable = false)
-    private int likesCount = 0;
 
     @ToString.Exclude
     @OneToMany(mappedBy = "article", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -54,10 +51,6 @@ public class Article {
             this.title = article.title;
         if (article.content != null && !article.content.isBlank())
             this.content = article.content;
-    }
-
-    public void incrementLikes() {
-        this.likesCount = this.likesCount + 1;
     }
 
     @PrePersist
@@ -80,11 +73,9 @@ public class Article {
         return switch (category) {
             case "free" -> "자유게시판";
             case "chat" -> "잡담게시판";
-            case "notice" -> "공지사항";
             case "trade" -> "교환게시판";
             case "sell" -> "거래게시판";
             case "group-orders" -> "분철게시판";
-            case "info" -> "정보게시판";
             case "popular" -> "인기글";
             default -> "기타";
         };

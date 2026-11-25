@@ -15,7 +15,6 @@ public class ArticleViewDto {
     private Long id;
     private String title;
     private Long displayId;
-    private int likesCount;
     private String content;
     /** 마켓 피드에 본문 설명을 노출할지. */
     private boolean hasMarketDescription;

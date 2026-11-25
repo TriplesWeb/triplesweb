@@ -5,7 +5,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
-/** 게시글 작성·수정 폼 바인딩. Multipart 첨부·좋아요 UI 상태 포함.
+/** 게시글 작성·수정 폼 바인딩. Multipart 첨부를 포함한다.
  * 제목·본문 필수는 ArticleController.validateTitleAndContent에서 검사한다(마켓은 선택). */
 @Getter
 @Setter
@@ -22,8 +22,6 @@ public class ArticleForm {
     private String content;
     private String category;
     private List<MultipartFile> files;
-    private int likesCount;
-    private boolean liked;
 
 
     public String getCategoryName() {
@@ -31,11 +29,9 @@ public class ArticleForm {
         return switch (category) {
             case "free" -> "자유게시판";
             case "chat" -> "잡담게시판";
-            case "notice" -> "공지사항";
             case "trade" -> "교환게시판";
             case "sell" -> "거래게시판";
             case "group-orders" -> "분철게시판";
-            case "info" -> "정보게시판";
             case "popular" -> "인기글";
             default -> "기타";
         };

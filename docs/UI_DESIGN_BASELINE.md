@@ -46,7 +46,7 @@
 로컬 서버 기동 후 수동 비교용 경로:
 
 - `/main`, `/triples/artist`, `/triples/album`, `/triples/chemistry`
-- `/cosmo/objekt`, `/cosmo/gravity`, `/article/info`, `/shop`
+- `/cosmo/objekt`, `/cosmo/gravity`, `/trade`, `/shop`
 
 ## Phase 1–4 적용 후 (동일 일자)
 

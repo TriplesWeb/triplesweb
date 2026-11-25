@@ -19,7 +19,7 @@ class MobilePageTemplatesTest {
         var compiler=Mustache.compiler().defaultValue("").withLoader(name -> new InputStreamReader(
                 new ClassPathResource("templates/"+name+".mustache").getInputStream(), StandardCharsets.UTF_8));
         String longText="모바일에서도 읽을 수 있어야 하는 아주 긴 제목과 계정 이름 및 오브젝트 정보";
-        var post=Map.<String,Object>of("id",1,"displayId",1,"title",longText,"userId",longText,"formattedDate","2026-10-27","likesCount",10,"category","trade");
+        var post=Map.<String,Object>of("id",1,"displayId",1,"title",longText,"userId",longText,"formattedDate","2026-10-27","category","trade");
         String rich="<p>"+"https://example.com/"+"longpath".repeat(30)+"</p><table style='width:1200px'><tr><td>가로로 긴 표</td></tr></table>";
         Map<String,Object> model=new HashMap<>();
         StaticAssetVersionService assets = new StaticAssetVersionService();
@@ -99,7 +99,7 @@ class MobilePageTemplatesTest {
         }
         for (String category : List.of("trade", "sell", "group-orders")) {
             var board = new HashMap<>(model);
-            board.put("category", category); board.put("hideRecommendations", true);
+            board.put("category", category);
             board.put("isMarketBoard", !"group-orders".equals(category));
             board.put("isTrade", "trade".equals(category));
             board.put("isSell", "sell".equals(category));
@@ -175,7 +175,7 @@ class MobilePageTemplatesTest {
         infoTab.put("id", "info"); infoTab.put("label", "정보");
         infoTab.put("href", "/search?keyword=323&tab=info"); infoTab.put("count", 0);
         infoTab.put("hasHits", false); infoTab.put("active", false); infoTab.put("hasMore", true);
-        infoTab.put("moreHref", "/article/info?type=title&keyword=323"); infoTab.put("hits", List.of());
+        infoTab.put("moreHref", ""); infoTab.put("hits", List.of());
         Map<String,Object> scheduleTab = new LinkedHashMap<>();
         scheduleTab.put("id", "schedule"); scheduleTab.put("label", "일정");
         scheduleTab.put("href", "/search?keyword=323&tab=schedule"); scheduleTab.put("count", 0);

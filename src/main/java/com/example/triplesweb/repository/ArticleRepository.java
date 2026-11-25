@@ -15,7 +15,6 @@ import java.util.Optional;
  */
 public interface ArticleRepository extends JpaRepository<Article,Long> {
 
-    List<Article> findByLikesCountGreaterThanEqualOrderByLikesCountDesc(int minLikes, Pageable pageable);
 
     List<Article> findByTitleContainingIgnoreCaseOrContentContainingIgnoreCaseOrUserIdContainingIgnoreCase(
             String title, String content, String userId, Sort sort);
@@ -52,13 +51,6 @@ public interface ArticleRepository extends JpaRepository<Article,Long> {
     List<Article> findByCategoryIgnoreCaseAndTitleContainingIgnoreCaseAndIdLessThanOrderByIdDesc(String category, String title, Long beforeId, Pageable pageable);
     List<Article> findByCategoryIgnoreCaseAndContentContainingIgnoreCaseAndIdLessThanOrderByIdDesc(String category, String content, Long beforeId, Pageable pageable);
     List<Article> findByCategoryIgnoreCaseAndUserIdContainingIgnoreCaseAndIdLessThanOrderByIdDesc(String category, String userId, Long beforeId, Pageable pageable);
-
-    @Query("""
-            select a from Article a
-             where (:category is null or :category = '' or lower(a.category) = lower(:category))
-             order by a.likesCount desc, a.id desc
-            """)
-    List<Article> findPopularByCategory(@Param("category") String category, Pageable pageable);
 
     @Query("SELECT MAX(a.displayId) FROM Article a WHERE a.category = :category")
     Long findMaxDisplayIdByCategory(@Param("category") String category);

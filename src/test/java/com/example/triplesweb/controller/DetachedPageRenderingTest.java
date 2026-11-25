@@ -118,7 +118,7 @@ class DetachedPageRenderingTest {
             article.setUserId("render-test");
             article.setTitle("렌더링 게시글");
             article.setContent("본문");
-            article.setCategory("info");
+            article.setCategory("trade");
             entities.persist(article);
             SavedMeta attachment = new SavedMeta("attachment.jpg", "attachment.jpg", "/uploads/attachment.jpg", 10L,
                     "image/jpeg", MediaType.IMAGE);
@@ -162,7 +162,7 @@ class DetachedPageRenderingTest {
         renders("/triples/artist?tab=member-" + artistId, "렌더링 멤버", "렌더링 하위 유닛");
         renders("/triples/artist/" + artistId + "/feeds", "렌더링 일정");
         renders("/cosmo/event/" + eventId, "렌더링 공연장");
-        renders("/article/info/" + articleId + "/edit", "attachment.jpg");
+        renders("/article/trade/" + articleId + "/edit", "attachment.jpg");
     }
 
     private void renders(String path, String... expectedText) throws Exception {

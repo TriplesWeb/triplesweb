@@ -25,12 +25,11 @@ class SiteAlertsControllerTest {
     @MockitoBean SiteAlertsService alerts;
 
     @Test
-    void alertsJsonIncludesNoticesObjektsAndPulseSignals() throws Exception {
+    void alertsJsonIncludesObjektsAndPulseSignals() throws Exception {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("catalogSig", "sig-9");
         body.put("catalogCount", 3);
         body.put("dropWindow", true);
-        body.put("notices", List.of(Map.of("id", 4L, "title", "서버 점검", "href", "/article/notice/4", "at", "2026-11-10")));
         body.put("objekts", List.of(Map.of("label", "HaYeon 323", "href", "/cosmo/objekt/detail/x",
                 "collectionId", "Cream02 HaYeon 323", "createdAt", "2026-11-10")));
         when(alerts.alerts()).thenReturn(body);
@@ -39,8 +38,6 @@ class SiteAlertsControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("\"catalogSig\":\"sig-9\"")))
                 .andExpect(content().string(containsString("\"dropWindow\":true")))
-                .andExpect(content().string(containsString("서버 점검")))
-                .andExpect(content().string(containsString("/article/notice/4")))
                 .andExpect(content().string(containsString("HaYeon 323")));
     }
 }

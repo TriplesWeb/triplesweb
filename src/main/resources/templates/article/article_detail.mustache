@@ -146,19 +146,8 @@
             </div>
             {{/isMarketBoard}}
 
-            <!-- 하단 푸터 (추천 및 수정/삭제/목록 버튼) -->
+            <!-- 하단 수정/삭제/목록 버튼 -->
             <div class="mt-10 pt-6 border-t border-outline-variant/35 flex flex-col gap-6">
-
-                <!-- 추천 버튼 영역 -->
-                {{#isLikeAllowed}}
-                    <div class="flex justify-center">
-                        <button class="py-2.5 px-6 rounded-full border border-error/50 bg-error-container/10 hover:bg-error-container/20 text-error font-medium text-sm transition-all flex items-center gap-2 active:scale-95" type="button" id="likeButton">
-                            <span class="material-symbols-outlined text-[18px]" data-icon="favorite">favorite</span>
-                            <span>추천</span>
-                            <span id="likeCount" class="font-bold">{{likeCount}}</span>
-                        </button>
-                    </div>
-                {{/isLikeAllowed}}
 
                 <!-- 버튼 그룹 (수정, 삭제, 목록으로) -->
                 <div class="article-detail-actions flex items-center justify-between pt-2">
@@ -189,42 +178,5 @@
     <script src="{{#asset}}/js/site-ui.js{{/asset}}"></script>
 </main>
 
-<script>
-    (function () {
-        const likeBtn = document.getElementById('likeButton');
-        const likeCountElem = document.getElementById('likeCount');
-        if (!likeBtn || !likeCountElem) return;
 
-        let pending = false;
-        likeBtn.addEventListener('click', async function () {
-            if (pending) return;
-            pending = true;
-            const headers = (window.SiteUi && window.SiteUi.csrfHeaders)
-                ? window.SiteUi.csrfHeaders({ 'Content-Type': 'application/json' })
-                : { 'Content-Type': 'application/json' };
-
-            fetch('{{boardBase}}/{{article.id}}/like', {
-                method: 'POST',
-                credentials: 'same-origin',
-                headers
-            })
-                .then(res => {
-                    if (!res.ok) throw new Error('HTTP ' + res.status);
-                    return res.json();
-                })
-                .then(ok => {
-                    // 서버는 좋아요 카운터 +1만 수행 (토글 아님)
-                    if (ok) {
-                        const n = parseInt(likeCountElem.textContent, 10) || 0;
-                        likeCountElem.textContent = String(n + 1);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    window.SiteFeedback.alert('추천 처리 중 오류가 발생했습니다');
-                })
-                .finally(() => { pending = false; });
-        });
-    })();
-</script>
 {{>layout/page-end}}
