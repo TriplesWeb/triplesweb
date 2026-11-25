@@ -618,13 +618,18 @@
 
             const decorationSource = {
                 id: 'decorations',
-                async events() {
-                    const items = await fetchCalendarItems('/api/calendar-decorations');
+                async events(fetchInfo) {
+                    const start = calendarDate(fetchInfo.start);
+                    const endDate = new Date(fetchInfo.end);
+                    endDate.setDate(endDate.getDate() - 1);
+                    const end = calendarDate(endDate);
+                    const params = new URLSearchParams({ start, end });
+                    const items = await fetchCalendarItems('/api/calendar-decorations/events?' + params);
                     return items.map(item => toCalendarEvent({
                         ...item,
-                        id: 'decoration-' + item.id,
+                        id: item.id,
                         title: (item.kind === 'UNIT' ? '★ ' : '🎉 ') + item.title,
-                        start: item.eventDate,
+                        start: item.start,
                         categoryLabel: item.kind === 'UNIT' ? '유닛' : '기념일'
                     }));
                 }
