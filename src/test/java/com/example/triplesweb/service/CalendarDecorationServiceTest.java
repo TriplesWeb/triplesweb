@@ -27,7 +27,7 @@ class CalendarDecorationServiceTest {
                 "image", "sticker.png", "image/png", "not-an-image".getBytes());
 
         assertThatThrownBy(() -> service.create(
-                "유닛 데뷔", "UNIT", LocalDate.of(2026, 11, 14), "AAA", "", "#00f5d4", file))
+                "유닛 데뷔", "UNIT", LocalDate.of(2026, 11, 14), "AAA", "", "#00f5d4", false, file))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("파일 내용");
         verify(repository, never()).save(any());
@@ -51,7 +51,7 @@ class CalendarDecorationServiceTest {
             return saved;
         });
 
-        service.create("유닛 데뷔", "UNIT", LocalDate.of(2026, 11, 14), "AAA", "", "#00f5d4", file);
+        service.create("유닛 데뷔", "UNIT", LocalDate.of(2026, 11, 14), "AAA", "", "#00f5d4", false, file);
 
         verify(storage).saveWithMeta(file, "calendar");
         verify(repository).save(any(CalendarDecoration.class));
@@ -60,10 +60,10 @@ class CalendarDecorationServiceTest {
     @Test
     void rejectsTextLongerThanTheDatabaseColumns() {
         LocalDate date = LocalDate.of(2026, 11, 14);
-        assertThatThrownBy(() -> service.create("유닛 데뷔", "UNIT", date, "가".repeat(81), "", null, null))
+        assertThatThrownBy(() -> service.create("유닛 데뷔", "UNIT", date, "가".repeat(81), "", null, false, null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("80자");
-        assertThatThrownBy(() -> service.create("유닛 데뷔", "UNIT", date, "", "가".repeat(501), null, null))
+        assertThatThrownBy(() -> service.create("유닛 데뷔", "UNIT", date, "", "가".repeat(501), null, false, null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("500자");
         verify(repository, never()).save(any());
