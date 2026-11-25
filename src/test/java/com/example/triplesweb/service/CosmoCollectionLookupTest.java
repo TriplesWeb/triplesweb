@@ -58,7 +58,7 @@ class CosmoCollectionLookupTest {
         });
         server.start();
         String url = "http://127.0.0.1:" + server.getAddress().getPort();
-        service = new CosmoCollectionService(url, url);
+        service = new CosmoCollectionService(org.mockito.Mockito.mock(ArtistSnapshotService.class), url, url);
     }
     @AfterEach void close() { continuePage.countDown(); service.close(); server.stop(0); }
 
@@ -94,7 +94,7 @@ class CosmoCollectionLookupTest {
         assertThat(cards).hasSize(24);
         assertThat(cards.get(0)).containsEntry("serial", "1").containsEntry("collectionId", "Cream02 HaYeon 367Z")
                 .containsEntry("cardTitle", "HaYeon 367Z")
-                .containsEntry("member", "정하연").containsEntry("seasonColor", "#FF8389")
+                .containsEntry("member", "HaYeon").containsEntry("memberDisplay", "정하연").containsEntry("seasonColor", "#FF8389")
                 .doesNotContainKeys("tokenId", "address");
         var last = service.search("테스트", 1);
         assertThat(last).containsEntry("pageDisplay", 2).containsEntry("hasNext", false);

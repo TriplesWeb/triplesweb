@@ -149,6 +149,23 @@ class SiteSearchServiceTest {
     }
 
     @Test
+    void cosmoSearchMatchesUnitMemberAliasesAndRejectsNumberPrefixes() {
+        when(objekts.findCollections("triples")).thenReturn(List.of(
+                Map.of("member", "S1 x S20", "collectionNo", "601A", "season", "Cream02"),
+                Map.of("member", "S10 x S13", "collectionNo", "602A", "season", "Cream02", "slug", "s1-decoy"),
+                Map.of("member", "ChaeWon", "collectionNo", "603A", "season", "Cream02")));
+
+        for (String query : List.of("s1", "s01", "서연", "seoyeon", "박시온", "cc601")) {
+            var hits = tab(search.search(query, "cosmo"), "cosmo").getHits();
+            assertThat(hits).filteredOn(SiteSearchService.Hit::isObjekt)
+                    .extracting(SiteSearchService.Hit::getLabel).containsExactly("윤서연 × 박시온 601A");
+        }
+        var hits = tab(search.search("채원", "cosmo"), "cosmo").getHits();
+        assertThat(hits).filteredOn(SiteSearchService.Hit::isObjekt)
+                .extracting(SiteSearchService.Hit::getLabel).containsExactly("김채원 603A");
+    }
+
+    @Test
     void mediaInfoAndScheduleTabsMapCanonicalLinks() {
         Archive photo = new Archive();
         photo.setTitle("서연 직캠");

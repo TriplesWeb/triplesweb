@@ -204,7 +204,7 @@
                     <span class="badge badge-sm badge-neutral collection-card-class">{{objektClass}}</span>
                 </div>
                 <div class="collection-card-foot">
-                    <span class="collection-card-member truncate">{{member}}</span>
+                    <span class="collection-card-member truncate">{{memberDisplay}}</span>
                     <span class="collection-card-no">{{collectionNo}}</span>
                 </div>
             </div>
@@ -554,7 +554,7 @@
   function buildCard(item) {
     const collectionId = item.collectionId || '오브젝트';
     const title = escapeHtml(item.cardTitle || cardTitleFrom(collectionId, item.season) || collectionId);
-    const member = escapeHtml(item.member || '');
+    const member = escapeHtml(item.memberDisplay || item.member || '');
     const klass = escapeHtml(item.objektClass || item.class || '');
     const collectionNo = escapeHtml(item.collectionNo || '');
     const serial = item.hasSerial

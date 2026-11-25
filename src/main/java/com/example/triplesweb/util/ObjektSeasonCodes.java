@@ -69,19 +69,20 @@ public final class ObjektSeasonCodes {
     }
 
     /**
-     * 짧은 시즌 코드는 토큰 완전 일치만, {@code cc401} 형태는 합성어 contains,
-     * 그 외는 기본 haystack contains.
+     * 멤버 번호는 구성 멤버에, 짧은 시즌 코드는 시즌에 정확히 일치시킨다.
+     * 나머지는 시즌 합성어, 기본 검색 텍스트, 멤버 이름과 별칭에서 찾는다.
      */
-    public static boolean matches(String query, String baseHaystack, String season, String collectionNo) {
+    public static boolean matches(String query, String baseHaystack, String season, String collectionNo, String member) {
         String q = query == null ? "" : query.trim().toLowerCase(Locale.ROOT);
         if (q.isEmpty()) return true;
-        String seasonCode = code(season);
-        String fused = composite(season, collectionNo);
-        if (KNOWN_CODES.contains(q)) {
-            return q.equals(seasonCode) || q.equals(fused);
+        if (MemberPortraitOptions.objektMemberNumberQueries().contains(q)) {
+            return MemberPortraitOptions.objektMemberNumbers(member).contains(q);
         }
-        if (!fused.isEmpty() && fused.contains(q)) return true;
+        if (KNOWN_CODES.contains(q)) return q.equals(code(season));
+        if (composite(season, collectionNo).contains(q)) return true;
         String base = baseHaystack == null ? "" : baseHaystack.toLowerCase(Locale.ROOT);
-        return base.contains(q);
+        return base.contains(q)
+                || MemberPortraitOptions.memberSearchTerms(member).stream().anyMatch(term -> term.contains(q))
+                || MemberPortraitOptions.displayMember(member).toLowerCase(Locale.ROOT).contains(q);
     }
 }

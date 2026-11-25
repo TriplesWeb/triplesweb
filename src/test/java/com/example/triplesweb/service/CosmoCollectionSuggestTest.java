@@ -32,7 +32,7 @@ class CosmoCollectionSuggestTest {
         });
         server.start();
         String url = "http://127.0.0.1:" + server.getAddress().getPort();
-        service = new CosmoCollectionService(url, url);
+        service = new CosmoCollectionService(org.mockito.Mockito.mock(ArtistSnapshotService.class), url, url);
     }
 
     @AfterEach void close() {

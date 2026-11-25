@@ -283,7 +283,7 @@
     }
 
     function tipText(item) {
-      return [item.season, item.member || item.memberName, item.collectionNo || displayTitle(item)]
+      return [item.season, item.memberDisplay || item.member || item.memberName, item.collectionNo || displayTitle(item)]
         .filter(Boolean)
         .join(' · ');
     }
@@ -432,7 +432,7 @@
       title.textContent = (item.season ? item.season + ' · ' : '') + displayTitle(item);
       const meta = document.createElement('span');
       meta.className = 'block truncate text-[11px] text-slate-400';
-      meta.textContent = [item.member, item.collectionNo].filter(Boolean).join(' · ');
+      meta.textContent = [item.memberDisplay || item.member, item.collectionNo].filter(Boolean).join(' · ');
       label.appendChild(title);
       label.appendChild(meta);
       itemCache.set(String(item.id), item);

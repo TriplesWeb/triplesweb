@@ -3,6 +3,9 @@ package com.example.triplesweb.controller;
 import com.example.triplesweb.repository.*;
 import com.example.triplesweb.service.*;
 import com.example.triplesweb.config.MustacheConfig;
+import com.example.triplesweb.dto.ObjektCatalogDto;
+import com.example.triplesweb.entity.Artist;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.example.triplesweb.util.ObjektLinks;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -581,7 +584,7 @@ class ObjektFeaturesTest {
             .contains("objekt-fav-icon")
             .contains("id=\"objektDetailFavoriteCount\"")
             .contains("objekt-member-logo")
-            .contains("/images/objekt-member-logos/s19.png")
+            .contains("/images/objekt-member-logos/clef.png")
             .contains("id=\"objektDescriptionEdit\"")
             .contains("수정하기")
             .contains("id=\"objektDescriptionScope\"")
@@ -605,7 +608,7 @@ class ObjektFeaturesTest {
     @Test void cardSupplyDoesNotShowPolygonPageTotal() throws Exception {
         var item = new java.util.LinkedHashMap<String, Object>();
         for (String field : List.of("frontImage", "backImage", "thumbnailImage", "seasonKey", "classKey", "artist",
-                "createdAt", "searchText", "backgroundColor", "textColor", "seasonColor", "publicKey", "memberHref")) {
+                "createdAt", "searchText", "backgroundColor", "textColor", "seasonColor", "publicKey")) {
             item.put(field, "");
         }
         item.putAll(Map.of("id", "uuid", "slug", "few", "collectionId", "Cream02 SeoYeon 367Z", "member", "SeoYeon",
@@ -629,13 +632,86 @@ class ObjektFeaturesTest {
                 .andExpect(content().string(containsString("objekt-member-chip")))
                 .andExpect(content().string(containsString("objekt-member-logo")))
                 .andExpect(content().string(containsString("objekt-member-name")))
-                .andExpect(content().string(containsString("--artist-color:#7B61FF")))
-                .andExpect(content().string(containsString("/images/objekt-member-logos/s01.png")));
+                .andExpect(content().string(containsString("/images/objekt-member-logos/clef.png")));
         mvc.perform(get("/cosmo/objekt/more").param("page", "0"))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].member").value("SeoYeon"))
+                .andExpect(jsonPath("$.items[0].memberDisplay").value("윤서연"))
+                .andExpect(jsonPath("$.items[0].memberHref").doesNotExist())
                 .andExpect(jsonPath("$.items[0].memberColor").value("#7B61FF"))
-                .andExpect(jsonPath("$.items[0].memberLogo").value("/images/objekt-member-logos/s01.png"))
-                .andExpect(jsonPath("$.items[0].hasMemberLogo").value(true));
+                .andExpect(jsonPath("$.items[0].memberMarkMask").value("/images/objekt-member-logos/clef.png"))
+                .andExpect(jsonPath("$.items[0].memberMarkFill").value("#7B61FF"));
+    }
+
+    @Test void unitCardPresentationAndSearchUseTheSameMemberData() throws Exception {
+        var unit = Map.<String, Object>of("id", "unit-a", "slug", "unit-a", "collectionId", "Cream02 S1 x S20 601A",
+                "member", "S1 x S20", "season", "Cream02", "collectionNo", "601A", "class", "Double",
+                "thumbnailImage", "/images/image-upload-pending.png");
+        var other = Map.<String, Object>of("id", "unit-b", "slug", "s10-contains-s1", "collectionId", "Cream02 S10 x S13 602A",
+                "member", "S10 x S13", "season", "Cream02", "collectionNo", "602A", "class", "Double",
+                "thumbnailImage", "/images/image-upload-pending.png");
+        var solo = Map.<String, Object>of("id", "solo-c", "slug", "solo-c", "collectionId", "Cream02 ChaeWon 603A",
+                "member", "ChaeWon", "season", "Cream02", "collectionNo", "603A", "class", "First",
+                "thumbnailImage", "/images/image-upload-pending.png");
+        var mapper = new ObjectMapper();
+        List<Map<String, Object>> catalogItems = List.of(unit, other, solo).stream()
+                .map(item -> ObjektCatalogDto.from(mapper.valueToTree(item)).toEntity())
+                .map(ObjektCatalogDto::toView)
+                .toList();
+        stubCatalog(catalogItems);
+        when(artists.findAll()).thenReturn(List.of(
+                artistWithColor("윤서연", "#22AEFF"), artistWithColor("박시온", "#FF428A"),
+                artistWithColor("서다현", "#FF9AD6"), artistWithColor("니엔", "#FF953F"),
+                artistWithColor("김채원", "#C7A3E0")));
+        when(market.withMintCounts(anyList())).thenAnswer(call -> call.getArgument(0));
+
+        var preview = mvc.perform(get("/cosmo/objekt")).andExpect(status().isOk()).andReturn();
+        java.nio.file.Files.writeString(java.nio.file.Path.of("build/objekt-unit-member-preview.html"),
+                preview.getResponse().getContentAsString());
+        Map<String, Object> previewResults = new LinkedHashMap<>();
+        for (String query : List.of("", "s1", "s01", "s10", "s13", "s20", "s21", "seoyeon", "윤서연",
+                "서연", "박시온", "시온", "채원", "cc601", "no-match")) {
+            var response = mvc.perform(get("/cosmo/objekt/more").param("page", "0").param("search", query))
+                    .andExpect(status().isOk()).andReturn().getResponse();
+            previewResults.put(query, mapper.readTree(response.getContentAsByteArray()));
+        }
+        java.nio.file.Files.writeString(java.nio.file.Path.of("build/objekt-unit-member-results.json"),
+                mapper.writeValueAsString(previewResults));
+        String html = mvc.perform(get("/cosmo/objekt").param("search", "서연"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        org.assertj.core.api.Assertions.assertThat(html)
+                .contains("data-member=\"S1 x S20\"", "윤서연 × 박시온", "linear-gradient(135deg, #22AEFF, #FF428A)")
+                .contains("objekt-member-logo--filled", "url('/images/objekt-member-logos/clef.png')", "Double</span>")
+                .doesNotContain("data-member=\"S10 x S13\"", "/cosmo/objekt/member?name=")
+                .doesNotContain("<a class=\"objekt-card-title\"", "<a class=\"objekt-member-chip\"");
+        for (String query : List.of("s1", "s01", "s20", "seoyeon", "윤서연", "서연", "박시온", "시온", "cc601")) {
+            mvc.perform(get("/cosmo/objekt/more").param("page", "0").param("search", query))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.resultCount").value(1))
+                    .andExpect(jsonPath("$.items[0].member").value("S1 x S20"))
+                    .andExpect(jsonPath("$.items[0].memberDisplay").value("윤서연 × 박시온"))
+                    .andExpect(jsonPath("$.items[0].memberColors[1]").value("#FF428A"));
+        }
+        mvc.perform(get("/cosmo/objekt/more").param("page", "0").param("search", "s10"))
+                .andExpect(jsonPath("$.items[0].memberMarkFill").value("linear-gradient(135deg, #FF9AD6, #FF953F)"))
+                .andExpect(jsonPath("$.items[0].memberMarkMask").value("/images/objekt-member-logos/clef.png"))
+                .andExpect(jsonPath("$.items[0].class").value("Double"));
+        mvc.perform(get("/cosmo/objekt/more").param("page", "0").param("search", "채원"))
+                .andExpect(jsonPath("$.items[0].member").value("김채원"))
+                .andExpect(jsonPath("$.items[0].memberDisplay").value("김채원"));
+        var detail = mvc.perform(get("/cosmo/objekt/detail/unit-a").accept(org.springframework.http.MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.member").value("S1 x S20"))
+                .andExpect(jsonPath("$.memberDisplay").value("윤서연 × 박시온")).andReturn();
+        java.nio.file.Files.write(java.nio.file.Path.of("build/objekt-unit-member-detail.json"),
+                detail.getResponse().getContentAsByteArray());
+    }
+
+    private static Artist artistWithColor(String name, String color) {
+        var artist = new Artist();
+        artist.setName(name);
+        artist.setColor(color);
+        return artist;
     }
 
     @Test void ownerResponseDoesNotExposeInternalVerificationFields() throws Exception {

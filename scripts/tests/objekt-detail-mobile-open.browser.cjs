@@ -73,17 +73,19 @@ body{margin:0;background:#0d0e12;color:#e3e2e8}
 </div>
 <div id="objekt-empty" class="hidden"></div>
 <div id="objekt-card-grid" class="objekt-card-grid" data-objekt-grid data-cols="2">
-  <article class="objekt-card objekt-item" data-objekt-key="special-card">
+  <article class="objekt-card objekt-item" data-objekt-key="special-card" data-member="S1 x S20">
     <button type="button" class="objekt-open-detail" aria-label="일반 상세 보기">
       <img class="objekt-image" alt="" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==">
     </button>
-    <a class="objekt-detail-link" href="/cosmo/objekt/detail/special-card">일반 카드</a>
+    <span class="objekt-card-title" title="Cream02 HaYeon 367Z">일반 카드</span>
+    <span class="objekt-member-chip"><span class="objekt-member-name">윤서연 × 박시온</span></span>
+    <button type="button" id="card-favorite" aria-pressed="false" onclick="this.setAttribute('aria-pressed', 'true')">찜</button>
   </article>
   <article class="objekt-card objekt-item" data-objekt-key="cream02-kaede-504z">
     <button type="button" class="objekt-open-detail" aria-label="Motion 상세 보기">
       <img class="objekt-image" alt="" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==">
     </button>
-    <a class="objekt-detail-link" href="/cosmo/objekt/detail/cream02-kaede-504z">Kaede 504Z</a>
+    <span class="objekt-card-title">Kaede 504Z</span>
   </article>
 </div>
 <div id="objekt-scroll-sentinel" data-has-more="false" data-next-page="1">
@@ -106,7 +108,7 @@ body{margin:0;background:#0d0e12;color:#e3e2e8}
     <div class="objekt-detail-body">
       <h2 class="objekt-detail-title" id="objektDetailTitle">—</h2>
       <dl class="objekt-detail-meta">
-        <div><dt>멤버</dt><dd><a id="objektDetailMember">—</a></dd></div>
+        <div><dt>멤버</dt><dd><span class="objekt-detail-member" id="objektDetailMember">—</span></dd></div>
         <div><dt>시즌</dt><dd id="objektDetailSeason">—</dd></div>
         <div><dt>클래스</dt><dd id="objektDetailClass">—</dd></div>
         <div><dt>번호</dt><dd id="objektDetailNo">—</dd></div>
@@ -134,7 +136,8 @@ const details = {
   'special-card': {
     objektKey: 'special-card',
     collectionId: 'Cream02 HaYeon 367Z',
-    member: 'HaYeon',
+    member: 'S1 x S20',
+    memberDisplay: '윤서연 × 박시온',
     season: 'Cream02',
     class: 'Special',
     collectionNo: '367Z',
@@ -227,9 +230,20 @@ const details = {
     const resetWidth = await resetBtn.evaluate((el) => el.getBoundingClientRect().width);
     assert.ok(resetWidth >= 80, '모바일 초기화 버튼 너비: ' + resetWidth);
 
-    await page.locator('[data-objekt-key="special-card"] .objekt-open-detail').tap();
+    await page.locator('#card-favorite').tap();
+    assert.equal(await page.locator('#card-favorite').getAttribute('aria-pressed'), 'true');
+    assert.equal(await page.locator('#objektDetailModal').isVisible(), false);
+    const unitCard = page.locator('[data-objekt-key="special-card"]');
+    const trigger = unitCard.locator('.objekt-open-detail');
+    const prefetched = page.waitForRequest(req => req.url().includes('/detail/special-card'));
+    await unitCard.locator('.objekt-member-chip').dispatchEvent('pointerdown', {button: 0});
+    await prefetched;
+    assert.equal(await page.locator('#objektDetailModal').isVisible(), false);
+    await unitCard.locator('.objekt-member-chip').tap();
     await page.locator('#objektDetailTitle').filter({hasText: 'Cream02 HaYeon 367Z'}).waitFor();
     assert.equal(await page.locator('#objektDetailModal').isVisible(), true);
+    assert.equal(await page.locator('#objektDetailMember').textContent(), '윤서연 × 박시온');
+    assert.equal(await page.locator('#objektDetailMember').getAttribute('href'), null);
 
     const layer = await page.evaluate(() => {
       const modal = document.getElementById('objektDetailModal');
@@ -278,6 +292,14 @@ const details = {
       return modal.hidden || !modal.classList.contains('is-open');
     });
 
+    assert.equal(await trigger.evaluate(el => document.activeElement === el), true);
+    for (const key of ['Enter', 'Space']) {
+      await trigger.press(key);
+      assert.equal(await page.locator('#objektDetailModal').isVisible(), true);
+      await page.keyboard.press('Escape');
+      assert.equal(await page.locator('#objektDetailModal').isVisible(), false);
+      assert.equal(await trigger.evaluate(el => document.activeElement === el), true);
+    }
     await page.locator('[data-objekt-key="cream02-kaede-504z"] .objekt-open-detail').tap();
     await page.locator('#objektDetailTitle').filter({hasText: 'Cream02 Kaede 504Z'}).waitFor();
     await page.waitForFunction(() => {

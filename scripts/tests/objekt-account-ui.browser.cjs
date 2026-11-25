@@ -6,9 +6,9 @@ const path = require('node:path');
 const base = path.resolve(__dirname, '../..');
 const read = p => fs.readFileSync(path.join(base, p), 'utf8');
 const fixtures = [
-  {timestamp:'2026-10-26T12:30:00Z',direction:'받음',member:'SeoYeon',season:'Cream02',collectionNo:'101A',class:'First Class',reportedSerial:42,fromNickname:'<script>alert(1)</script>',toNickname:'lunlun',collectionId:'Cream02 SeoYeon 101A'},
-  {timestamp:'2026-10-26T11:20:00Z',direction:'보냄',member:'HaYeon',season:'Cream02',collectionNo:'367Z',class:'Special Class',reportedSerial:128,fromNickname:'lunlun',toNickname:'cosmo',collectionId:'Cream02 HaYeon 367Z'},
-  {timestamp:'2026-10-25T10:00:00Z',direction:'받음',member:'SooMin',season:'Divine01',collectionNo:'203A',fromNickname:'',toNickname:'lunlun'},
+  {timestamp:'2026-10-26T12:30:00Z',direction:'받음',member:'S1 x S20',memberDisplay:'윤서연 × 박시온',memberNumbers:['s1','s01','s20'],memberSearch:['seoyeon','윤서연','서연','박시온'],season:'Cream02',collectionNo:'101A',class:'First Class',reportedSerial:42,fromNickname:'<script>alert(1)</script>',toNickname:'lunlun',collectionId:'Cream02 SeoYeon 101A'},
+  {timestamp:'2026-10-26T11:20:00Z',direction:'보냄',member:'S10 x S13',memberDisplay:'서다현 × 니엔',memberNumbers:['s10','s13'],season:'Cream02',collectionNo:'367Z',class:'Special Class',reportedSerial:128,fromNickname:'lunlun',toNickname:'cosmo',collectionId:'Cream02 HaYeon 367Z'},
+  {timestamp:'2026-10-25T10:00:00Z',direction:'받음',member:'ChaeWon',memberDisplay:'김채원',memberNumbers:['s21'],memberSearch:['chaewon','채원'],season:'Divine01',collectionNo:'203A',fromNickname:'',toNickname:'lunlun'},
 ];
 (async () => {
   const browser = await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH || (fs.existsSync('/usr/bin/chromium') ? '/usr/bin/chromium' : undefined),args:['--no-sandbox']});
@@ -20,7 +20,7 @@ const fixtures = [
       if (route.request().url().includes('/api/objekt/transfers')) {
         calls++;
         if(calls===2) return route.fulfill({status:503,contentType:'application/json',body:'{}'});
-        return route.fulfill({contentType:'application/json',body:JSON.stringify({status:'available',transfers:calls===1?fixtures:[],hasNext:calls===1,cursorTimestamp:'2026-10-25T10:00:00Z',cursorId:'opaque+id'})});
+        return route.fulfill({contentType:'application/json',body:JSON.stringify({status:'available',transfers:calls===1?fixtures:[],memberNumberQueries:['s1','s01','s10','s13','s20','s21'],hasNext:calls===1,cursorTimestamp:'2026-10-25T10:00:00Z',cursorId:'opaque+id'})});
       }
       let html=read('src/main/resources/templates/cosmo/transfers.mustache').replace(/{{>[^}]+}}/g,'').replaceAll('{{nickname}}','lunlun').replace(/<link[^>]+>/g,'').replace(/<script[^>]+><\/script>/g,'');
       // head-open partial을 제거하면 doctype/html/head·charset이 사라지므로 픽스처용 셸을 다시 붙인다.
@@ -47,8 +47,14 @@ const fixtures = [
     await page.getByRole('button',{name:'↗ 보낸 내역'}).click();
     assert.equal(await page.locator('.tr-row').count(),1);
     await page.getByRole('button',{name:'전체',exact:true}).click();
-    await page.locator('[data-search]').fill('SooMin');
-    assert.equal(await page.locator('.tr-row').count(),1);
+    for (const query of ['s1', 'S01', '시온', 'seoyeon']) {
+      await page.locator('[data-search]').fill(query);
+      assert.deepEqual(await page.locator('.tr-card-name').allTextContents(), ['윤서연 × 박시온 · 101A']);
+    }
+    for (const query of ['s21', '채원']) {
+      await page.locator('[data-search]').fill(query);
+      assert.deepEqual(await page.locator('.tr-card-name').allTextContents(), ['김채원 · 203A']);
+    }
     await page.locator('[data-search]').fill('nothingmatches');
     assert.equal(await page.locator('[data-empty]').isVisible(),true);
     await page.locator('[data-search]').fill('');

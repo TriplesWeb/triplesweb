@@ -29,8 +29,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.client.RestClientException;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -98,7 +96,7 @@ public class CosmoController {
         model.addAttribute("objektWorkspaceNamedFields", true);
         model.addAttribute("kindByClassJson", ObjektCatalogSort.kindByClassJson(facets.numbersByClass()));
 
-        model.addAttribute("objekts", withMemberLinks(page.items()));
+        model.addAttribute("objekts", objektCards(page.items(), artists));
         model.addAttribute("objektCount", page.resultCount());
         model.addAttribute("objektPageCount", page.items().size());
         model.addAttribute("objektAllCount", page.allCount());
@@ -140,7 +138,7 @@ public class CosmoController {
         body.put("hasMore", result.hasMore());
         body.put("nextPage", result.hasMore() ? result.page() + 1 : null);
         body.put("error", result.error().isBlank() ? null : result.error());
-        body.put("items", withMemberLinks(result.items()));
+        body.put("items", objektCards(result.items(), artistSnapshot.findAll()));
         return ResponseEntity.ok(body);
     }
 
@@ -389,7 +387,8 @@ public class CosmoController {
                 value(objekt, "class"), value(objekt, "classKey"), value(objekt, "numberValue"),
                 descriptionOf(objekt, descriptionTexts))
                 .toLowerCase(Locale.ROOT);
-        return ObjektSeasonCodes.matches(query, base, season, collectionNo);
+        return ObjektSeasonCodes.matches(query, base, season, collectionNo,
+                firstValue(objekt, "member", "memberName"));
     }
 
     private static String firstValue(Map<String, Object> objekt, String... keys) {
@@ -417,19 +416,12 @@ public class CosmoController {
         return value;
     }
 
-    private List<Map<String, Object>> withMemberLinks(List<Map<String, Object>> items) {
+    private static List<Map<String, Object>> objektCards(List<Map<String, Object>> items, List<Artist> artists) {
         if (items == null || items.isEmpty()) return items == null ? List.of() : items;
-        List<Artist> artists = artistSnapshot.findAll();
         List<Map<String, Object>> out = new ArrayList<>(items.size());
         for (Map<String, Object> item : items) {
             Map<String, Object> copy = new LinkedHashMap<>(item);
-            String member = firstValue(item, "member", "memberName");
-            copy.put("memberHref", "/cosmo/objekt/member?name="
-                    + URLEncoder.encode(member, StandardCharsets.UTF_8).replace("+", "%20"));
-            copy.put("memberColor", MemberPortraitOptions.artistColor(member, artists));
-            String memberLogo = MemberPortraitOptions.objektMemberLogo(member);
-            copy.put("memberLogo", memberLogo);
-            copy.put("hasMemberLogo", !memberLogo.isBlank());
+            MemberPortraitOptions.addObjektMemberPresentation(copy, artists);
             copy.put("publicKey", ObjektLinks.key(item));
             copy.put("seasonColor", ObjektSeasonColors.colorFor(firstValue(item, "season", "seasonKey")));
             copy.put("cardTitle", ObjektSeasonCodes.cardTitle(

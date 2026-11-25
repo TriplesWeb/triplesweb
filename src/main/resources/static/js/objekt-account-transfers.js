@@ -7,6 +7,7 @@
   const more = $('[data-more]'), retry = $('[data-retry]'), empty = $('[data-empty]');
   let rows = [], next = null, loading = false, filter = 'all', failedAppend = false;
   let state = 'idle';
+  let memberNumberQueries = new Set();
   const dayFormat = new Intl.DateTimeFormat('ko-KR', {year: 'numeric', month: 'long', day: 'numeric', weekday: 'short'});
   const timeFormat = new Intl.DateTimeFormat('ko-KR', {hour: '2-digit', minute: '2-digit', hour12: false});
   function el(tag, className, text) {
@@ -32,7 +33,7 @@
       }
     } catch { /* Keep the card placeholder when no valid image is available. */ }
     const card = el('div', 'tr-card');
-    card.append(el('strong', 'tr-card-name', [row.member, row.collectionNo].filter(Boolean).join(' · ') || row.collectionId || '오브젝트'));
+    card.append(el('strong', 'tr-card-name', [row.memberDisplay || row.member, row.collectionNo].filter(Boolean).join(' · ') || row.collectionId || '오브젝트'));
     const meta = el('div', 'tr-card-meta', [row.season, row.class].filter(Boolean).join(' / ') || row.collectionId || '카드 정보 미확인');
     if (Number.isSafeInteger(row.reportedSerial) && row.reportedSerial > 0) {
       const serial = el('span', 'tr-serial', `#${row.reportedSerial.toLocaleString('ko-KR')}`);
@@ -52,12 +53,14 @@
   }
   function render() {
     const search = $('[data-search]').value.trim().toLocaleLowerCase();
+    const isMemberNumber = memberNumberQueries.has(search);
     const visible = rows.filter(row => (filter === 'all' || row.direction === filter) &&
       (!$('[data-season]').value || row.season === $('[data-season]').value) &&
       (!$('[data-class]').value || row.class === $('[data-class]').value) &&
       (!$('[data-action]').value || (row.action || 'transfer') === $('[data-action]').value) &&
-      [row.member, row.collectionNo, row.collectionId, row.season, row.class, row.fromNickname, row.toNickname, row.reportedSerial]
-        .some(value => String(value || '').toLocaleLowerCase().includes(search)));
+      (isMemberNumber ? row.memberNumbers?.includes(search) :
+        [row.member, ...(row.memberSearch || []), row.collectionNo, row.collectionId, row.season, row.class, row.fromNickname, row.toNickname, row.reportedSerial]
+          .some(value => String(value || '').toLocaleLowerCase().includes(search))));
     const groups = new Map();
     visible.forEach(row => { const key = dayFormat.format(row.date); if (!groups.has(key)) groups.set(key, []); groups.get(key).push(row); });
     const fragment = document.createDocumentFragment();
@@ -100,6 +103,7 @@
         following = {timestamp: data.cursorTimestamp, id: data.cursorId};
         if (append && next && following.timestamp === next.timestamp && following.id === next.id) throw new Error();
       }
+      memberNumberQueries = new Set(data.memberNumberQueries || []);
       rows = (append ? rows.concat(incoming) : incoming).sort((a,b) => b.date - a.date);
       for (const [selector, field] of [['[data-season]', 'season'], ['[data-class]', 'class']]) {
         const select = $(selector), selected = select.value;

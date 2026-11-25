@@ -560,7 +560,7 @@
             gap: .5rem;
             padding: .78rem .85rem 1rem;
         }
-        .objekt-detail-link {
+        .objekt-card-title {
             flex: 1 1 auto;
             min-width: 0;
             overflow: visible;
@@ -568,11 +568,9 @@
             font-size: .72rem;
             font-weight: 700;
             line-height: 1.35;
-            text-decoration: none;
             overflow-wrap: anywhere;
             white-space: normal;
         }
-        .objekt-detail-link:hover { color: #00f5d4; }
         .objekt-card-foot {
             display: flex;
             align-items: center;
@@ -588,26 +586,30 @@
             min-width: 0;
             color: #f4f6fb;
             font-weight: 700;
-            text-decoration: none;
         }
         .objekt-member-logo {
             display: block;
             flex: 0 0 auto;
-        }
-        span.objekt-member-logo {
             width: .95rem;
             height: 1.48rem;
+        }
+        .objekt-member-logo:not(.objekt-member-logo--filled) {
             box-sizing: border-box;
             border: 1px solid rgba(185, 202, 196, .28);
             border-radius: .2rem;
             background: rgba(185, 202, 196, .06);
         }
-        img.objekt-member-logo {
-            width: .95rem;
-            height: 1.48rem;
-            object-fit: contain;
-            object-position: center;
-            filter: drop-shadow(0 0 .7px rgba(255,255,255,.45));
+        .objekt-member-logo--filled {
+            background: var(--member-mark-fill);
+            -webkit-mask-image: var(--member-logo-mask);
+            mask-image: var(--member-logo-mask);
+            -webkit-mask-size: contain;
+            mask-size: contain;
+            -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
+            -webkit-mask-position: center;
+            mask-position: center;
+            mask-mode: alpha;
         }
         .objekt-member-name {
             min-width: 0;
@@ -618,13 +620,12 @@
             text-overflow: ellipsis;
             white-space: nowrap;
         }
-        .objekt-member-chip:hover .objekt-member-name,
-        .objekt-member-chip:focus-visible .objekt-member-name { text-decoration: underline; }
         .objekt-card-supply {
             margin: .08rem 0 0;
             color: #c5ccd8;
             font-size: .75rem;
         }
+        .objekt-card[data-objekt-key] { cursor: pointer; }
         .objekt-card:hover {
             border-color: rgba(0,245,212,.58);
             box-shadow: 0 14px 32px rgba(0,0,0,.34), 0 0 0 1px rgba(0,245,212,.06);
@@ -639,6 +640,10 @@
             background: transparent;
             cursor: pointer;
             text-align: left;
+        }
+        .objekt-open-detail:focus-visible {
+            outline: 2px solid #00f5d4;
+            outline-offset: -2px;
         }
         .objekt-open-detail .objekt-image {
             display: block;
@@ -814,18 +819,7 @@
         }
         .objekt-detail-meta dt { color: #8b93a7; margin: 0; }
         .objekt-detail-meta dd { margin: 0; color: #e8edf5; font-weight: 600; text-align: right; }
-        .objekt-detail-meta a.objekt-detail-member-link {
-            color: #fff;
-            font-weight: 700;
-            text-decoration: none;
-            text-shadow: none;
-        }
-        .objekt-detail-meta a.objekt-detail-member-link:hover,
-        .objekt-detail-meta a.objekt-detail-member-link:focus-visible {
-            text-decoration: underline;
-            text-underline-offset: 2px;
-            text-shadow: none;
-        }
+        .objekt-detail-member { color: #fff; font-weight: 700; }
         .objekt-detail-story {
             margin: .1rem 0;
             padding: .95rem 1rem 1.05rem;
@@ -1265,11 +1259,10 @@
             .objekt-card-body { padding: .5rem .5rem .65rem; gap: .32rem; }
             .objekt-card-badges { flex-wrap: wrap; gap: .22rem .3rem; }
             .objekt-card-season { order: 1; }
-            .objekt-detail-link { order: 2; flex: 1 1 auto; min-width: 0; }
+            .objekt-card-title { order: 2; flex: 1 1 auto; min-width: 0; }
             .objekt-card-class { font-size: .58rem; padding: .12rem .4rem; }
             .objekt-member-name { font-size: .82rem; }
-            span.objekt-member-logo { width: .86rem; height: 1.34rem; }
-            img.objekt-member-logo { width: .86rem; height: 1.34rem; }
+            .objekt-member-logo { width: .86rem; height: 1.34rem; }
         }
         @media (max-width: 420px) {
             .objekt-head { align-items: flex-start; }

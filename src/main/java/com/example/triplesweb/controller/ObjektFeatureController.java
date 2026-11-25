@@ -1,5 +1,6 @@
 package com.example.triplesweb.controller;
 
+import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.entity.ObjektDescription;
 import com.example.triplesweb.repository.ObjektDescriptionRepository;
 import com.example.triplesweb.repository.ObjektFavoriteRepository;
@@ -93,8 +94,7 @@ public class ObjektFeatureController {
         body.put("isAdmin", admin);
         body.put("detailUrl", ObjektLinks.detail(item));
         body.put("memberUrl", ObjektLinks.member(item));
-        String member = value(item, "member", "memberName");
-        body.put("memberColor", MemberPortraitOptions.artistColor(member, artistSnapshot.findAll()));
+        MemberPortraitOptions.addObjektMemberPresentation(body, artistSnapshot.findAll());
         body.put("tradeUrl", ObjektLinks.compose(item, "trade"));
         body.put("sellUrl", ObjektLinks.compose(item, "sell"));
         body.put("descriptionUrl", ObjektLinks.detail(item) + "/description");
@@ -287,7 +287,19 @@ public class ObjektFeatureController {
 
     @GetMapping("/favorites")
     public String favorites(HttpSession session, Model model) {
-        model.addAttribute("favorites", favoriteRepository.findByVisitorKeyOrderByCreatedAtDesc(session.getId()));
+        var favorites = favoriteRepository.findByVisitorKeyOrderByCreatedAtDesc(session.getId());
+        List<Artist> artists = favorites.isEmpty() ? List.of() : artistSnapshot.findAll();
+        model.addAttribute("favorites", favorites.stream().map(favorite -> {
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("objektKey", favorite.getObjektKey());
+            row.put("thumbnailImage", favorite.getThumbnailImage());
+            row.put("collectionId", favorite.getCollectionId());
+            row.put("memberName", favorite.getMemberName());
+            row.put("season", favorite.getSeason());
+            row.put("collectionNo", favorite.getCollectionNo());
+            MemberPortraitOptions.addObjektMemberPresentation(row, artists);
+            return row;
+        }).toList());
         return "cosmo/objekt_favorites";
     }
 

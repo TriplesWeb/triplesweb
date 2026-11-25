@@ -37,10 +37,23 @@ class ObjektSeasonCodesTest {
     @Test
     void shortCodesMatchOnlyAsSeasonAliases() {
         String hayeon = "cream02 hayeon 401a double";
-        assertTrue(ObjektSeasonCodes.matches("cc401", hayeon, "Cream02", "401A"));
-        assertTrue(ObjektSeasonCodes.matches("cc", hayeon, "Cream02", "401A"));
-        assertTrue(ObjektSeasonCodes.matches("a", "atom01 seoyeon 012z", "Atom01", "012Z"));
-        assertFalse(ObjektSeasonCodes.matches("a", hayeon, "Cream02", "401A"));
-        assertTrue(ObjektSeasonCodes.matches("hayeon", hayeon, "Cream02", "401A"));
+        assertTrue(ObjektSeasonCodes.matches("cc401", hayeon, "Cream02", "401A", "hayeon"));
+        assertTrue(ObjektSeasonCodes.matches("cc", hayeon, "Cream02", "401A", "hayeon"));
+        assertTrue(ObjektSeasonCodes.matches("a", "atom01 seoyeon 012z", "Atom01", "012Z", "seoyeon"));
+        assertFalse(ObjektSeasonCodes.matches("a", hayeon, "Cream02", "401A", "hayeon"));
+        assertTrue(ObjektSeasonCodes.matches("hayeon", hayeon, "Cream02", "401A", "hayeon"));
+    }
+
+    @Test
+    void searchesMemberAliasesAndUsesExactNumberTokens() {
+        String unit = "S1 x S20";
+        for (String query : java.util.List.of("s1", "S01", "s20", "seoyeon", "윤서연", "서연", "박시온", "시온")) {
+            assertTrue(ObjektSeasonCodes.matches(query, "Cream02 601A", "Cream02", "601A", unit), query);
+        }
+        assertFalse(ObjektSeasonCodes.matches("s1", "s1-in-slug", "Cream02", "609A", "S10 x S13"));
+        assertFalse(ObjektSeasonCodes.matches("s1", "s1 in description", "Cream02", "609A", "S21"));
+        assertFalse(ObjektSeasonCodes.matches("s1", "zenith s1", "s1", "601A", "zenith"));
+        assertTrue(ObjektSeasonCodes.matches("채원", "Cream02 ChaeWon 286A", "Cream02", "286A", "ChaeWon"));
+        assertTrue(ObjektSeasonCodes.matches("cc601", unit, "Cream02", "601A", unit));
     }
 }

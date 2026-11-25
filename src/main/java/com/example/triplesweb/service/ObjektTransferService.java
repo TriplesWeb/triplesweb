@@ -1,5 +1,7 @@
 package com.example.triplesweb.service;
 
+import com.example.triplesweb.entity.Artist;
+import com.example.triplesweb.util.MemberPortraitOptions;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
@@ -16,10 +18,12 @@ import java.util.*;
 public class ObjektTransferService {
     private final ObjektIndexClient index;
     private final RestClient cosmo;
+    private final ArtistSnapshotService artistSnapshot;
 
-    public ObjektTransferService(ObjektIndexClient index,
+    public ObjektTransferService(ObjektIndexClient index, ArtistSnapshotService artistSnapshot,
             @Value("${gravity.cosmo-api-base-url:https://api.cosmo.fans}") String cosmoUrl) {
         this.index = index;
+        this.artistSnapshot = artistSnapshot;
         var factory = new JdkClientHttpRequestFactory(HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(3)).build());
         factory.setReadTimeout(Duration.ofSeconds(6));
@@ -47,7 +51,9 @@ public class ObjektTransferService {
         JsonNode response = index.accountHistory(address, timestamp, id);
         if (response.path("hide").asBoolean()) return Map.of("status", "hidden");
         List<Map<String, Object>> rows = new ArrayList<>();
-        for (JsonNode item : response.path("results")) {
+        JsonNode results = response.path("results");
+        List<Artist> artists = results.isEmpty() ? List.of() : artistSnapshot.findAll();
+        for (JsonNode item : results) {
             JsonNode transfer = item.path("transfer"), card = item.path("objekt");
             String from = transfer.path("from").asText(""), to = transfer.path("to").asText("");
             if (!from.matches("0x[0-9a-fA-F]{40}") || !to.matches("0x[0-9a-fA-F]{40}")
@@ -61,7 +67,12 @@ public class ObjektTransferService {
             row.put("collectionId", safeText(card.path("collectionId")));
             row.put("fromNickname", safeText(item.path("nickname").path("from")));
             row.put("toNickname", safeText(item.path("nickname").path("to")));
-            for (String field : List.of("member", "season", "collectionNo", "class")) row.put(field, safeText(card.path(field)));
+            String member = safeText(card.path("member"));
+            row.put("member", member);
+            for (String field : List.of("season", "collectionNo", "class")) row.put(field, safeText(card.path(field)));
+            MemberPortraitOptions.addObjektMemberPresentation(row, artists);
+            row.put("memberSearch", MemberPortraitOptions.memberSearchTerms(member));
+            row.put("memberNumbers", MemberPortraitOptions.objektMemberNumbers(member));
             row.put("thumbnailImage", safeImage(card.path("thumbnailImage")));
             JsonNode serial = card.path("serial");
             if (serial.isIntegralNumber() && serial.canConvertToLong() && serial.asLong() > 0) row.put("reportedSerial", serial.asLong());
