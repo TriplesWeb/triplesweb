@@ -47,7 +47,7 @@
                 <li><strong>설명 서식</strong> — 편집 칸을 클릭한 뒤 글자를 드래그하고 <b>B</b>(굵게) / <i>I</i>(기울임) / <u>U</u>(밑줄) / <b>A</b>(색상)를 누르세요.</li>
                 <li><strong>하이퍼링크</strong> — 아래에 표시 텍스트와 URL을 추가한 뒤, 설명 본문에서 같은 문구를 <code>**표시 텍스트**</code>처럼 감싸면 클릭 가능한 링크가 됩니다.</li>
                 <li><strong>사진 출처</strong> — 아래 <em>사진 출처</em> 칸에 계정명만 적습니다(<code>@</code> 없이). 설명 본문에는 넣지 않으며, 조회 시 이미지 아래에 <code>photo by. 계정</code>으로만 표시됩니다.</li>
-                <li><strong>사진</strong> — 여러 장(최대 10장)을 고를 수 있습니다. 미리보기에서 개별 삭제. 조회 시 인스타처럼 좌우로 넘깁니다.</li>
+                <li><strong>사진</strong> — 여러 장(최대 10장)을 고르거나 끌어다 놓을 수 있습니다. 목록에서 순서 변경·개별 삭제. 조회 시 인스타처럼 좌우로 넘깁니다.</li>
             </ul>
         </details>
         <form id="chemistryEditForm" class="chem-edit-form">
@@ -163,11 +163,10 @@
                 <div id="chemEditLinks" class="chem-edit-links"></div>
             </div>
             <div class="chem-edit-label">사진
-                <input type="file" id="chemEditImage" name="images" accept="image/*" multiple>
-                <p class="chem-edit-field-hint">여러 장 선택 가능 · 최대 10장. 미리보기 × 로 개별 삭제.</p>
-            </div>
-            <div id="chemEditImagePreviewWrap" class="chem-edit-image-preview hidden">
-                <div id="chemEditImageThumbs" class="chem-edit-image-thumbs"></div>
+                <div class="file-drop" data-file-drop="multi" data-sortable data-max-files="10" data-file-label="사진">
+                    <input type="file" id="chemEditImage" name="images" accept="image/*" multiple>
+                </div>
+                <p class="chem-edit-field-hint">최대 10장 · 손잡이를 끌거나 ↑↓ 버튼으로 순서 변경 · 휴지통으로 삭제 후 5초 안에 되돌리기</p>
             </div>
             <div class="chem-edit-label">사진 출처
                 <div class="chem-edit-credit-row">

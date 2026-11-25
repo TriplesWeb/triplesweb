@@ -65,6 +65,7 @@
     if (!modal) return;
     modal.classList.add("hidden");
     modal.classList.remove("flex");
+    window.FilePicker?.reset(document.getElementById("albumEditImage"));
     if (!document.querySelector(".about-modal.flex")) document.body.style.overflow = "";
   }
 
@@ -246,11 +247,9 @@ ${escapeAttr(t.lyrics || "")}</textarea>
     const mvInput = document.getElementById("albumEditMusicVideo");
     if (mvInput) mvInput.value = "";
     document.getElementById("albumEditClearImage").checked = false;
-    document.getElementById("albumEditImage").value = "";
+    const imageInput = document.getElementById("albumEditImage");
+    let originalImage = "";
     document.getElementById("albumEditImageUrl").value = "";
-    const preview = document.getElementById("albumEditImagePreview");
-    preview.classList.add("hidden");
-    preview.removeAttribute("src");
 
     try {
       await loadOptions({ requireArtists: true });
@@ -285,16 +284,14 @@ ${escapeAttr(t.lyrics || "")}</textarea>
       fillSectionSelect(data.sectionId);
       document.getElementById("albumEditTracks").innerHTML = trackRowsHtml(data.tracks);
       if (/^https?:\/\//i.test(data.albumImage || "")) document.getElementById("albumEditImageUrl").value = data.albumImage;
-      if (data.albumImage) {
-        preview.src = data.albumImage;
-        preview.classList.remove("hidden");
-      }
+      originalImage = data.albumImage || "";
     } else {
       fillUnitSelect(null);
       fillArtistChecks([]);
       fillSectionSelect(null);
       document.getElementById("albumEditTracks").innerHTML = trackRowsHtml([]);
     }
+    window.FilePicker?.setOriginal(imageInput, originalImage);
     openModal("albumEditModal");
   }
 
@@ -309,6 +306,9 @@ ${escapeAttr(t.lyrics || "")}</textarea>
   }
 
   function bindUi() {
+    document.getElementById("albumEditImage")?.addEventListener("file-picker:change", (event) => {
+      if (event.detail.files.length) document.getElementById("albumEditClearImage").checked = false;
+    });
     document.querySelectorAll(".album-edit-close").forEach((el) => {
       el.addEventListener("click", () => closeModal("albumEditModal"));
     });

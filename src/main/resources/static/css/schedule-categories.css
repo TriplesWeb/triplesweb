@@ -60,5 +60,4 @@
 #calendar .fc-event .fc-event-main-frame { min-width:0; }
 #calendar .fc-event img { flex:none; }
 #decorationModal .site-modal-dialog { max-width:42rem; }
-#decorationPreview { max-width:100%; margin-inline:auto; }
 .schedule-detail-item img { max-width:100%; }

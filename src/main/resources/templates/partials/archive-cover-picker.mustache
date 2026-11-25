@@ -1,8 +1,7 @@
 <div class="ar-field ar-cover-field">커버
-    <span class="ar-file">
-        <input type="file" name="thumbnail" accept="image/jpeg,image/png,image/webp,image/gif,image/bmp,.jpg,.jpeg,.jfif,.png,.webp,.gif,.bmp" tabindex="-1" aria-hidden="true">
-        <span class="ar-file-name" data-file-name hidden>선택된 파일 없음</span>
-    </span>
+    <div class="file-drop" data-file-drop="single" data-file-label="커버 이미지" data-preview="[data-cover-stage-image]">
+        <input type="file" name="thumbnail" accept="image/jpeg,image/png,image/webp,image/gif,image/bmp,.jpg,.jpeg,.jfif,.png,.webp,.gif,.bmp">
+    </div>
     <div class="ar-cover-picker" data-cover-picker>
         <div class="ar-cover-stage">
             <video data-cover-stage-video muted playsinline preload="metadata" hidden></video>

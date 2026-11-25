@@ -104,6 +104,37 @@ public final class ChemistryImages {
      * keep 목록(기존 URL, 순서 유지) + 신규 업로드로 최종 목록을 만든다.
      * keep에 없는 기존 URL은 제거 대상으로 반환한다.
      */
+    /**
+     * 화면에서 정한 순서({@code imageOrderJson}, 저장된 URL 또는 새 업로드 자리를 뜻하는 빈 문자열)대로 합친다.
+     * 순서가 없으면 기존 규칙(유지 목록 뒤에 업로드를 붙임)을 따른다. 장수 제한은 업로드 저장 전에 검사한다.
+     */
+    public static Result mergeInOrder(
+            List<String> previous,
+            String keepImageUrlsJson,
+            String imageOrderJson,
+            List<MultipartFile> uploads,
+            boolean clearAll,
+            ObjectMapper mapper,
+            UploadFn uploadFn,
+            int maxImages
+    ) throws IOException {
+        if (!StringUtils.hasText(imageOrderJson)) {
+            return merge(previous, keepImageUrlsJson, uploads, clearAll, mapper, uploadFn, maxImages);
+        }
+        List<String> tokens;
+        try {
+            tokens = mapper.readValue(imageOrderJson, new TypeReference<>() {});
+        } catch (IOException e) {
+            throw new IllegalArgumentException("이미지 순서 형식이 올바르지 않습니다.");
+        }
+        long kept = tokens == null ? 0 : tokens.stream().filter(StringUtils::hasText).count();
+        long uploadCount = uploads == null ? 0 : uploads.stream().filter(f -> f != null && !f.isEmpty()).count();
+        if (maxImages > 0 && kept + uploadCount > maxImages) {
+            throw new IllegalArgumentException("사진은 최대 " + maxImages + "장까지 등록할 수 있습니다.");
+        }
+        return ArchiveImages.merge(previous, keepImageUrlsJson, imageOrderJson, uploads, mapper, uploadFn);
+    }
+
     public static Result merge(
             List<String> previous,
             String keepImageUrlsJson,

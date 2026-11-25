@@ -7,7 +7,6 @@
   /** @type {{name:string,salesStart:string,salesEnd:string,categories:{title:string,photos:string[]}[]}[]} */
   let mdRegions = [];
   /** @type {{ri:number,ci:number}|null} */
-  let mdPhotoTarget = null;
 
   function setToken(token) { if (auth) auth.setToken(token); }
 
@@ -458,13 +457,38 @@
     if (ta) ta.value = serializeMdDocument(mdRegions);
   }
 
+  // 구분마다 공통 업로드 칸(즉시 업로드)이 사진 목록을 가진다. 순서·삭제도 그 목록 기준.
+  function mdPickerPhotos(container) {
+    const input = container?.querySelector('input[type="file"]');
+    if (!input || !window.FilePicker) return [];
+    return window.FilePicker.existing(input);
+  }
+
+  function mdPhotoDropHtml(ri, ci) {
+    return `
+      <div class="file-drop shop-md-photo-drop" data-file-drop="multi" data-upload-mode="immediate" data-sortable
+           data-file-label="MD 사진" data-md-photo-drop data-md-ri="${ri}" data-md-ci="${ci}">
+        <input type="file" accept="image/*" multiple>
+      </div>`;
+  }
+
+  function initMdPhotoPickers(root) {
+    if (!window.FilePicker) return;
+    window.FilePicker.init(root);
+    root.querySelectorAll("[data-md-photo-drop]").forEach((container) => {
+      const ri = Number(container.dataset.mdRi);
+      const ci = Number(container.dataset.mdCi);
+      const photos = mdRegions[ri]?.categories?.[ci]?.photos || [];
+      const input = container.querySelector('input[type="file"]');
+      if (input) window.FilePicker.setExisting(input, photos);
+    });
+  }
+
   function syncMdBuilderFromDom() {
     const root = document.getElementById("shopEditMdBuilder");
     if (!root) return;
     if (!hasLinkedEvent()) {
-      const photos = Array.from(root.querySelectorAll("[data-md-photo]"))
-        .map((img) => img.getAttribute("data-md-photo") || "")
-        .filter(Boolean);
+      const photos = mdPickerPhotos(root.querySelector("[data-md-photo-drop]"));
       mdRegions = [{
         name: "",
         salesStart: "",
@@ -478,9 +502,7 @@
     root.querySelectorAll("[data-md-region]").forEach((regionEl) => {
       const cats = [];
       regionEl.querySelectorAll("[data-md-category]").forEach((catEl) => {
-        const photos = Array.from(catEl.querySelectorAll("[data-md-photo]"))
-          .map((img) => img.getAttribute("data-md-photo") || "")
-          .filter(Boolean);
+        const photos = mdPickerPhotos(catEl.querySelector("[data-md-photo-drop]"));
         cats.push({
           title: catEl.querySelector("[data-md-cat-title]")?.value?.trim() || "",
           photos
@@ -517,19 +539,11 @@
       const photos = mdRegions[0]?.categories?.[0]?.photos || [];
       root.innerHTML = `
         <div class="shop-md-flat" data-md-flat>
-          <div class="shop-md-category-head">
-            <button type="button" class="about-mode-btn shop-md-file-btn shop-md-file-btn--sm" data-md-add-photos>사진 추가</button>
-            <span class="text-xs text-gray-400">상세에 보이는 MD 공지 사진입니다.</span>
-          </div>
-          <div class="shop-md-photo-list">
-            ${photos.map((url, pi) => `
-              <div class="shop-md-photo-item">
-                <img src="${escapeAttr(url)}" alt="" data-md-photo="${escapeAttr(url)}" class="shop-md-thumb" loading="lazy" decoding="async">
-                <button type="button" class="shop-md-photo-remove" data-md-remove-photo="${pi}" title="사진 삭제" aria-label="사진 삭제">×</button>
-              </div>
-            `).join("")}
-          </div>
+          <p class="text-xs text-gray-400">상세에 보이는 MD 공지 사진입니다. 끌어다 놓거나 고르면 바로 올라갑니다.</p>
+          ${mdPhotoDropHtml(0, 0)}
         </div>`;
+      void photos;
+      initMdPhotoPickers(root);
       syncMdListField();
       return;
     }
@@ -553,18 +567,10 @@
                 <input type="text" class="shop-md-input" data-md-cat-title maxlength="120"
                        placeholder="구분 이름 (예: Official MD)" value="${escapeAttr(cat.title || "")}" aria-label="구분 이름">
                 <div class="shop-md-category-actions">
-                  <button type="button" class="about-mode-btn shop-md-file-btn shop-md-file-btn--sm" data-md-add-photos>사진 추가</button>
                   <button type="button" class="about-mode-btn btn btn-xs btn-error" data-md-remove-category title="구분 삭제">삭제</button>
                 </div>
               </div>
-              <div class="shop-md-photo-list">
-                ${(cat.photos || []).map((url, pi) => `
-                  <div class="shop-md-photo-item">
-                    <img src="${escapeAttr(url)}" alt="" data-md-photo="${escapeAttr(url)}" class="shop-md-thumb" loading="lazy" decoding="async">
-                    <button type="button" class="shop-md-photo-remove" data-md-remove-photo="${pi}" title="사진 삭제" aria-label="사진 삭제">×</button>
-                  </div>
-                `).join("")}
-              </div>
+              ${mdPhotoDropHtml(ri, ci)}
             </div>
           `).join("")}
         </div>
@@ -575,33 +581,84 @@
         <span class="material-symbols-outlined" aria-hidden="true">add</span>
         지역 추가
       </button>`;
+    initMdPhotoPickers(root);
     syncMdListField();
     syncAllShopDateRanges();
   }
 
-  async function uploadMdPhotos(files) {
-    if (!mdPhotoTarget) return;
-    const list = Array.from(files || []).filter((f) => f && f.type && f.type.startsWith("image/"));
-    if (!list.length) {
-      window.SiteFeedback.alert("이미지 파일을 선택해 주세요.");
-      return;
-    }
-    syncMdBuilderFromDom();
-    if (!hasLinkedEvent()) ensureFlatMdStructure();
-    const { ri, ci } = mdPhotoTarget;
-    if (!mdRegions[ri] || !mdRegions[ri].categories[ci]) return;
-    const err = document.getElementById("shopEditError");
-    for (const file of list) {
+  function uploadSingleMdPhoto(file, input) {
+    return new Promise((resolve, reject) => {
       const fd = new FormData();
       fd.append("file", file);
-      const res = await apiFetch(API + "/md-photo", { method: "POST", body: fd });
-      if (!res.ok) throw new Error(await readError(res, "사진 업로드에 실패했습니다."));
-      const data = await res.json();
-      if (!data?.url) throw new Error("업로드 응답에 URL이 없습니다.");
-      mdRegions[ri].categories[ci].photos.push(data.url);
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", API + "/md-photo", true);
+      xhr.withCredentials = true;
+      const headers = auth ? auth.applyAuthHeaders({}) : new Headers();
+      if (headers && typeof headers.forEach === "function") {
+        headers.forEach((value, key) => xhr.setRequestHeader(key, value));
+      } else if (headers && typeof headers === "object") {
+        Object.keys(headers).forEach((key) => xhr.setRequestHeader(key, headers[key]));
+      }
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable && e.total > 0) {
+          window.FilePicker?.setProgress(input, file, { status: "uploading", ratio: e.loaded / e.total });
+        } else {
+          window.FilePicker?.setProgress(input, file, { status: "uploading" });
+        }
+      };
+      xhr.onload = () => {
+        if (xhr.status === 403) {
+          isAdmin = false;
+          setToken("");
+          setAdminUi();
+        }
+        let data = null;
+        try { data = JSON.parse(xhr.responseText || "{}"); } catch (_) {}
+        if (xhr.status >= 200 && xhr.status < 300 && data?.url) {
+          resolve(data.url);
+          return;
+        }
+        const msg = (data && (data.detail || data.message || data.error || data.title))
+          || (xhr.status === 403 ? "관리자 로그인이 필요합니다." : "사진 업로드에 실패했습니다.");
+        window.FilePicker?.setProgress(input, file, { status: "fail", message: msg });
+        reject(new Error(msg));
+      };
+      xhr.onerror = () => {
+        const msg = "네트워크 오류로 업로드에 실패했습니다.";
+        window.FilePicker?.setProgress(input, file, { status: "fail", message: msg });
+        reject(new Error(msg));
+      };
+      xhr.send(fd);
+    });
+  }
+
+  // 구분 칸에 새로 들어온 사진을 하나씩 올린다. 성공하면 공통 칸이 그 사진을 '올린 사진' 목록으로 옮긴다.
+  async function uploadMdPhotos(container, files) {
+    const input = container.querySelector('input[type="file"]');
+    const ri = Number(container.dataset.mdRi);
+    const ci = Number(container.dataset.mdCi);
+    const err = document.getElementById("shopEditError");
+    let failed = "";
+    for (const file of files) {
+      try {
+        const url = await uploadSingleMdPhoto(file, input);
+        if (input.isConnected) {
+          window.FilePicker?.setProgress(input, file, { status: "done", url });
+        } else {
+          // 업로드 중에 구분을 추가·삭제해 칸이 다시 그려졌으면, 같은 자리에 사진을 붙여 다시 그린다.
+          syncMdBuilderFromDom();
+          mdRegions[ri]?.categories?.[ci]?.photos.push(url);
+          renderMdBuilder();
+        }
+      } catch (ex) {
+        failed = ex.message || "사진 업로드에 실패했습니다.";
+      }
     }
-    if (err) { err.hidden = true; err.textContent = ""; }
-    renderMdBuilder();
+    syncMdBuilderFromDom();
+    if (err) {
+      err.hidden = !failed;
+      err.textContent = failed;
+    }
   }
 
   function summarizeRegionSalesPeriods() {
@@ -653,8 +710,8 @@
     if (cardNameEl) cardNameEl.value = "";
     setSalesPeriodInputs("");
     mdRegions = [emptyRegion()];
-    mdPhotoTarget = null;
-    document.getElementById("shopEditImage").value = "";
+    const coverInput = document.getElementById("shopEditImage");
+    if (coverInput) window.FilePicker?.setOriginal(coverInput, "");
     document.getElementById("shopEditImageUrl").value = "";
     document.getElementById("shopEditClearImage").checked = false;
     const preview = document.getElementById("shopEditImagePreview");
@@ -681,10 +738,7 @@
       if (!mdRegions.length) mdRegions = [emptyRegion()];
       fillSectionSelect(data.sectionId);
       loadedEventId = data.eventId || null;
-      if (data.coverImage && preview) {
-        preview.src = data.coverImage;
-        preview.classList.remove("hidden");
-      }
+      if (coverInput) window.FilePicker?.setOriginal(coverInput, data.coverImage || "");
     }
     syncEventFieldVisibility(loadedEventId);
     if (!id || isMdBlank(mdRegions)) {
@@ -739,17 +793,16 @@
       },
     });
 
-    document.getElementById("shopEditImage")?.addEventListener("change", (e) => {
-      const file = e.target.files?.[0];
-      const preview = document.getElementById("shopEditImagePreview");
-      if (!preview) return;
-      if (!file) {
-        preview.src = "";
-        preview.classList.add("hidden");
-        return;
+    document.getElementById("shopEditImage")?.addEventListener("file-picker:change", (e) => {
+      const files = e.detail?.files || [];
+      const clearCb = document.getElementById("shopEditClearImage");
+      if (clearCb && files.length) clearCb.checked = false;
+    });
+    document.getElementById("shopEditClearImage")?.addEventListener("change", (e) => {
+      if (e.target.checked) {
+        const input = document.getElementById("shopEditImage");
+        if (input) window.FilePicker?.reset(input);
       }
-      preview.src = URL.createObjectURL(file);
-      preview.classList.remove("hidden");
     });
 
     document.getElementById("shopEditSectionId")?.addEventListener("change", () => {
@@ -771,24 +824,7 @@
     });
 
     document.getElementById("shopEditMdBuilder")?.addEventListener("click", (e) => {
-      if (!hasLinkedEvent()) {
-        if (e.target.closest("[data-md-add-photos]")) {
-          syncMdBuilderFromDom();
-          ensureFlatMdStructure();
-          mdPhotoTarget = { ri: 0, ci: 0 };
-          document.getElementById("shopEditMdPhoto")?.click();
-          return;
-        }
-        const removePhoto = e.target.closest("[data-md-remove-photo]");
-        if (removePhoto) {
-          const pi = Number(removePhoto.getAttribute("data-md-remove-photo"));
-          syncMdBuilderFromDom();
-          ensureFlatMdStructure();
-          mdRegions[0].categories[0].photos.splice(pi, 1);
-          renderMdBuilder();
-        }
-        return;
-      }
+      if (!hasLinkedEvent()) return;
 
       if (e.target.closest("[data-md-add-region]")) {
         syncMdBuilderFromDom();
@@ -821,12 +857,6 @@
       const ci = Number(catEl.getAttribute("data-md-category"));
       if (Number.isNaN(ci)) return;
 
-      if (e.target.closest("[data-md-add-photos]")) {
-        syncMdBuilderFromDom();
-        mdPhotoTarget = { ri, ci };
-        document.getElementById("shopEditMdPhoto")?.click();
-        return;
-      }
       if (e.target.closest("[data-md-remove-category]")) {
         syncMdBuilderFromDom();
         if (!mdRegions[ri]) return;
@@ -834,14 +864,6 @@
         if (!mdRegions[ri].categories.length) mdRegions[ri].categories = [emptyCategory()];
         renderMdBuilder();
         return;
-      }
-      const removePhoto = e.target.closest("[data-md-remove-photo]");
-      if (removePhoto) {
-        const pi = Number(removePhoto.getAttribute("data-md-remove-photo"));
-        syncMdBuilderFromDom();
-        if (!mdRegions[ri]?.categories[ci]) return;
-        mdRegions[ri].categories[ci].photos.splice(pi, 1);
-        renderMdBuilder();
       }
     });
 
@@ -867,20 +889,13 @@
       });
     });
 
-    document.getElementById("shopEditMdPhoto")?.addEventListener("change", async (e) => {
-      const input = e.target;
-      const files = input.files;
-      if (!files || !files.length) return;
-      const err = document.getElementById("shopEditError");
-      try {
-        await uploadMdPhotos(files);
-      } catch (ex) {
-        if (err) { err.hidden = false; err.textContent = ex.message || "사진 업로드 실패"; }
-        else window.SiteFeedback.alert(ex.message || "사진 업로드 실패");
-      } finally {
-        input.value = "";
-        mdPhotoTarget = null;
-      }
+    // 구분 칸(공통 업로드 칸)에 새 사진이 들어오면 바로 올리고, 삭제·순서 변경은 목록 상태를 다시 읽는다.
+    document.getElementById("shopEditMdBuilder")?.addEventListener("file-picker:change", (e) => {
+      const container = e.target.closest("[data-md-photo-drop]");
+      if (!container) return;
+      const added = e.detail?.added || [];
+      if (added.length) void uploadMdPhotos(container, added);
+      else syncMdBuilderFromDom();
     });
 
     document.getElementById("shopEditForm")?.addEventListener("submit", async (e) => {

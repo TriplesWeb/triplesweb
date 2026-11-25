@@ -24,6 +24,7 @@
             const bulk = forms.querySelector('#archiveSourceBulkBar');
             if (bulk) document.getElementById('archiveBulkMount')?.replaceWith(bulk);
             mount.replaceChildren(forms);
+            window.FilePicker?.init(mount);
         }
 
         for (const src of scripts) {

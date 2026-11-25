@@ -69,4 +69,35 @@ class ChemistryImagesTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("최대");
     }
+
+    @Test
+    void mergeInOrderPlacesUploadsWhereTheScreenPutThem() throws Exception {
+        var upload = new MockMultipartFile("images", "c.jpg", "image/jpeg", new byte[]{1});
+        ChemistryImages.Result result = ChemistryImages.mergeInOrder(
+                List.of("/uploads/a.jpg", "/uploads/b.jpg"),
+                "[\"/uploads/b.jpg\",\"/uploads/a.jpg\"]",
+                "[\"/uploads/b.jpg\",\"\",\"/uploads/a.jpg\"]",
+                List.of(upload),
+                false,
+                mapper,
+                file -> "/uploads/new-" + file.getOriginalFilename(),
+                ChemistryImages.MAX_IMAGES);
+        assertThat(result.urls()).containsExactly("/uploads/b.jpg", "/uploads/new-c.jpg", "/uploads/a.jpg");
+        assertThat(result.removed()).isEmpty();
+    }
+
+    @Test
+    void mergeInOrderRejectsOverMaxBeforeSavingUploads() {
+        var upload = new MockMultipartFile("images", "c.jpg", "image/jpeg", new byte[]{1});
+        assertThatThrownBy(() -> ChemistryImages.mergeInOrder(
+                List.of("/uploads/a.jpg"),
+                "[\"/uploads/a.jpg\"]",
+                "[\"/uploads/a.jpg\",\"\"]",
+                List.of(upload),
+                false,
+                mapper,
+                file -> { throw new AssertionError("업로드를 저장하면 안 된다"); },
+                1))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
 }

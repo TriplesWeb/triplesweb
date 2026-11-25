@@ -1,0 +1,1086 @@
+/* Lucian UX/UI Prompt #032 · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/#032 */
+/* Lucian UX/UI Prompt #432 · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/#432 */
+/* Lucian UX/UI Prompt #470 · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/#470 */
+
+:root {
+  --ux-surface: var(--color-surface, #16181f);
+  --ux-surface-2: var(--color-surface-container-high, #1a1b22);
+  --ux-surface-3: var(--color-surface-container-highest, #23242e);
+  --ux-ink: var(--color-on-surface, #e3e2e8);
+  --ux-ink-2: var(--color-on-surface-variant, #b9cac4);
+  --ux-ink-3: var(--color-muted, #8b9b95);
+  --ux-line: var(--color-outline-variant, #2d313e);
+  --ux-line-2: var(--color-outline, #3a4a46);
+  --ux-accent: var(--color-primary-container, #00f5d4);
+  --ux-accent-ink: var(--color-on-primary-container, #00382f);
+  --ux-accent-soft: color-mix(in srgb, var(--ux-accent) 14%, transparent);
+  --ux-mint: var(--color-success, #34d399);
+  --ux-danger: var(--color-error, #f87171);
+  --ux-shadow: rgba(0, 0, 0, 0.35);
+  --ux-shadow-strong: rgba(0, 0, 0, 0.55);
+  --ux-ease: cubic-bezier(.22, 1, .36, 1);
+  --ux-spring: cubic-bezier(.3, 1.5, .5, 1);
+}
+
+html[data-theme="light"] {
+  --ux-surface: #ffffff;
+  --ux-surface-2: #f4f6f8;
+  --ux-surface-3: #e9edf2;
+  --ux-ink: #111827;
+  --ux-ink-2: #374151;
+  --ux-ink-3: #6b7280;
+  --ux-line: rgba(17, 24, 39, 0.12);
+  --ux-line-2: rgba(17, 24, 39, 0.22);
+  --ux-accent: #0d9488;
+  --ux-accent-ink: #ffffff;
+  --ux-accent-soft: rgba(13, 148, 136, 0.1);
+  --ux-mint: #10b981;
+  --ux-danger: #dc2626;
+  --ux-shadow: rgba(15, 23, 42, 0.08);
+  --ux-shadow-strong: rgba(15, 23, 42, 0.18);
+}
+
+.ux,
+.ux *,
+.ux *::before,
+.ux *::after {
+  box-sizing: border-box;
+}
+
+.file-drop {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  font-family: inherit;
+  color: var(--ux-ink);
+}
+
+.file-drop-input {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  overflow: hidden !important;
+  clip-path: inset(50%) !important;
+}
+
+.file-drop-status {
+  margin: 6px 0 0;
+  min-height: 1.1em;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--ux-ink-3);
+}
+
+.file-drop-status.is-error {
+  color: var(--ux-danger);
+}
+
+.file-drop-status:empty {
+  display: none;
+}
+
+/* dnd-only (영상 등 기존 UI 유지 + 드래그 강조) */
+.file-drop[data-dnd-only] {
+  border-radius: 14px;
+  border: 1.5px dashed transparent;
+  padding: 6px;
+  margin: -6px;
+  transition: border-color .2s var(--ux-ease), background-color .2s var(--ux-ease);
+}
+
+.file-drop[data-dnd-only].is-drag {
+  border-color: var(--ux-accent);
+  background: var(--ux-accent-soft);
+}
+
+/* Lucian #432: 한 장 칸 (진행 링 제거, 선택 이미지 미리보기 + 원래대로) */
+.u432 {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  display: grid;
+  place-items: center;
+}
+
+.u432-dz {
+  position: relative;
+  width: 100%;
+  min-height: 200px;
+  padding: 16px;
+  border-radius: 22px;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--ux-ink) 2.5%, transparent);
+  cursor: pointer;
+  transform: scale(var(--k, 1));
+  transition: background-color .25s var(--ux-ease), transform .5s cubic-bezier(.3, 1.5, .5, 1);
+}
+
+.u432-dz::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1.5px dashed var(--ux-line-2);
+  pointer-events: none;
+  transition: border-color .25s var(--ux-ease);
+}
+
+.u432-dz:hover::before {
+  border-color: color-mix(in srgb, var(--ux-ink) 30%, transparent);
+}
+
+.u432.is-drag .u432-dz {
+  --k: 1.03;
+  background: var(--ux-accent-soft);
+}
+
+.u432.is-drag .u432-dz::before {
+  border-style: solid;
+  border-color: var(--ux-accent);
+}
+
+.u432 .u432-dz:focus-visible {
+  outline: 2px solid var(--ux-accent);
+  outline-offset: 3px;
+}
+
+.u432-idle,
+.u432-up {
+  grid-area: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 100%;
+}
+
+.u432-idle {
+  transition: opacity .25s var(--ux-ease), transform .45s cubic-bezier(.3, 1.5, .5, 1);
+}
+
+.u432.is-up .u432-idle {
+  opacity: 0;
+  transform: scale(.85);
+  pointer-events: none;
+}
+
+.u432-ar {
+  width: 58px;
+  height: 58px;
+  margin-bottom: 14px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  background: var(--ux-surface-2);
+  box-shadow: 0 0 0 1px var(--ux-line), 0 10px 22px -12px var(--ux-shadow-strong);
+  color: var(--ux-ink-2);
+  animation: u432-bob 2.6s ease-in-out infinite;
+  transition: color .2s, transform .4s cubic-bezier(.3, 1.6, .5, 1);
+}
+
+.u432-ar svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@keyframes u432-bob {
+  50% { transform: translateY(-5px); }
+}
+
+.u432.is-drag .u432-ar {
+  color: var(--ux-accent);
+  animation: none;
+  transform: translateY(-8px) scale(1.08);
+}
+
+.u432-idle b {
+  font-size: 14.5px;
+  font-weight: 650;
+  letter-spacing: -.015em;
+  color: var(--ux-ink);
+}
+
+.u432-idle b + b {
+  display: none;
+  color: var(--ux-accent);
+}
+
+.u432.is-drag .u432-idle b:first-of-type {
+  display: none;
+}
+
+.u432.is-drag .u432-idle b + b {
+  display: block;
+}
+
+.u432-idle small {
+  margin-top: 5px;
+  font-size: 12px;
+  color: var(--ux-ink-3);
+}
+
+.u432-br {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 650;
+  color: var(--ux-accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: color-mix(in srgb, var(--ux-accent) 40%, transparent);
+  cursor: pointer;
+}
+
+.u432-up {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .25s var(--ux-ease);
+}
+
+.u432.is-up .u432-up {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.u432-preview-frame {
+  position: relative;
+  width: 112px;
+  height: 112px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--ux-surface-2);
+  box-shadow: 0 0 0 1px var(--ux-line), 0 10px 22px -12px var(--ux-shadow-strong);
+  display: grid;
+  place-items: center;
+}
+
+.u432.is-up .u432-preview-frame {
+  animation: u432-drop .75s cubic-bezier(.3, 1.2, .5, 1) both;
+}
+
+@keyframes u432-drop {
+  0% { transform: translateY(-40px) rotate(-6deg); opacity: 0; }
+  45% { transform: translateY(4px) rotate(1.5deg) scale(1.04, .94); opacity: 1; }
+  65% { transform: translateY(-3px) scale(.98, 1.02); }
+  100% { transform: none; }
+}
+
+.u432-preview-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.u432-nm {
+  margin: 10px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  max-width: 240px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--ux-ink);
+}
+
+.u432-nm small {
+  font-weight: 500;
+  color: var(--ux-ink-3);
+}
+
+.u432-actions {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Lucian #032: 여러 장 드롭존 + 즉시 업로드 진행 막대 */
+.u032 {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+}
+
+.u032-zone {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 176px;
+  border: 0;
+  padding: 12px;
+  border-radius: 26px;
+  background: var(--ux-surface);
+  color: var(--ux-ink);
+  cursor: pointer;
+  transition: transform .5s var(--ux-spring), background-color .3s var(--ux-ease);
+}
+
+.u032-zone:focus-visible {
+  outline: 2px solid var(--ux-accent);
+  outline-offset: 4px;
+}
+
+.u032-zone svg.u032-dash {
+  position: absolute;
+  left: 1px;
+  top: 1px;
+  width: calc(100% - 2px);
+  height: calc(100% - 2px);
+  overflow: visible;
+  pointer-events: none;
+}
+
+.u032-dash rect {
+  fill: none;
+  stroke: var(--ux-line-2);
+  stroke-width: 2;
+  stroke-dasharray: 8 7;
+  transition: stroke .3s var(--ux-ease);
+}
+
+.u032-zone:hover .u032-dash rect,
+.u032.is-over .u032-dash rect {
+  stroke: var(--ux-accent);
+  animation: u032-march .9s linear infinite;
+}
+
+@keyframes u032-march {
+  to { stroke-dashoffset: -30; }
+}
+
+.u032.is-over .u032-zone {
+  transform: scale(1.03);
+  background: color-mix(in srgb, var(--ux-accent) 7%, var(--ux-surface));
+}
+
+.u032-orb {
+  width: 54px;
+  height: 54px;
+  border-radius: 20px;
+  display: grid;
+  place-items: center;
+  color: var(--ux-accent-ink);
+  background: linear-gradient(140deg, var(--ux-accent), var(--ux-mint));
+  box-shadow: 0 16px 28px -14px color-mix(in srgb, var(--ux-accent) 70%, transparent);
+  transition: transform .5s var(--ux-spring);
+}
+
+.u032-orb svg {
+  width: 26px;
+  height: 26px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.u032-zone:hover .u032-orb {
+  transform: translateY(-4px);
+}
+
+.u032.is-over .u032-orb {
+  transform: translateY(-8px) scale(1.1) rotate(-6deg);
+}
+
+.u032-zone b {
+  margin-top: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  text-align: center;
+}
+
+.u032-zone b em {
+  font-style: normal;
+  color: var(--ux-accent);
+}
+
+.u032-zone small {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--ux-ink-3);
+  text-align: center;
+}
+
+.u032-list {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.u032-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 58px;
+  padding: 0 12px;
+  border-radius: 18px;
+  background: var(--ux-surface);
+  box-shadow: 0 0 0 1px var(--ux-line);
+  overflow: hidden;
+  animation: u032-in .5s var(--ux-spring);
+}
+
+@keyframes u032-in {
+  from { transform: translateY(-10px) scale(.96); opacity: 0; }
+}
+
+.u032-ic {
+  width: 34px;
+  height: 38px;
+  flex: none;
+  border-radius: 9px;
+  display: grid;
+  place-items: end center;
+  padding-bottom: 5px;
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  color: #fff;
+  background: var(--c, #6b7280);
+}
+
+.u032-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.u032-meta b {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 660;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.u032-meta small {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--ux-ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.u032-bar {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  width: 100%;
+  background: var(--ux-accent);
+  transform-origin: 0 50%;
+  transform: scaleX(var(--p, 0));
+  transition: transform .2s linear, background-color .3s, opacity .5s .4s;
+}
+
+.u032-row.done .u032-bar {
+  background: var(--ux-mint);
+  opacity: 0;
+}
+
+.u032-row.fail .u032-bar {
+  background: var(--ux-danger);
+}
+
+.u032-st {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+}
+
+.u032-st svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.u032-row.done .u032-st {
+  background: var(--ux-mint);
+  color: var(--ux-accent-ink);
+  animation: u032-pop .45s var(--ux-spring);
+}
+
+@keyframes u032-pop {
+  from { transform: scale(.3); }
+}
+
+.u032-row.done .u032-st path {
+  stroke-dasharray: 16;
+  stroke-dashoffset: 16;
+  animation: u032-draw .4s var(--ux-ease) .15s forwards;
+}
+
+@keyframes u032-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+.u032-row.fail .u032-meta small {
+  color: var(--ux-danger);
+}
+
+.u032-spin {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2.5px solid var(--ux-surface-3);
+  border-top-color: var(--ux-accent);
+  animation: u032-rot .8s linear infinite;
+}
+
+@keyframes u032-rot {
+  to { transform: rotate(360deg); }
+}
+
+/* Lucian #470: 여러 장 목록 개별 삭제 + 5초 되돌리기 */
+.u470 {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  margin-top: 10px;
+}
+
+.u470-cd {
+  width: 100%;
+  padding: 6px;
+  border-radius: 20px;
+  background: var(--ux-surface);
+  box-shadow: 0 0 0 1px var(--ux-line), 0 10px 24px -16px var(--ux-shadow-strong);
+}
+
+.u470-ls {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.u470-r {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows .42s cubic-bezier(.65, 0, .35, 1) .12s;
+}
+
+.u470-r > div {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.u470-in {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  height: 56px;
+  padding: 0 6px 0 9px;
+  border-radius: 14px;
+  transition: transform .32s var(--ux-ease), opacity .22s var(--ux-ease), background-color .2s;
+}
+
+.u470-in:hover {
+  background: var(--ux-surface-2);
+}
+
+.u470-r + .u470-r .u470-in::before {
+  content: "";
+  position: absolute;
+  left: 52px;
+  right: 10px;
+  top: 0;
+  height: 1px;
+  background: var(--ux-line);
+}
+
+.u470-r.is-gone {
+  grid-template-rows: 0fr;
+}
+
+.u470-r.is-gone .u470-in {
+  transform: translateX(-46px) scale(.96);
+  opacity: 0;
+}
+
+.u470-r.is-back {
+  transition: grid-template-rows .4s cubic-bezier(.2, .8, .2, 1);
+}
+
+.u470-r.is-back .u470-in {
+  transition: transform .62s cubic-bezier(.34, 1.56, .64, 1) .08s, opacity .3s var(--ux-ease) .08s, background-color .2s;
+}
+
+.u470-thumb {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: var(--ux-surface-2);
+}
+
+.u470-ic {
+  flex: none;
+  position: relative;
+  width: 32px;
+  height: 38px;
+  border-radius: 7px 11px 7px 7px;
+  display: grid;
+  place-items: end center;
+  padding-bottom: 6px;
+  font-style: normal;
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: .03em;
+  color: #FFFFFF;
+  background: var(--u470-c, #6b7280);
+}
+
+.u470-ic::before {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 0 11px 0 4px;
+  background: rgba(255, 255, 255, .35);
+}
+
+.u470-tx {
+  flex: 1;
+  min-width: 0;
+}
+
+.u470-tx b {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 620;
+  letter-spacing: -.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.u470-tx small {
+  display: block;
+  margin-top: 2px;
+  font-size: 11.5px;
+  color: var(--ux-ink-3);
+  white-space: nowrap;
+}
+
+.u470-del {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: none;
+  color: var(--ux-ink-3);
+  cursor: pointer;
+  transition: background-color .2s, color .2s, transform .35s var(--ux-spring);
+}
+
+.u470-del:hover {
+  background: color-mix(in srgb, var(--ux-danger) 12%, transparent);
+  color: var(--ux-danger);
+}
+
+.u470-del:active {
+  transform: scale(.88);
+}
+
+.u470 .u470-del:focus-visible {
+  outline: 2px solid var(--ux-accent);
+  outline-offset: 1px;
+}
+
+.u470-del svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  overflow: visible;
+}
+
+.u470-del .lid {
+  transform-origin: 17px 6.5px;
+  transition: transform .35s cubic-bezier(.34, 1.8, .5, 1);
+}
+
+.u470-del:hover .lid {
+  transform: translateY(-1.5px) rotate(14deg);
+}
+
+.u470-em {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows .4s var(--ux-ease);
+}
+
+.u470-em > p {
+  min-height: 0;
+  overflow: hidden;
+  margin: 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--ux-ink-3);
+}
+
+.u470-em.is-on {
+  grid-template-rows: 1fr;
+}
+
+.u470-em.is-on > p {
+  padding: 12px 0;
+}
+
+.u470-undo {
+  position: sticky;
+  bottom: 8px;
+  margin: 10px auto 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  height: 40px;
+  padding: 0 16px 0 10px;
+  border: 0;
+  border-radius: 20px;
+  background: var(--ux-ink);
+  color: var(--ux-surface);
+  font-size: 13px;
+  font-weight: 650;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 14px 30px -12px var(--ux-shadow-strong), 0 2px 6px -2px var(--ux-shadow);
+  transform: translateY(16px) scale(.86);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: transform .45s var(--ux-ease), opacity .25s var(--ux-ease), visibility 0s .45s;
+}
+
+.u470-undo.is-on {
+  transform: translateY(0) scale(var(--u470-k, 1));
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: transform .55s cubic-bezier(.34, 1.56, .64, 1), opacity .2s var(--ux-ease), visibility 0s;
+}
+
+.u470-undo.is-on:hover {
+  --u470-k: 1.04;
+}
+
+.u470-undo.is-on:active {
+  --u470-k: .94;
+  transition-duration: .12s;
+}
+
+.u470 .u470-undo:focus-visible {
+  outline: 2px solid var(--ux-accent);
+  outline-offset: 3px;
+}
+
+.u470-rg {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+}
+
+.u470-rg svg {
+  position: absolute;
+  inset: 0;
+  width: 24px;
+  height: 24px;
+  transform: rotate(-90deg);
+}
+
+.u470-rg circle {
+  fill: none;
+  stroke-width: 2.4;
+}
+
+.u470-rg .bg {
+  stroke: currentColor;
+  opacity: .2;
+}
+
+.u470-rg .fg {
+  stroke: currentColor;
+  stroke-linecap: round;
+}
+
+.u470-rg b {
+  font-size: 10.5px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+
+.u470-ar {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform .5s var(--ux-spring);
+}
+
+.u470-undo:hover .u470-ar {
+  transform: rotate(-40deg);
+}
+
+/* 모달 내 높이 컴팩트 조정 (움직임·모양 유지) */
+.modal-box .u432-dz,
+.ar-dialog .u432-dz,
+.about-modal .u432-dz,
+.chem-edit-modal .u432-dz {
+  min-height: 156px;
+  padding: 12px;
+}
+
+.modal-box .u432-ar,
+.ar-dialog .u432-ar,
+.about-modal .u432-ar,
+.chem-edit-modal .u432-ar {
+  width: 46px;
+  height: 46px;
+  margin-bottom: 10px;
+}
+
+.modal-box .u032-zone,
+.ar-dialog .u032-zone,
+.about-modal .u032-zone,
+.chem-edit-modal .u032-zone {
+  height: 136px;
+}
+
+@media (max-width: 420px) {
+  .u432-dz {
+    min-height: 160px;
+  }
+  .u032-zone {
+    height: 140px;
+  }
+}
+
+
+/* 되돌리기 알약은 목록 위에 떠서 빈 공간을 차지하지 않는다 */
+.u470 > .u470-undo {
+  position: absolute;
+  left: 50%;
+  bottom: 10px;
+  margin: 0;
+  z-index: 2;
+  translate: -50% 0;
+}
+
+/* 한 장 칸: #470 되돌리기 알약을 미리보기 아래에 둔다 (카운트다운 없음, 저장 전까지 유지) */
+.u432 .u432-undo {
+  position: static;
+  margin: 0;
+  height: 34px;
+  padding: 0 14px 0 11px;
+}
+.u432 .u432-undo:not(.is-on) {
+  display: none;
+}
+.u432 .u432-undo:focus-visible {
+  outline: 2px solid var(--ux-accent);
+  outline-offset: 3px;
+}
+
+/* 순서 바꾸기: 끌기 손잡이 + 위·아래 버튼 */
+.u470-grip,
+.u470-mv {
+  flex: none;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--ux-ink-3);
+  cursor: pointer;
+  transition: background-color .2s, color .2s;
+}
+.u470-grip {
+  width: 22px;
+  height: 34px;
+  margin-right: -4px;
+  cursor: grab;
+  touch-action: none;
+}
+.u470-grip svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+.u470-mv {
+  width: 28px;
+  height: 30px;
+}
+.u470-mv svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.u470-grip:hover,
+.u470-mv:hover {
+  background: color-mix(in srgb, var(--ux-accent) 12%, transparent);
+  color: var(--ux-ink);
+}
+.u470-grip:focus-visible,
+.u470-mv:focus-visible {
+  outline: 2px solid var(--ux-accent);
+  outline-offset: 1px;
+}
+.u470-ls > .u470-r:first-child .u470-mv[data-dir="-1"],
+.u470-ls > .u470-r:last-child .u470-mv[data-dir="1"] {
+  visibility: hidden;
+}
+.u470-r.is-dragging .u470-in {
+  background: var(--ux-surface-2);
+  box-shadow: 0 0 0 1px var(--ux-accent);
+  border-radius: 12px;
+}
+.u470-r.is-dragging .u470-grip {
+  cursor: grabbing;
+}
+
+
+/* 대표 지정(아카이브) */
+.u470-pri {
+  flex: none;
+  height: 26px;
+  padding: 0 9px;
+  border: 1px solid var(--ux-line-2);
+  border-radius: 999px;
+  background: none;
+  color: var(--ux-ink-2);
+  font-size: 11.5px;
+  font-weight: 650;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color .2s, color .2s, border-color .2s;
+}
+.u470-pri:hover {
+  border-color: var(--ux-accent);
+  color: var(--ux-ink);
+}
+.u470-pri[aria-pressed="true"] {
+  border-color: transparent;
+  background: var(--ux-accent);
+  color: var(--ux-accent-ink);
+}
+.u470-pri:focus-visible {
+  outline: 2px solid var(--ux-accent);
+  outline-offset: 2px;
+}
+
+/* 행 선택(아카이브: 아래 큰 미리보기·편집 대상) */
+.u470-pick {
+  cursor: pointer;
+}
+.u470-r.is-active .u470-in {
+  border-radius: 12px;
+  background: var(--ux-accent-soft);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ux-accent) 55%, transparent);
+}
+
+
+/* 목록 행을 #032처럼 줄마다 떨어진 카드로 보인다(간격 8px). 테두리는 inset이라 삭제 접힘 애니메이션에 잘리지 않는다. */
+.u470-cd {
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.u470-r + .u470-r .u470-in::before {
+  display: none;
+}
+.u470-in {
+  height: 58px;
+  margin-bottom: 8px;
+  padding: 0 8px 0 10px;
+  border-radius: 18px;
+  background: var(--ux-surface);
+  box-shadow: inset 0 0 0 1px var(--ux-line);
+}
+.u470-ls > .u470-r:last-child .u470-in {
+  margin-bottom: 0;
+}
+.u470-r.is-active .u470-in,
+.u470-r.is-dragging .u470-in {
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--ux-accent) 10%, var(--ux-surface));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ux-accent) 60%, transparent);
+}
+.u470-em > p {
+  border-radius: 18px;
+  box-shadow: inset 0 0 0 1px var(--ux-line);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .u432-dz,
+  .u432-idle,
+  .u432-ar,
+  .u432-preview-frame,
+  .u032-zone,
+  .u032-orb,
+  .u032-dash rect,
+  .u032-row,
+  .u032-st,
+  .u032-spin,
+  .u470-r,
+  .u470-in,
+  .u470-del,
+  .u470-del .lid,
+  .u470-undo,
+  .u470-ar {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    transition-delay: 0ms !important;
+  }
+}
