@@ -23,6 +23,9 @@ import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.PosixFileAttributeView;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.Set;
@@ -46,6 +49,8 @@ public class UploadImageResizeService {
             ".+\\.card(?:2)?-[0-9]+\\.jpg", Pattern.CASE_INSENSITIVE);
     private static final float JPEG_QUALITY = 0.82f;
     private static final Color CARD_BG = new Color(0x0d0e12);
+    /** 원본과 같이 644. createTempFile 기본값(600)이면 백업·복사 계정이 읽지 못한다. */
+    private static final Set<PosixFilePermission> VARIANT_PERMISSIONS = PosixFilePermissions.fromString("rw-r--r--");
     private final ConcurrentHashMap<Path, CompletableFuture<Path>> inFlight = new ConcurrentHashMap<>();
 
     public static boolean isAllowedWidth(int width) {
@@ -127,6 +132,7 @@ public class UploadImageResizeService {
             Path temp = Files.createTempFile(variant.getParent(), variant.getFileName() + "-", ".tmp");
             try {
                 writeJpeg(scaled, temp);
+                makeWorldReadable(temp);
                 try {
                     Files.move(temp, variant, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
                 } catch (AtomicMoveNotSupportedException ignored) {
@@ -139,6 +145,11 @@ public class UploadImageResizeService {
             scaled.flush();
         }
         return variant;
+    }
+
+    static void makeWorldReadable(Path file) throws IOException {
+        PosixFileAttributeView view = Files.getFileAttributeView(file, PosixFileAttributeView.class);
+        if (view != null) view.setPermissions(VARIANT_PERMISSIONS);
     }
 
     private static BufferedImage readScaledImage(Path original, int maxWidth) throws IOException {
