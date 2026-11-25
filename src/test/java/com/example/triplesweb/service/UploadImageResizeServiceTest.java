@@ -13,6 +13,8 @@ import java.awt.image.BufferedImage;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFileAttributeView;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.ArrayList;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executors;
@@ -45,6 +47,18 @@ class UploadImageResizeServiceTest {
         BufferedImage out = ImageIO.read(variant.toFile());
         assertThat(out.getWidth()).isEqualTo(480);
         assertThat(service.ensureJpegVariant(source, UploadImageResizeService.CARD_WIDTH)).isEqualTo(variant);
+    }
+
+    @Test void variantIsReadableByOtherAccounts() throws Exception {
+        Path source = temp.resolve("perm.png");
+        ImageIO.write(new BufferedImage(800, 600, BufferedImage.TYPE_INT_RGB), "png", source.toFile());
+
+        Path variant = new UploadImageResizeService().ensureJpegVariant(source, 1600);
+
+        assertThat(variant).isNotNull();
+        if (Files.getFileAttributeView(variant, PosixFileAttributeView.class) != null) {
+            assertThat(PosixFilePermissions.toString(Files.getPosixFilePermissions(variant))).isEqualTo("rw-r--r--");
+        }
     }
 
     @ParameterizedTest
