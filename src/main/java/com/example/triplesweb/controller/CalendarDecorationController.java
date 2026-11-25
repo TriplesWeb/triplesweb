@@ -133,6 +133,7 @@ public class CalendarDecorationController {
             @RequestParam(required = false) String unitName,
             @RequestParam(required = false) String description,
             @RequestParam(required = false) String color,
+            @RequestParam(defaultValue = "false") boolean repeatYearly,
             @RequestParam(required = false) MultipartFile image,
             @RequestParam(defaultValue = "false") boolean clearImage,
             HttpServletRequest request, HttpSession session) {
