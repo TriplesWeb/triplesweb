@@ -1,5 +1,6 @@
 package com.example.triplesweb.controller;
 
+import com.example.triplesweb.dto.CalendarDecorationDto;
 import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.service.AboutAdminAuth;
@@ -11,6 +12,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import static org.mockito.Mockito.when;
@@ -25,6 +27,36 @@ class CalendarDecorationControllerTest {
     @MockitoBean CalendarDecorationService decorations;
     @MockitoBean ArtistRepository artists;
     @MockitoBean AboutAdminAuth adminAuth;
+
+
+    @Test
+    void repeatsUnitAnniversaryInTheRequestedYear() throws Exception {
+        when(decorations.findAll()).thenReturn(List.of(new CalendarDecorationDto(
+                12L, "AAA 기념일", "UNIT", LocalDate.of(2022, 10, 28),
+                "AAA", "AAA 기념일", null, "#00f5d4", true)));
+
+        mvc.perform(get("/api/calendar-decorations/events")
+                        .param("start", "2026-10-01")
+                        .param("end", "2026-10-31"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value("decoration-12-2026"))
+                .andExpect(jsonPath("$[0].title").value("AAA 기념일"))
+                .andExpect(jsonPath("$[0].start").value("2026-10-28"))
+                .andExpect(jsonPath("$[0].repeatYearly").value(true));
+    }
+
+    @Test
+    void skipsFebruary29DecorationInANonLeapYear() throws Exception {
+        when(decorations.findAll()).thenReturn(List.of(new CalendarDecorationDto(
+                13L, "윤일 기념일", "ANNIVERSARY", LocalDate.of(2024, 2, 29),
+                null, "", null, "#00f5d4", true)));
+
+        mvc.perform(get("/api/calendar-decorations/events")
+                        .param("start", "2025-02-01")
+                        .param("end", "2025-02-28"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isEmpty());
+    }
 
     @Test
     void repeatsMemberBirthdayInsideTheRequestedRange() throws Exception {

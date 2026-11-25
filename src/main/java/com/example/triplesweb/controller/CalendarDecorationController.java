@@ -36,6 +36,42 @@ public class CalendarDecorationController {
         return service.findAll();
     }
 
+    /** 등록된 기념일을 조회 기간에 맞춰 반환한다. 매년 반복 항목은 최초 등록일 이후 매년 표시한다. */
+    @GetMapping("/events")
+    public List<Map<String, Object>> decorationEvents(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
+        if (end.isBefore(start) || ChronoUnit.DAYS.between(start, end) > 400) {
+            throw new IllegalArgumentException("기념일 조회 기간은 400일 이내여야 합니다.");
+        }
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (CalendarDecorationDto item : service.findAll()) {
+            int firstYear = item.eventDate().getYear();
+            int lastYear = item.repeatYearly() ? end.getYear() : firstYear;
+            for (int year = firstYear; year <= lastYear; year++) {
+                try {
+                    LocalDate occurrence = LocalDate.of(year, item.eventDate().getMonthValue(), item.eventDate().getDayOfMonth());
+                    if (occurrence.isBefore(start) || occurrence.isAfter(end)) continue;
+                    result.add(Map.of(
+                            "id", "decoration-" + item.id() + "-" + year,
+                            "title", item.title(),
+                            "start", occurrence.toString(),
+                            "kind", item.kind(),
+                            "unitName", item.unitName() == null ? "" : item.unitName(),
+                            "description", item.description() == null ? "" : item.description(),
+                            "imageUrl", item.imageUrl() == null ? "" : item.imageUrl(),
+                            "color", item.color(),
+                            "repeatYearly", item.repeatYearly(),
+                            "categoryLabel", item.kind().equals("UNIT") ? "유닛" : "기념일"
+                    ));
+                } catch (DateTimeException ignored) {
+                    // 2월 29일은 윤년이 아닌 해에 표시하지 않는다.
+                }
+            }
+        }
+        return result;
+    }
+
     /** Artist.birthDate에서 월/일을 추출해 조회 범위에 맞는 매년 반복 생일을 반환한다. */
     @GetMapping("/birthdays")
     public List<Map<String, Object>> birthdays(
@@ -81,10 +117,11 @@ public class CalendarDecorationController {
             @RequestParam(required = false) String unitName,
             @RequestParam(required = false) String description,
             @RequestParam(required = false) String color,
+            @RequestParam(defaultValue = "false") boolean repeatYearly,
             @RequestParam(required = false) MultipartFile image,
             HttpServletRequest request, HttpSession session) {
         adminAuth.requireAdmin(request, session);
-        return service.create(title, kind, eventDate, unitName, description, color, image);
+        return service.create(title, kind, eventDate, unitName, description, color, repeatYearly, image);
     }
 
     @PostMapping("/{id}")
@@ -96,11 +133,12 @@ public class CalendarDecorationController {
             @RequestParam(required = false) String unitName,
             @RequestParam(required = false) String description,
             @RequestParam(required = false) String color,
+            @RequestParam(defaultValue = "false") boolean repeatYearly,
             @RequestParam(required = false) MultipartFile image,
             @RequestParam(defaultValue = "false") boolean clearImage,
             HttpServletRequest request, HttpSession session) {
         adminAuth.requireAdmin(request, session);
-        return service.update(id, title, kind, eventDate, unitName, description, color, image, clearImage);
+        return service.update(id, title, kind, eventDate, unitName, description, color, repeatYearly, image, clearImage);
     }
 
     @DeleteMapping("/{id}")

@@ -38,4 +38,7 @@ public class CalendarDecoration {
 
     @Column(length = 16)
     private String color = "#00f5d4";
+
+    @Column(name = "repeat_yearly", nullable = false)
+    private boolean repeatYearly = false;
 }

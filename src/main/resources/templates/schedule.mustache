@@ -235,6 +235,7 @@
                             <div><label class="site-label" for="decorationDate">날짜</label><input id="decorationDate" name="eventDate" type="date" class="site-field" required></div>
                         </div>
                         <div><label class="site-label" for="decorationUnit">유닛명 (선택)</label><input id="decorationUnit" name="unitName" class="site-field" maxlength="80"></div>
+                        <label class="flex items-center gap-2 text-sm text-[#b9cac4]"><input id="decorationRepeatYearly" name="repeatYearly" type="checkbox" value="true"> 매년 반복</label>
                         <div><label class="site-label" for="decorationDescription">설명</label><textarea id="decorationDescription" name="description" class="site-field" rows="3" maxlength="500"></textarea></div>
                         <div class="grid grid-cols-2 items-end gap-3">
                             <div><label class="site-label" for="decorationColor">표시 색상</label><input id="decorationColor" name="color" type="color" value="#00f5d4" class="site-field h-11"></div>
@@ -307,7 +308,7 @@
                         if (item.imageUrl) { const img=document.createElement('img'); img.src=item.imageUrl; img.className='h-12 w-12 rounded object-contain'; img.alt=''; row.appendChild(img); }
                         const label=document.createElement('div'); label.className='min-w-0 flex-1';
                         const name=document.createElement('p'); name.className='truncate text-sm font-semibold text-white'; name.textContent=item.title;
-                        const date=document.createElement('p'); date.className='text-xs text-[#b9cac4]'; date.textContent=item.eventDate + (item.unitName ? ' · '+item.unitName : '');
+                        const date=document.createElement('p'); date.className='text-xs text-[#b9cac4]'; date.textContent=item.eventDate + (item.unitName ? ' · '+item.unitName : '') + (item.repeatYearly ? ' · 매년 반복' : '');
                         label.append(name,date); row.appendChild(label);
                         const edit=document.createElement('button'); edit.type='button'; edit.className='btn-custom-secondary text-xs'; edit.textContent='수정'; edit.addEventListener('click',()=>editDecoration(item));
                         const remove=document.createElement('button'); remove.type='button'; remove.className='btn-custom-danger text-xs'; remove.textContent='삭제'; remove.addEventListener('click',()=>deleteDecoration(item.id));
@@ -324,6 +325,7 @@
                 document.getElementById('decorationUnit').value=item.unitName||'';
                 document.getElementById('decorationDescription').value=item.description||'';
                 document.getElementById('decorationColor').value=item.color||'#00f5d4';
+                document.getElementById('decorationRepeatYearly').checked=Boolean(item.repeatYearly);
                 showPreview(item.imageUrl);
             }
             async function deleteDecoration(id) {
@@ -618,13 +620,18 @@
 
             const decorationSource = {
                 id: 'decorations',
-                async events() {
-                    const items = await fetchCalendarItems('/api/calendar-decorations');
+                async events(fetchInfo) {
+                    const start = calendarDate(fetchInfo.start);
+                    const endDate = new Date(fetchInfo.end);
+                    endDate.setDate(endDate.getDate() - 1);
+                    const end = calendarDate(endDate);
+                    const params = new URLSearchParams({ start, end });
+                    const items = await fetchCalendarItems('/api/calendar-decorations/events?' + params);
                     return items.map(item => toCalendarEvent({
                         ...item,
-                        id: 'decoration-' + item.id,
+                        id: item.id,
                         title: (item.kind === 'UNIT' ? '★ ' : '🎉 ') + item.title,
-                        start: item.eventDate,
+                        start: item.start,
                         categoryLabel: item.kind === 'UNIT' ? '유닛' : '기념일'
                     }));
                 }
