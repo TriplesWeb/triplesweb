@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 import sys
@@ -98,15 +99,18 @@ def main() -> int:
                 p.unlink()
         removed += 1
 
-    for p in UPLOAD_ROOT.rglob("*"):
-        if not p.is_file():
-            continue
-        if p.name == ".DS_Store" or p.suffix == ".orig":
-            if dry:
-                print("would remove", p.relative_to(ROOT))
-            else:
-                p.unlink()
-            removed += 1
+    for directory, subdirs, filenames in os.walk(UPLOAD_ROOT):
+        current = Path(directory)
+        if current == UPLOAD_ROOT and "thumbs" in subdirs:
+            subdirs.remove("thumbs")
+        for name in filenames:
+            p = current / name
+            if p.is_file() and (name == ".DS_Store" or p.suffix == ".orig"):
+                if dry:
+                    print("would remove", p.relative_to(ROOT))
+                else:
+                    p.unlink()
+                removed += 1
 
     print(f"{'would remove' if dry else 'removed'} {removed} paths (legacy dirs/files + .orig/.DS_Store)")
     return 0

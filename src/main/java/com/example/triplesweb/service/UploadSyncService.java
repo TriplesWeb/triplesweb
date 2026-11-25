@@ -141,6 +141,7 @@ public class UploadSyncService implements ApplicationRunner {
             cmd.add("--no-group");
             cmd.add("--exclude");
             cmd.add(".DS_Store");
+            cmd.add("--exclude=/thumbs/");
             cmd.add("-e");
             cmd.add(sshCommandString());
             cmd.add(user + "@" + host + ":" + remoteDir + "/");

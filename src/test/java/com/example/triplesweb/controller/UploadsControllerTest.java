@@ -1,6 +1,7 @@
 package com.example.triplesweb.controller;
 
 import com.example.triplesweb.service.UploadImageResizeService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -27,7 +28,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 class UploadsControllerTest {
     @TempDir Path temp;
-    private final UploadImageResizeService resize = new UploadImageResizeService();
+    private UploadImageResizeService resize;
+
+    @BeforeEach
+    void setUp() {
+        resize = new UploadImageResizeService(temp.toString());
+    }
 
     @ParameterizedTest
     @CsvSource({"photo.jfif, image/jpeg", "photo.WEBP, image/webp"})
@@ -90,8 +96,11 @@ class UploadsControllerTest {
 
     @Test void widthQueryUsesVariantCachePolicyAndVariantLastModified() throws Exception {
         String stem = "0123456789abcdef0123456789abcdef";
-        Path original = temp.resolve(stem + ".jpg");
-        Path variant = temp.resolve(stem + ".card2-1600.jpg");
+        String relative = "images/2026-11-25/" + stem;
+        Path original = temp.resolve(relative + ".jpg");
+        Path variant = temp.resolve("thumbs/" + relative + ".card2-1600.jpg");
+        Files.createDirectories(original.getParent());
+        Files.createDirectories(variant.getParent());
         Files.write(original, new byte[]{1, 2, 3});
         Files.write(variant, new byte[]{4, 5});
         long originalModified = Instant.parse("2026-11-24T00:00:00Z").toEpochMilli();
@@ -100,7 +109,7 @@ class UploadsControllerTest {
         Files.setLastModifiedTime(variant, FileTime.fromMillis(variantModified));
         var mvc = MockMvcBuilders.standaloneSetup(
                 new UploadsController(temp.toString(), "", resize)).build();
-        String url = "/uploads/" + original.getFileName();
+        String url = "/uploads/" + relative + ".jpg";
 
         var response = mvc.perform(get(url).param("w", "1600"))
                 .andExpect(status().isOk())
@@ -126,7 +135,8 @@ class UploadsControllerTest {
     @Test void blocksTraversalSymlinksAndPrivateSidecars() throws Exception {
         Path uploads = temp.resolve("uploads");
         Files.createDirectories(uploads);
-        var controller = new UploadsController(uploads.toString(), "", resize);
+        var controller = new UploadsController(
+                uploads.toString(), "", new UploadImageResizeService(uploads.toString()));
         Files.writeString(temp.resolve("secret.txt"), "secret");
         Files.createSymbolicLink(uploads.resolve("link.txt"), temp.resolve("secret.txt"));
         assertThat(serve(controller, new MockHttpServletRequest("GET", "/uploads/link.txt")).getStatusCode().value()).isEqualTo(403);

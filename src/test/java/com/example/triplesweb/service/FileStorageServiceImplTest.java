@@ -17,19 +17,24 @@ import static org.mockito.Mockito.verify;
 class FileStorageServiceImplTest {
     @TempDir Path directory;
 
-    @Test void deletesBothGenerationsOfImageVariantsWithOriginal() throws Exception {
+    @Test void deletesMirroredAndSiblingImageVariantsWithOriginal() throws Exception {
         var sync = mock(UploadSyncService.class);
         var storage = new FileStorageServiceImpl(directory.toString(), sync);
         Files.createDirectories(directory.resolve("images"));
+        Files.createDirectories(directory.resolve("thumbs/images"));
         Path original = Files.createFile(directory.resolve("images/photo.jpg"));
         Path legacy = Files.createFile(directory.resolve("images/photo.card-480.jpg"));
-        Path current = Files.createFile(directory.resolve("images/photo.card2-1600.jpg"));
-        Path unrelated = Files.createFile(directory.resolve("images/other.card2-1600.jpg"));
+        Path old = Files.createFile(directory.resolve("images/photo.card2-1600.jpg"));
+        Path current = Files.createFile(directory.resolve("thumbs/images/photo.card2-480.jpg"));
+        Path oldWidth = Files.createFile(directory.resolve("thumbs/images/photo.card2-960.jpg"));
+        Path unrelated = Files.createFile(directory.resolve("thumbs/images/photo.card2-extra.card2-480.jpg"));
 
         assertThat(storage.deleteFile("/uploads/images/photo.jpg")).isTrue();
         assertThat(original).doesNotExist();
         assertThat(legacy).doesNotExist();
+        assertThat(old).doesNotExist();
         assertThat(current).doesNotExist();
+        assertThat(oldWidth).doesNotExist();
         assertThat(unrelated).exists();
         verify(sync).deleteRelative("images/photo.jpg");
     }

@@ -30,7 +30,8 @@ class UploadImageResizeServiceTest {
     @TempDir Path temp;
 
     @Test void createsCachedJpegVariantSmallerThanSource() throws Exception {
-        Path source = temp.resolve("big.png");
+        Path source = temp.resolve("images/2026-11-25/big.png");
+        Files.createDirectories(source.getParent());
         BufferedImage image = new BufferedImage(1600, 1200, BufferedImage.TYPE_INT_RGB);
         Graphics2D g = image.createGraphics();
         g.setColor(Color.CYAN);
@@ -38,22 +39,54 @@ class UploadImageResizeServiceTest {
         g.dispose();
         ImageIO.write(image, "png", source.toFile());
 
-        UploadImageResizeService service = new UploadImageResizeService();
+        UploadImageResizeService service = new UploadImageResizeService(temp.toString());
         Path variant = service.ensureJpegVariant(source, UploadImageResizeService.CARD_WIDTH);
 
-        assertThat(variant).isNotNull();
+        assertThat(variant).isEqualTo(temp.resolve("thumbs/images/2026-11-25/big.card2-480.jpg"));
+        assertThat(source.resolveSibling("big.card2-480.jpg")).doesNotExist();
         assertThat(Files.size(variant)).isLessThan(Files.size(source));
-        assertThat(variant.getFileName().toString()).endsWith(".card2-480.jpg");
         BufferedImage out = ImageIO.read(variant.toFile());
         assertThat(out.getWidth()).isEqualTo(480);
         assertThat(service.ensureJpegVariant(source, UploadImageResizeService.CARD_WIDTH)).isEqualTo(variant);
+    }
+
+    @Test void rejectsSourcesOutsideUploadRootOrInsideThumbs() throws Exception {
+        Path uploads = Files.createDirectories(temp.resolve("uploads"));
+        Path thumbs = Files.createDirectories(uploads.resolve("thumbs"));
+        Path outside = temp.resolve("outside.png");
+        Path cached = thumbs.resolve("cached.png");
+        var image = new BufferedImage(10, 10, BufferedImage.TYPE_INT_RGB);
+        ImageIO.write(image, "png", outside.toFile());
+        ImageIO.write(image, "png", cached.toFile());
+        Path outsideLink = Files.createSymbolicLink(uploads.resolve("outside.png"), outside);
+        Path cachedLink = Files.createSymbolicLink(uploads.resolve("cached.png"), cached);
+        var service = new UploadImageResizeService(uploads.toString());
+
+        for (Path source : new Path[]{outside, cached, outsideLink, cachedLink}) {
+            assertThat(service.ensureJpegVariant(source, 480)).isNull();
+        }
+        try (var files = Files.list(thumbs)) {
+            assertThat(files.toList()).containsExactly(cached);
+        }
+    }
+
+    @Test void rejectsMirroredDirectoriesThatResolveOutsideTheUploadRoot() throws Exception {
+        Path uploads = Files.createDirectories(temp.resolve("uploads"));
+        Path sourceDirectory = Files.createDirectories(uploads.resolve("images"));
+        Path outside = Files.createDirectories(temp.resolve("elsewhere"));
+        Files.createSymbolicLink(uploads.resolve("thumbs"), outside);
+        Path source = sourceDirectory.resolve("photo.png");
+        ImageIO.write(new BufferedImage(10, 10, BufferedImage.TYPE_INT_RGB), "png", source.toFile());
+
+        assertThat(new UploadImageResizeService(uploads.toString()).ensureJpegVariant(source, 480)).isNull();
+        assertThat(outside.resolve("images")).doesNotExist();
     }
 
     @Test void variantIsReadableByOtherAccounts() throws Exception {
         Path source = temp.resolve("perm.png");
         ImageIO.write(new BufferedImage(800, 600, BufferedImage.TYPE_INT_RGB), "png", source.toFile());
 
-        Path variant = new UploadImageResizeService().ensureJpegVariant(source, 1600);
+        Path variant = new UploadImageResizeService(temp.toString()).ensureJpegVariant(source, 1600);
 
         assertThat(variant).isNotNull();
         if (Files.getFileAttributeView(variant, PosixFileAttributeView.class) != null) {
@@ -67,8 +100,8 @@ class UploadImageResizeServiceTest {
         Path source = temp.resolve("detail.png");
         ImageIO.write(new BufferedImage(originalWidth, 600, BufferedImage.TYPE_INT_RGB), "png", source.toFile());
 
-        Path variant = new UploadImageResizeService().ensureJpegVariant(source, 1600);
-        assertThat(variant).isEqualTo(temp.resolve("detail.card2-1600.jpg"));
+        Path variant = new UploadImageResizeService(temp.toString()).ensureJpegVariant(source, 1600);
+        assertThat(variant).isEqualTo(temp.resolve("thumbs/detail.card2-1600.jpg"));
         BufferedImage output = ImageIO.read(variant.toFile());
         assertThat(output.getWidth()).isEqualTo(expectedWidth);
         assertThat(output.getHeight()).isEqualTo(expectedHeight);
@@ -102,11 +135,12 @@ class UploadImageResizeServiceTest {
         Files.write(source, ByteBuffer.allocate(jpeg.length + app1.length)
                 .put(jpeg, 0, offset).put(app1).put(jpeg, offset, jpeg.length - offset).array());
 
-        var service = new UploadImageResizeService();
+        var service = new UploadImageResizeService(temp.toString());
         for (int width : new int[]{480, 1600}) {
             Files.write(temp.resolve("oriented.card-" + width + ".jpg"), jpeg);
+            Files.write(temp.resolve("oriented.card2-" + width + ".jpg"), jpeg);
             Path variant = service.ensureJpegVariant(source, width);
-            assertThat(variant).isEqualTo(temp.resolve("oriented.card2-" + width + ".jpg"));
+            assertThat(variant).isEqualTo(temp.resolve("thumbs/oriented.card2-" + width + ".jpg"));
             BufferedImage output = ImageIO.read(variant.toFile());
             assertThat(output.getWidth()).isEqualTo(width);
             assertThat(output.getHeight()).isEqualTo(width / 2);
@@ -118,9 +152,9 @@ class UploadImageResizeServiceTest {
 
     @Test void concurrentRequestsGenerateTheSameDetailVariantOnce() throws Exception {
         Path source = temp.resolve("concurrent.png");
-        Path variant = temp.resolve("concurrent.card2-1600.jpg");
+        Path variant = temp.resolve("thumbs/concurrent.card2-1600.jpg");
         ImageIO.write(new BufferedImage(3200, 1600, BufferedImage.TYPE_INT_RGB), "png", source.toFile());
-        var service = spy(new UploadImageResizeService());
+        var service = spy(new UploadImageResizeService(temp.toString()));
         int requestCount = 8;
         var start = new CyclicBarrier(requestCount);
         var executor = Executors.newFixedThreadPool(requestCount);
