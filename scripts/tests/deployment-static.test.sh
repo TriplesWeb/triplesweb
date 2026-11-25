@@ -51,6 +51,7 @@ test ! -e docker-compose.bluegreen.yml
 test ! -e scripts/deploy-pi-bluegreen.sh
 reject_match -Eiq 'bluegreen|app_blue|app_green|active_slot|project_container' scripts/deploy-pi-app.sh
 grep -Fq 'bash ./deploy-pi-app.sh' .github/workflows/deploy-main.yml
+grep -Fq -- '${MARIADB_TUNING_CNF:-./docker/mariadb/empty.cnf}:/etc/mysql/conf.d/tuning.cnf:ro' docker-compose.yml
 grep -Fq '${APP_PORT:-8090}:8080' docker-compose.yml
 grep -Fq 'SPRING_JPA_HIBERNATE_DDL_AUTO: none' docker-compose.yml
 grep -Fq './logs:/app/logs' docker-compose.yml
@@ -64,6 +65,9 @@ grep -Fq 'driver: json-file' docker-compose.yml
 grep -Fq 'max-size: "10m"' docker-compose.yml
 grep -Fq 'max-file: "3"' docker-compose.yml
 grep -Fq 'mkdir -p -m 0750 logs' scripts/deploy-pi-app.sh
+grep -Eq '^[[:space:]]+docker/mariadb$' .github/workflows/deploy-main.yml
+grep -Fq "ssh pi \"mkdir -p '\${PI_DEPLOY_PATH}/docker/mariadb'\"" .github/workflows/deploy-main.yml
+grep -Fq 'scp docker/mariadb/empty.cnf "pi:${PI_DEPLOY_PATH}/docker/mariadb/empty.cnf"' .github/workflows/deploy-main.yml
 grep -Fq 'scp docker-compose.yml "pi:${PI_DEPLOY_PATH}/docker-compose.yml"' .github/workflows/deploy-main.yml
 reject_match -Fq 'profiles: [legacy]' docker-compose.yml
 grep -Fq 'flock -w 900' scripts/deploy-pi-app.sh

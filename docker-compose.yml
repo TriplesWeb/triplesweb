@@ -10,6 +10,7 @@ services:
       - "${MYSQL_PUBLISH_PORT:-3306}:3306"
     volumes:
       - mariadb_data:/var/lib/mysql
+      - ${MARIADB_TUNING_CNF:-./docker/mariadb/empty.cnf}:/etc/mysql/conf.d/tuning.cnf:ro
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 10s
