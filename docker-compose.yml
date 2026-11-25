@@ -57,7 +57,8 @@ services:
       UPLOAD_SYNC_ENABLED: "false"
       UPLOAD_FALLBACK_BASE_URL: ""
     volumes:
-      - ./uploads:/app/uploads
+      # 원본 uploads는 HDD(/mnt/data)에 둔다. 인프라 이전(2026-11-26) 후 경로.
+      - /mnt/data/triplesweb/uploads:/app/uploads
       - ./data:/app/data
       - ./logs:/app/logs
     logging:
