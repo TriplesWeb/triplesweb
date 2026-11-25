@@ -3,6 +3,7 @@ package com.example.triplesweb.service;
 import net.coobird.thumbnailator.util.exif.ExifFilterUtils;
 import net.coobird.thumbnailator.util.exif.ExifUtils;
 import net.coobird.thumbnailator.util.exif.Orientation;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.imageio.IIOImage;
@@ -21,6 +22,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.PosixFileAttributeView;
@@ -35,7 +37,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 /**
- * 아카이브 카드와 상세 보기용 축소 JPEG를 원본 옆에 캐시한다.
+ * 아카이브 카드와 상세 보기용 축소 JPEG를 uploads/thumbs 아래에 캐시한다.
  * 그리드가 수 MB 원본을 그대로 받지 않게 한다.
  */
 @Service
@@ -44,14 +46,18 @@ public class UploadImageResizeService {
     public static final int CARD_WIDTH = 480;
     private static final Set<Integer> ALLOWED_WIDTHS = Set.of(360, CARD_WIDTH, 720, 1600);
     private static final String VARIANT_SUFFIX = ".card2-";
-    private static final String LEGACY_VARIANT_SUFFIX = ".card-";
     private static final Pattern VARIANT_FILENAME = Pattern.compile(
             ".+\\.card(?:2)?-[0-9]+\\.jpg", Pattern.CASE_INSENSITIVE);
     private static final float JPEG_QUALITY = 0.82f;
     private static final Color CARD_BG = new Color(0x0d0e12);
     /** 원본과 같이 644. createTempFile 기본값(600)이면 백업·복사 계정이 읽지 못한다. */
     private static final Set<PosixFilePermission> VARIANT_PERMISSIONS = PosixFilePermissions.fromString("rw-r--r--");
+    private final Path uploadRoot;
     private final ConcurrentHashMap<Path, CompletableFuture<Path>> inFlight = new ConcurrentHashMap<>();
+
+    public UploadImageResizeService(@Value("${file.upload-dir}") String uploadDir) {
+        this.uploadRoot = Path.of(uploadDir).toAbsolutePath().normalize();
+    }
 
     public static boolean isAllowedWidth(int width) {
         return ALLOWED_WIDTHS.contains(width);
@@ -61,11 +67,34 @@ public class UploadImageResizeService {
         return VARIANT_FILENAME.matcher(filename).matches();
     }
 
-    static void deleteJpegVariants(Path original) throws IOException {
-        if (!supportsVariant(original.getFileName().toString())) return;
-        for (int width : ALLOWED_WIDTHS) {
-            Files.deleteIfExists(variantPath(original, VARIANT_SUFFIX, width));
-            Files.deleteIfExists(variantPath(original, LEGACY_VARIANT_SUFFIX, width));
+    static void deleteJpegVariants(Path uploadRoot, Path original) throws IOException {
+        Path mirror = mirrorDirectory(uploadRoot, original);
+        if (mirror == null || !supportsVariant(original.getFileName().toString()) || !Files.isDirectory(uploadRoot)) {
+            return;
+        }
+        Path realRoot = uploadRoot.toRealPath();
+        Path sourceDirectory = original.getParent();
+        String stem = stem(original.getFileName().toString());
+        if (Files.isDirectory(sourceDirectory)) {
+            Path realSourceDirectory = sourceDirectory.toRealPath();
+            if (realSourceDirectory.startsWith(realRoot) && !realSourceDirectory.startsWith(realRoot.resolve("thumbs"))) {
+                deleteVariantsIn(sourceDirectory, stem, true);
+            }
+        }
+        if (Files.isDirectory(mirror) && hasExpectedMirrorPath(uploadRoot, realRoot, mirror)) {
+            deleteVariantsIn(mirror, stem, false);
+        }
+    }
+
+    private static void deleteVariantsIn(Path directory, String stem, boolean includeLegacy) throws IOException {
+        String suffix = includeLegacy ? "\\.card2?-" : "\\.card2-";
+        Pattern filename = Pattern.compile(Pattern.quote(stem) + suffix + "[0-9]+\\.jpg");
+        try (var files = Files.newDirectoryStream(directory, path ->
+                filename.matcher(path.getFileName().toString()).matches()
+                        && !Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS))) {
+            for (Path file : files) {
+                Files.deleteIfExists(file);
+            }
         }
     }
 
@@ -76,17 +105,22 @@ public class UploadImageResizeService {
         if (original == null || !Files.isRegularFile(original) || !isAllowedWidth(maxWidth)) {
             return null;
         }
-        if (original.getParent() == null || !supportsVariant(original.getFileName().toString())) {
+        Path mirror = mirrorDirectory(uploadRoot, original.toAbsolutePath().normalize());
+        if (mirror == null || !supportsVariant(original.getFileName().toString())) return null;
+
+        Path realRoot = uploadRoot.toRealPath();
+        Path realSource = original.toRealPath();
+        if (!realSource.startsWith(realRoot) || realSource.startsWith(realRoot.resolve("thumbs"))
+                || !hasExpectedMirrorPath(uploadRoot, realRoot, mirror)) {
             return null;
         }
-        Path variant = variantPath(original, VARIANT_SUFFIX, maxWidth);
+        Path variant = mirror.resolve(stem(original.getFileName().toString()) + VARIANT_SUFFIX + maxWidth + ".jpg");
         if (isCurrent(original, variant)) {
             return variant;
         }
 
-        Path key = variant.toAbsolutePath().normalize();
         CompletableFuture<Path> generation = new CompletableFuture<>();
-        CompletableFuture<Path> existing = inFlight.putIfAbsent(key, generation);
+        CompletableFuture<Path> existing = inFlight.putIfAbsent(variant, generation);
         if (existing != null) {
             try {
                 return existing.join();
@@ -104,7 +138,7 @@ public class UploadImageResizeService {
             generation.completeExceptionally(ex);
             throw ex;
         } finally {
-            inFlight.remove(key, generation);
+            inFlight.remove(variant, generation);
         }
     }
 
@@ -115,12 +149,26 @@ public class UploadImageResizeService {
                 || lower.endsWith(".webp");
     }
 
-    private static Path variantPath(Path original, String suffix, int width) {
-        return original.resolveSibling(stem(original.getFileName().toString()) + suffix + width + ".jpg");
+    private static Path mirrorDirectory(Path uploadRoot, Path original) {
+        Path thumbs = uploadRoot.resolve("thumbs");
+        if (!original.startsWith(uploadRoot) || original.equals(uploadRoot) || original.startsWith(thumbs)) {
+            return null;
+        }
+        return thumbs.resolve(uploadRoot.relativize(original.getParent()));
+    }
+
+    private static boolean hasExpectedMirrorPath(Path uploadRoot, Path realRoot, Path directory) throws IOException {
+        // 아직 없는 미러 디렉터리는 가장 가까운 기존 상위 디렉터리에서 경로를 확인한다.
+        Path existing = directory;
+        while (!Files.exists(existing, LinkOption.NOFOLLOW_LINKS) && !existing.equals(uploadRoot)) {
+            existing = existing.getParent();
+        }
+        return Files.isDirectory(existing)
+                && existing.toRealPath().equals(realRoot.resolve(uploadRoot.relativize(existing)));
     }
 
     private static boolean isCurrent(Path original, Path variant) throws IOException {
-        return Files.isRegularFile(variant)
+        return Files.isRegularFile(variant, LinkOption.NOFOLLOW_LINKS)
                 && Files.getLastModifiedTime(variant).compareTo(Files.getLastModifiedTime(original)) >= 0
                 && Files.size(variant) > 0;
     }
@@ -129,6 +177,7 @@ public class UploadImageResizeService {
         BufferedImage scaled = readScaledImage(original, maxWidth);
         if (scaled == null) return null;
         try {
+            Files.createDirectories(variant.getParent());
             Path temp = Files.createTempFile(variant.getParent(), variant.getFileName() + "-", ".tmp");
             try {
                 writeJpeg(scaled, temp);
@@ -252,7 +301,6 @@ public class UploadImageResizeService {
             param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
             param.setCompressionQuality(JPEG_QUALITY);
         }
-        Files.createDirectories(target.getParent());
         try (OutputStream out = Files.newOutputStream(target);
              ImageOutputStream ios = ImageIO.createImageOutputStream(out)) {
             writer.setOutput(ios);

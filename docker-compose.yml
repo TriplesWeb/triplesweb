@@ -58,6 +58,7 @@ services:
       UPLOAD_FALLBACK_BASE_URL: ""
     volumes:
       - ./uploads:/app/uploads
+      - ./uploads-thumbs:/app/uploads/thumbs # 썸네일은 SSD에 따로 둔다
       - ./data:/app/data
       - ./logs:/app/logs
     logging:
