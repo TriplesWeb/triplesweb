@@ -10,5 +10,6 @@ public record CalendarDecorationDto(
         String unitName,
         String description,
         String imageUrl,
-        String color
+        String color,
+        boolean repeatYearly
 ) {}
