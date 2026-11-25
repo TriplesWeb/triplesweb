@@ -32,19 +32,19 @@ public class CalendarDecorationService {
     }
 
     public CalendarDecorationDto create(String title, String kind, LocalDate date,
-                                        String unitName, String description, String color, MultipartFile image) {
+                                        String unitName, String description, String color, boolean repeatYearly, MultipartFile image) {
         CalendarDecoration item = new CalendarDecoration();
-        apply(item, title, kind, date, unitName, description, color, image, false);
+        apply(item, title, kind, date, unitName, description, color, repeatYearly, image, false);
         return toDto(repository.save(item));
     }
 
     public CalendarDecorationDto update(long id, String title, String kind, LocalDate date,
-                                        String unitName, String description, String color, MultipartFile image,
+                                        String unitName, String description, String color, boolean repeatYearly, MultipartFile image,
                                         boolean clearImage) {
         CalendarDecoration item = repository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("해당 달력 장식이 없습니다."));
         String previous = item.getImageUrl();
-        apply(item, title, kind, date, unitName, description, color, image, clearImage);
+        apply(item, title, kind, date, unitName, description, color, repeatYearly, image, clearImage);
         if (!Objects.equals(previous, item.getImageUrl())) deleteManagedImageAfterCommit(previous);
         return toDto(repository.save(item));
     }
@@ -57,7 +57,7 @@ public class CalendarDecorationService {
     }
 
     private void apply(CalendarDecoration item, String title, String kind, LocalDate date,
-                       String unitName, String description, String color, MultipartFile image, boolean clearImage) {
+                       String unitName, String description, String color, boolean repeatYearly, MultipartFile image, boolean clearImage) {
         if (!StringUtils.hasText(title) || title.trim().length() > 120) throw new IllegalArgumentException("제목은 1~120자로 입력해 주세요.");
         if (!StringUtils.hasText(kind) || !(kind.equals("UNIT") || kind.equals("ANNIVERSARY"))) throw new IllegalArgumentException("구분을 선택해 주세요.");
         if (date == null) throw new IllegalArgumentException("날짜를 입력해 주세요.");
@@ -75,6 +75,7 @@ public class CalendarDecorationService {
         item.setUnitName(trimmedUnit);
         item.setDescription(trimmedDescription);
         item.setColor(normalizeColor(color));
+        item.setRepeatYearly(repeatYearly);
         if (image != null && !image.isEmpty()) {
             validateImage(image);
             try {
