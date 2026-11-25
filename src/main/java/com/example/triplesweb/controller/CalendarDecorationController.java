@@ -117,10 +117,11 @@ public class CalendarDecorationController {
             @RequestParam(required = false) String unitName,
             @RequestParam(required = false) String description,
             @RequestParam(required = false) String color,
+            @RequestParam(defaultValue = "false") boolean repeatYearly,
             @RequestParam(required = false) MultipartFile image,
             HttpServletRequest request, HttpSession session) {
         adminAuth.requireAdmin(request, session);
-        return service.create(title, kind, eventDate, unitName, description, color, image);
+        return service.create(title, kind, eventDate, unitName, description, color, repeatYearly, image);
     }
 
     @PostMapping("/{id}")
@@ -136,7 +137,7 @@ public class CalendarDecorationController {
             @RequestParam(defaultValue = "false") boolean clearImage,
             HttpServletRequest request, HttpSession session) {
         adminAuth.requireAdmin(request, session);
-        return service.update(id, title, kind, eventDate, unitName, description, color, image, clearImage);
+        return service.update(id, title, kind, eventDate, unitName, description, color, repeatYearly, image, clearImage);
     }
 
     @DeleteMapping("/{id}")
