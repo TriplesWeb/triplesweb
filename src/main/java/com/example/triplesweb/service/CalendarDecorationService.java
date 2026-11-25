@@ -146,6 +146,6 @@ public class CalendarDecorationService {
 
     private CalendarDecorationDto toDto(CalendarDecoration item) {
         return new CalendarDecorationDto(item.getId(), item.getTitle(), item.getKind(), item.getEventDate(),
-                item.getUnitName(), item.getDescription(), item.getImageUrl(), item.getColor());
+                item.getUnitName(), item.getDescription(), item.getImageUrl(), item.getColor(), item.isRepeatYearly());
     }
 }
