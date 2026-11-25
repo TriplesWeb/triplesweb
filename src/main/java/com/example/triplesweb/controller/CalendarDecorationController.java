@@ -50,7 +50,7 @@ public class CalendarDecorationController {
             int lastYear = item.repeatYearly() ? end.getYear() : firstYear;
             for (int year = firstYear; year <= lastYear; year++) {
                 try {
-                    LocalDate occurrence = item.eventDate().withYear(year);
+                    LocalDate occurrence = LocalDate.of(year, item.eventDate().getMonthValue(), item.eventDate().getDayOfMonth());
                     if (occurrence.isBefore(start) || occurrence.isAfter(end)) continue;
                     result.add(Map.of(
                             "id", "decoration-" + item.id() + "-" + year,
