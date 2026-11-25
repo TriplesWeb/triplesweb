@@ -37,56 +37,34 @@ public class FileStorageServiceImpl implements FileStorageService {
 
     private final String uploadRoot;
     private final UploadSyncService uploadSyncService;
-    private final UploadContentStore uploadContentStore;
     private final UploadImageResizeService imageResizeService;
-    private final Executor dbCopyExecutor;
-    /** 카드 JPEG 미리 생성 전용. DB 복사 대기열과 분리한다. */
+    /** 카드 JPEG 미리 생성 전용. */
     private final Executor cardWarmExecutor;
 
     @Autowired
     public FileStorageServiceImpl(
             @Value("${file.upload-dir}") String uploadRoot,
             UploadSyncService uploadSyncService,
-            UploadContentStore uploadContentStore,
             UploadImageResizeService imageResizeService
     ) {
-        this(uploadRoot, uploadSyncService, uploadContentStore, imageResizeService,
-                defaultDbCopyExecutor(), defaultCardWarmExecutor());
+        this(uploadRoot, uploadSyncService, imageResizeService, defaultCardWarmExecutor());
     }
 
-    /** 테스트에서 DB 복사를 동기화할 때 쓰는 생성자. */
-    FileStorageServiceImpl(
-            String uploadRoot,
-            UploadSyncService uploadSyncService,
-            UploadContentStore uploadContentStore,
-            Executor dbCopyExecutor
-    ) {
-        this(uploadRoot, uploadSyncService, uploadContentStore, null, dbCopyExecutor, Runnable::run);
+    /** 테스트용 생성자. */
+    FileStorageServiceImpl(String uploadRoot, UploadSyncService uploadSyncService) {
+        this(uploadRoot, uploadSyncService, null, Runnable::run);
     }
 
     FileStorageServiceImpl(
             String uploadRoot,
             UploadSyncService uploadSyncService,
-            UploadContentStore uploadContentStore,
             UploadImageResizeService imageResizeService,
-            Executor dbCopyExecutor,
             Executor cardWarmExecutor
     ) {
         this.uploadRoot = uploadRoot;
         this.uploadSyncService = uploadSyncService;
-        this.uploadContentStore = uploadContentStore;
         this.imageResizeService = imageResizeService;
-        this.dbCopyExecutor = dbCopyExecutor;
         this.cardWarmExecutor = cardWarmExecutor;
-    }
-
-    private static Executor defaultDbCopyExecutor() {
-        return new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(64), r -> {
-            Thread t = new Thread(r, "upload-db-copy");
-            t.setDaemon(true);
-            return t;
-        }, (task, executor) -> org.slf4j.LoggerFactory.getLogger(FileStorageServiceImpl.class)
-                .warn("업로드 DB 복사 대기열이 가득 찼거나 종료됨: 디스크 원본 유지"));
     }
 
     private static Executor defaultCardWarmExecutor() {
@@ -100,7 +78,6 @@ public class FileStorageServiceImpl implements FileStorageService {
 
     @PreDestroy
     void shutdownBackgroundExecutors() {
-        if (dbCopyExecutor instanceof ExecutorService service) service.shutdown();
         if (cardWarmExecutor instanceof ExecutorService service) service.shutdown();
     }
 
@@ -176,10 +153,9 @@ public class FileStorageServiceImpl implements FileStorageService {
         }
         writeOriginalNameSidecar(newPath, originalName);
         String url = toPublicUrl(newPath);
-        // 공유 DB ↔ 공유 파일: 로컬 저장분을 원격 uploads와 MariaDB에도 남긴다.
+        // 공유 파일: 로컬 저장분을 원격 uploads에도 남긴다.
         String relative = normalizeSavedName(url);
         uploadSyncService.pushRelative(relative);
-        copyToDatabase(newPath, relative, guessContentType(ext, type));
         // 카드용 JPEG는 요청 스레드 밖에서 미리 만들어, 목록 첫 로딩이 ImageIO에 막히지 않게 한다.
         warmCardVariant(newPath, isImage);
 
@@ -208,7 +184,6 @@ public class FileStorageServiceImpl implements FileStorageService {
             boolean deleted = Files.deleteIfExists(target);
             UploadImageResizeService.deleteJpegVariants(target);
             uploadSyncService.deleteRelative(relative);
-            uploadContentStore.delete(relative);
             return deleted;
         } catch (IOException e) {
             throw new FileStorageException("파일 삭제 실패: " + relative, e);
@@ -225,37 +200,6 @@ public class FileStorageServiceImpl implements FileStorageService {
                         .warn("카드 JPEG 미리 생성 실패 {}: {}", localFile.getFileName(), e.toString());
             }
         });
-    }
-
-    /** HTTP 응답을 막지 않도록 DB 복사는 백그라운드에서 한다. */
-    private void copyToDatabase(Path localFile, String relative, String contentType) {
-        try {
-            long size = Files.size(localFile);
-            if (size <= 0 || size > uploadContentStore.maxBytes()) {
-                logSkip(relative, size);
-                return;
-            }
-        } catch (IOException e) {
-            throw new FileStorageException("업로드 크기 확인 실패", e);
-        }
-        dbCopyExecutor.execute(() -> {
-            try {
-                long size = Files.size(localFile);
-                if (size <= 0 || size > uploadContentStore.maxBytes()) {
-                    logSkip(relative, size);
-                    return;
-                }
-                uploadContentStore.save(relative, Files.readAllBytes(localFile), contentType);
-            } catch (Exception e) {
-                org.slf4j.LoggerFactory.getLogger(FileStorageServiceImpl.class)
-                        .warn("업로드 DB 복사 실패 {}: {}", relative, e.toString());
-            }
-        });
-    }
-
-    private void logSkip(String relative, long size) {
-        org.slf4j.LoggerFactory.getLogger(FileStorageServiceImpl.class)
-                .info("업로드 DB 복사 생략 {} ({} bytes)", relative, size);
     }
 
     private String getExtension(String name) {

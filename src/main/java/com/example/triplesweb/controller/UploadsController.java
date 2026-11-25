@@ -1,12 +1,9 @@
 package com.example.triplesweb.controller;
 
-import com.example.triplesweb.entity.UploadBlob;
-import com.example.triplesweb.service.UploadContentStore;
 import com.example.triplesweb.service.UploadImageResizeService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -42,13 +39,11 @@ public class UploadsController {
     private final Path uploadRoot;
     private final Path uploadRootReal;
     private final String fallbackBaseUrl;
-    private final UploadContentStore uploadContentStore;
     private final UploadImageResizeService imageResizeService;
 
     public UploadsController(
             @Value("${file.upload-dir}") String uploadDir,
             @Value("${upload.fallback-base-url:}") String fallbackBaseUrl,
-            UploadContentStore uploadContentStore,
             UploadImageResizeService imageResizeService
     ) {
         this.uploadRoot = Paths.get(uploadDir).toAbsolutePath().normalize();
@@ -63,7 +58,6 @@ public class UploadsController {
         this.fallbackBaseUrl = StringUtils.hasText(fallbackBaseUrl)
                 ? fallbackBaseUrl.trim().replaceAll("/+$", "")
                 : "";
-        this.uploadContentStore = uploadContentStore;
         this.imageResizeService = imageResizeService;
     }
 
@@ -91,31 +85,6 @@ public class UploadsController {
                 return ResponseEntity.notFound().build();
             }
             return fileResponse(maybeCardVariant(local, request), local, request, response);
-        }
-
-        UploadBlob stored = uploadContentStore.find(relative).orElse(null);
-        if (stored != null && stored.getData() != null && stored.getData().length > 0) {
-            // 이후 요청은 디스크에서 바로 서빙하도록 DB 히트를 디스크에 캐시한다.
-            try {
-                Path parent = local.getParent();
-                if (parent != null) Files.createDirectories(parent);
-                if (!Files.exists(local)) {
-                    Files.write(local, stored.getData());
-                }
-                if (Files.isRegularFile(local) && Files.isReadable(local)
-                        && local.toRealPath().startsWith(uploadRootReal)) {
-                    return fileResponse(maybeCardVariant(local, request), local, request, response);
-                }
-            } catch (IOException ignored) {
-                // 디스크 캐시 실패 시 메모리 응답으로 이어간다.
-            }
-            MediaType type = imageType(relative, mediaType(stored.getContentType()));
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.CACHE_CONTROL, cacheControl(local, request))
-                    .header("X-Content-Type-Options", "nosniff")
-                    .header(HttpHeaders.CONTENT_DISPOSITION, safeDisposition(type))
-                    .contentType(type)
-                    .body(new ByteArrayResource(stored.getData()));
         }
 
         if (!StringUtils.hasText(fallbackBaseUrl)) {
@@ -211,15 +180,6 @@ public class UploadsController {
         if (name.endsWith(".jfif")) return MediaType.IMAGE_JPEG;
         if (name.endsWith(".webp")) return MediaType.parseMediaType("image/webp");
         return fallback;
-    }
-
-    private static MediaType mediaType(String contentType) {
-        if (!StringUtils.hasText(contentType)) return MediaType.APPLICATION_OCTET_STREAM;
-        try {
-            return MediaType.parseMediaType(contentType);
-        } catch (RuntimeException ex) {
-            return MediaType.APPLICATION_OCTET_STREAM;
-        }
     }
 
     private static String relativeUploadPath(HttpServletRequest request) {
