@@ -94,9 +94,12 @@ const html=`<!doctype html><html><head><meta charset="utf-8">
     const kind=url.searchParams.get('kind')||'all';
     const search=url.searchParams.get('search')||'';
     const label=search||members[0]||seasons[0]||(group==='other'?'other':kind!=='all'?kind:'filtered');
-    const member=members[0]||(group==='other'?'zenith':'');
+    const unit = search === '서연';
+    const member = unit ? 'S1 x S20' : members[0] || (group === 'other' ? 'zenith' : '');
+    const memberMarkFill = unit ? 'linear-gradient(135deg, #22aeff, #ff428a)' : member === '윤서연' ? '#22aeff' : '';
+    const memberMarkMask = memberMarkFill ? '/images/objekt-member-logos/clef.png' : '';
     return route.fulfill({contentType:'application/json',body:JSON.stringify({
-      items:[{id:label,publicKey:label,collectionId:label+' 카드',member,memberLogo:member==='윤서연'?'/images/objekt-member-logos/s01.png':'',season:seasons[0]||'',class:'First',collectionNo:'1'}],
+      items:[{id:label,publicKey:label,collectionId:label+' 카드',member,memberDisplay:unit?'윤서연 × 박시온':member,memberMarkFill,memberMarkMask,season:seasons[0]||'',class:'First',collectionNo:'1'}],
       resultCount:3,allCount:8,hasMore:false,nextPage:null
     })});
    }
@@ -115,8 +118,10 @@ const html=`<!doctype html><html><head><meta charset="utf-8">
   assert.equal(await page.locator('#objekt-card-grid .objekt-item').count(),1);
   assert.equal(await page.locator('#objekt-result-summary strong').textContent(),'3');
   assert.ok(moreCalls.some(call=>call.member==='윤서연'&&call.group==='members'));
-  assert.equal(await page.locator('img.objekt-member-logo').count(),1);
-  assert.equal(await page.locator('img.objekt-member-logo').getAttribute('src'),'/images/objekt-member-logos/s01.png');
+  const soloMark = page.locator('.objekt-member-logo--filled');
+  assert.equal(await soloMark.count(), 1);
+  assert.match(await soloMark.evaluate(el => getComputedStyle(el).maskImage), /\/objekt-member-logos\/clef\.png/);
+  assert.equal(await soloMark.evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(34, 174, 255)');
   assert.equal(await page.locator('.objekt-member-name').textContent(),'윤서연');
   assert.equal(await page.locator('.objekt-member-name').evaluate(el=>getComputedStyle(el).color),'rgb(244, 246, 251)');
 
@@ -126,7 +131,7 @@ const html=`<!doctype html><html><head><meta charset="utf-8">
   assert.ok(moreCalls.some(call=>call.group==='other'));
   assert.equal(await page.locator('[data-objekt-key="other"] .objekt-member-name').textContent(),'zenith');
   assert.equal(await page.locator('[data-objekt-key="other"] span.objekt-member-logo').count(),1);
-  assert.equal(await page.locator('[data-objekt-key="other"] img.objekt-member-logo').count(),0);
+  assert.equal(await page.locator('[data-objekt-key="other"] .objekt-member-logo--filled').count(),0);
 
   moreCalls.length=0;
   await page.locator('.season-checkbox[value="Atom01"]').evaluate(el=>{el.checked=true;el.dispatchEvent(new Event('change',{bubbles:true}));});
@@ -180,7 +185,13 @@ const html=`<!doctype html><html><head><meta charset="utf-8">
   await searchWait;
   await page.waitForFunction(()=>document.querySelector('[data-objekt-key="서연"]'));
   assert.ok(moreCalls.some(call=>call.search==='서연'));
-  assert.equal(await page.locator('[data-objekt-key="서연"]').count(),1);
+  const unitCard = page.locator('[data-objekt-key="서연"]');
+  assert.equal(await unitCard.getAttribute('data-member'), 'S1 x S20');
+  assert.equal(await unitCard.locator('.objekt-member-name').textContent(), '윤서연 × 박시온');
+  const unitMark = unitCard.locator('.objekt-member-logo--filled');
+  assert.match(await unitMark.evaluate(el => getComputedStyle(el).maskImage), /\/objekt-member-logos\/clef\.png/);
+  assert.equal(await unitMark.evaluate(el => getComputedStyle(el).backgroundImage),
+    'linear-gradient(135deg, rgb(34, 174, 255), rgb(255, 66, 138))');
 
   console.log('PASS: 멤버·그룹·시즌·종류·검색어 변경 시 검색 버튼 없이 결과 갱신');
  }finally{await browser.close();}

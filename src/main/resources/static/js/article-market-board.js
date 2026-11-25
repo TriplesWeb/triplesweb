@@ -187,7 +187,7 @@
           if (src) img.src = src;
           img.alt = data.collectionId || tip || "";
         }
-        setText("marketObjektMember", data.member);
+        setText("marketObjektMember", data.memberDisplay || data.member);
         setText("marketObjektSeason", data.season);
         setText("marketObjektClass", data.class);
         setText("marketObjektNo", data.collectionNo);

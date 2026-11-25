@@ -697,19 +697,12 @@
 
     function paintFromCard(card) {
         if (!card) return;
-        const titleLink = card.querySelector('.objekt-detail-link');
-        const collectionId = (titleLink?.getAttribute('title') || '').trim()
+        const title = card.querySelector('.objekt-card-title');
+        const collectionId = (title?.getAttribute('title') || '').trim()
             || (card.querySelector('.objekt-open-detail')?.getAttribute('aria-label') || '').replace(/\s*상세 보기\s*$/, '').trim();
         if (detailTitle) detailTitle.textContent = collectionId || '—';
         const memberName = (card.querySelector('.objekt-member-name')?.textContent || card.dataset.member || '').trim();
-        if (detailMember) {
-            detailMember.textContent = memberName || '—';
-            const color = card.querySelector('.objekt-member-chip')?.style.getPropertyValue('--artist-color') || '';
-            if (color) detailMember.style.setProperty('--artist-color', color);
-            const href = card.querySelector('.objekt-member-chip')?.getAttribute('href');
-            if (href) detailMember.href = href;
-            else detailMember.removeAttribute('href');
-        }
+        if (detailMember) detailMember.textContent = memberName || '—';
         if (detailSeason) {
             detailSeason.textContent = (card.querySelector('.objekt-card-season')?.textContent || card.dataset.season || '—').trim() || '—';
         }
@@ -1114,14 +1107,7 @@
         const key = data.objektKey || data.id || activeObjektKey;
         activeObjektKey = key;
         if (detailTitle) detailTitle.textContent = data.collectionId || '—';
-        if (detailMember) {
-            const memberName = data.member || '—';
-            detailMember.textContent = memberName;
-            detailMember.style.setProperty('--artist-color', data.memberColor || '#00f5d4');
-            const href = data.membersTabUrl || data.memberUrl;
-            if (href) detailMember.href = href;
-            else detailMember.removeAttribute('href');
-        }
+        if (detailMember) detailMember.textContent = data.memberDisplay || data.member || '—';
         if (detailSeason) detailSeason.textContent = data.season || '—';
         if (detailClass) detailClass.textContent = data.class || '—';
         if (detailNo) detailNo.textContent = data.collectionNo || '—';
@@ -1187,6 +1173,8 @@
         history.replaceState(history.state, '', address.pathname + address.search);
     }
 
+    let detailReturnFocus = null;
+
     function closeDetailModal() {
         if (!detailModal) return;
         if (window.AboutModal) {
@@ -1196,6 +1184,8 @@
             detailModal.classList.remove('flex');
             document.body.style.overflow = '';
             finishDetailClose();
+            detailReturnFocus?.focus({ preventScroll: true });
+            detailReturnFocus = null;
         }
     }
 
@@ -1216,6 +1206,7 @@
             });
             detailModal.classList.add('is-open');
         } else {
+            detailReturnFocus = document.activeElement;
             detailModal.classList.add('flex');
             document.body.style.overflow = 'hidden';
             detailModal.querySelector('.objekt-detail-panel')?.focus({ preventScroll: true });
@@ -1353,26 +1344,25 @@
         return true;
     }
 
+    function detailCardFromEvent(event) {
+        const target = event.target;
+        if (!(target instanceof Element) || !shouldOpenModalFromEvent(event)) return null;
+        const card = target.closest('.objekt-card[data-objekt-key]');
+        if (!card) return null;
+        const control = target.closest('a[href], button, input, select, textarea, label, summary, [role="button"], [role="link"], [contenteditable]');
+        return control && card.contains(control) && !control.matches('.objekt-open-detail') ? null : card;
+    }
+
     grid?.addEventListener('pointerdown', (event) => {
-        if (event.button != null && event.button !== 0) return;
-        const memberChip = event.target.closest('.objekt-member-chip');
-        if (memberChip) return;
-        const card = event.target.closest('.objekt-card[data-objekt-key]');
-        const openHit = event.target.closest('.objekt-open-detail, .objekt-detail-link');
-        if (!card || !openHit) return;
-        requestDetail(card.dataset.objektKey).catch(() => {});
+        const card = detailCardFromEvent(event);
+        if (card) requestDetail(card.dataset.objektKey).catch(() => {});
     });
     grid?.addEventListener('click', (event) => {
-        const memberChip = event.target.closest('.objekt-member-chip');
-        if (memberChip) return;
-        const card = event.target.closest('.objekt-card[data-objekt-key]');
+        const card = detailCardFromEvent(event);
         if (!card) return;
-        const openHit = event.target.closest('.objekt-open-detail, .objekt-detail-link');
-        if (!openHit && !event.target.closest('.objekt-card')) return;
-        if (!openHit) return;
-        if (!shouldOpenModalFromEvent(event)) return;
         event.preventDefault();
         event.stopPropagation();
+        card.querySelector('.objekt-open-detail')?.focus({ preventScroll: true });
         openObjektDetail(card.dataset.objektKey);
     });
 
@@ -1433,12 +1423,10 @@
     }
 
     function memberChipHtml(item, member) {
-        const color = item.memberColor || '#00f5d4';
-        const logo = typeof item.memberLogo === 'string' ? item.memberLogo.trim() : '';
-        const mark = logo
-            ? `<img class="objekt-member-logo" src="${attr(logo)}" alt="" aria-hidden="true">`
+        const mark = item.memberMarkMask && item.memberMarkFill
+            ? `<span class="objekt-member-logo objekt-member-logo--filled" aria-hidden="true" style="--member-logo-mask:url('${attr(item.memberMarkMask)}');--member-mark-fill:${attr(item.memberMarkFill)}"></span>`
             : '<span class="objekt-member-logo" aria-hidden="true"></span>';
-        return `<a href="/cosmo/objekt/member?name=${encodeURIComponent(member)}" class="objekt-member-chip" style="--artist-color:${attr(color)}">${mark}<span class="objekt-member-name">${escapeHtml(member)}</span></a>`;
+        return `<span class="objekt-member-chip">${mark}<span class="objekt-member-name">${escapeHtml(item.memberDisplay || member)}</span></span>`;
     }
 
     function buildCard(item) {
@@ -1461,7 +1449,7 @@
             <div class="card-body objekt-card-body">
                 <div class="objekt-card-badges">
                     <span class="badge badge-sm objekt-card-season" style="background:${attr(seasonBadgeColor(item, season))}">${escapeHtml(season)}</span>
-                    <a href="/cosmo/objekt/detail/${attr(id)}" class="objekt-detail-link" title="${attr(collectionId)}">${escapeHtml(title)}</a>
+                    <span class="objekt-card-title" title="${attr(collectionId)}">${escapeHtml(title)}</span>
                 </div>
                 <div class="objekt-card-foot">
                     ${memberChipHtml(item, member)}

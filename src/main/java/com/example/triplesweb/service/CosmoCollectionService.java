@@ -1,5 +1,6 @@
 package com.example.triplesweb.service;
 
+import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.infra.GzipRestClients;
 import com.example.triplesweb.util.MemberPortraitOptions;
 import com.example.triplesweb.util.ObjektCatalogSort;
@@ -36,6 +37,7 @@ public class CosmoCollectionService {
 
     private final RestClient cosmo;
     private final RestClient index;
+    private final ArtistSnapshotService artistSnapshot;
     private final ConcurrentHashMap<String, Cached> cache = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, CachedNames> nicknameSearchCache = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, CachedUser> userHints = new ConcurrentHashMap<>();
@@ -46,9 +48,10 @@ public class CosmoCollectionService {
         return t;
     });
 
-    public CosmoCollectionService(
+    public CosmoCollectionService(ArtistSnapshotService artistSnapshot,
             @Value("${gravity.cosmo-api-base-url:https://api.cosmo.fans}") String cosmoUrl,
             @Value("${objekt.api.base-url:https://objekt.top/api/v1}") String indexUrl) {
+        this.artistSnapshot = artistSnapshot;
         var factory = new JdkClientHttpRequestFactory(HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(2)).build());
         factory.setReadTimeout(Duration.ofSeconds(3));
@@ -125,17 +128,17 @@ public class CosmoCollectionService {
         boolean kindFiltered = !kindKey.isBlank() && !"all".equalsIgnoreCase(kindKey);
         String sortKey = sort == null || sort.isBlank() ? "latest" : sort.trim().toLowerCase(Locale.ROOT);
         List<Map<String, Object>> filtered = snapshot.stream().filter(card -> {
-            if (!MemberPortraitOptions.matchesMemberGroup(
-                    selectedGroup, selectedMembers, text(card, "member"))) return false;
+            String rawMember = text(card, "member");
+            if (!MemberPortraitOptions.matchesMemberGroup(selectedGroup, selectedMembers, rawMember)) return false;
             if (!matchesSelection(seasonKeys, text(card, "season"))) return false;
             if (!matchesSelection(classKeys, text(card, "objektClass"))) return false;
             if (kindFiltered && !kindKey.equalsIgnoreCase(text(card, "collectionNo"))) return false;
             if (!search.isBlank()) {
-                String haystack = (text(card, "collectionId") + " " + text(card, "member") + " "
+                String haystack = (text(card, "collectionId") + " " + rawMember + " "
                         + text(card, "season") + " " + text(card, "objektClass") + " "
                         + text(card, "collectionNo") + " "
                         + text(card, "serial") + " " + text(card, "slug")).toLowerCase(Locale.ROOT);
-                if (!ObjektSeasonCodes.matches(search, haystack, text(card, "season"), text(card, "collectionNo")))
+                if (!ObjektSeasonCodes.matches(search, haystack, text(card, "season"), text(card, "collectionNo"), rawMember))
                     return false;
             }
             return true;
@@ -154,7 +157,12 @@ public class CosmoCollectionService {
         view.put("hasProfileImage", !GravityService.safeImage(found.image).isBlank());
         view.put("ownedCount", snapshot.size());
         view.put("filteredCount", filtered.size());
-        view.put("cards", cards);
+        List<Artist> artists = cards.isEmpty() ? List.of() : artistSnapshot.findAll();
+        view.put("cards", cards.stream().map(card -> {
+            Map<String, Object> viewCard = new LinkedHashMap<>(card);
+            MemberPortraitOptions.addObjektMemberPresentation(viewCard, artists);
+            return viewCard;
+        }).toList());
         if (includeFacets) {
             CardFacets facets = found.cards.facets();
             view.put("allCards", snapshot);
@@ -598,7 +606,7 @@ public class CosmoCollectionService {
         String season = objekt.path("season").asText("");
         card.put("collectionId", collectionId);
         card.put("cardTitle", ObjektSeasonCodes.cardTitle(collectionId, season));
-        card.put("member", MemberPortraitOptions.displayMember(objekt.path("member").asText("")));
+        card.put("member", objekt.path("member").asText(""));
         card.put("season", season);
         card.put("seasonColor", ObjektSeasonColors.colorFor(season));
         card.put("objektClass", objekt.path("class").asText(""));

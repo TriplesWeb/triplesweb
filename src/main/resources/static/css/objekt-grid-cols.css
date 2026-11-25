@@ -132,10 +132,10 @@
   padding: .08rem .28rem;
 }
 
-[data-objekt-grid][data-cols="5"] .objekt-detail-link,
+[data-objekt-grid][data-cols="5"] .objekt-card-title,
 [data-objekt-grid][data-cols="5"] .collection-title-link,
 [data-objekt-grid][data-cols="5"] .collection-card-title,
-[data-objekt-grid][data-cols="6"] .objekt-detail-link,
+[data-objekt-grid][data-cols="6"] .objekt-card-title,
 [data-objekt-grid][data-cols="6"] .collection-title-link,
 [data-objekt-grid][data-cols="6"] .collection-card-title {
   font-size: .68rem;
@@ -162,10 +162,10 @@
   padding: .06rem .2rem;
 }
 
-[data-objekt-grid][data-cols="7"] .objekt-detail-link,
+[data-objekt-grid][data-cols="7"] .objekt-card-title,
 [data-objekt-grid][data-cols="7"] .collection-title-link,
 [data-objekt-grid][data-cols="7"] .collection-card-title,
-[data-objekt-grid][data-cols="8"] .objekt-detail-link,
+[data-objekt-grid][data-cols="8"] .objekt-card-title,
 [data-objekt-grid][data-cols="8"] .collection-title-link,
 [data-objekt-grid][data-cols="8"] .collection-card-title {
   font-size: .58rem;
@@ -210,7 +210,7 @@
     font-size: .55rem;
     padding: .1rem .28rem;
   }
-  [data-objekt-grid][data-cols="3"] .objekt-detail-link,
+  [data-objekt-grid][data-cols="3"] .objekt-card-title,
   [data-objekt-grid][data-cols="3"] .collection-title-link,
   [data-objekt-grid][data-cols="3"] .collection-card-title {
     font-size: .62rem;
@@ -233,7 +233,7 @@
     font-size: .48rem;
     padding: .06rem .18rem;
   }
-  [data-objekt-grid][data-cols="4"] .objekt-detail-link,
+  [data-objekt-grid][data-cols="4"] .objekt-card-title,
   [data-objekt-grid][data-cols="4"] .collection-title-link,
   [data-objekt-grid][data-cols="4"] .collection-card-title {
     font-size: .54rem;

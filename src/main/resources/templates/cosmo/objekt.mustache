@@ -74,13 +74,13 @@
             <div class="card-body objekt-card-body">
                 <div class="objekt-card-badges">
                     <span class="badge badge-sm objekt-card-season" style="background:{{seasonColor}}">{{season}}</span>
-                    <a href="/cosmo/objekt/detail/{{publicKey}}" class="objekt-detail-link" title="{{collectionId}}">{{#cardTitle}}{{cardTitle}}{{/cardTitle}}{{^cardTitle}}{{collectionId}}{{/cardTitle}}</a>
+                    <span class="objekt-card-title" title="{{collectionId}}">{{#cardTitle}}{{cardTitle}}{{/cardTitle}}{{^cardTitle}}{{collectionId}}{{/cardTitle}}</span>
                 </div>
                 <div class="objekt-card-foot">
-                    <a href="{{memberHref}}" class="objekt-member-chip" style="--artist-color:{{memberColor}}">
-                        {{#hasMemberLogo}}<img class="objekt-member-logo" src="{{memberLogo}}" alt="" aria-hidden="true">{{/hasMemberLogo}}{{^hasMemberLogo}}<span class="objekt-member-logo" aria-hidden="true"></span>{{/hasMemberLogo}}
-                        <span class="objekt-member-name">{{member}}</span>
-                    </a>
+                    <span class="objekt-member-chip">
+                        <span class="objekt-member-logo{{#memberMarkMask}} objekt-member-logo--filled{{/memberMarkMask}}" aria-hidden="true"{{#memberMarkMask}} style="--member-logo-mask:url('{{memberMarkMask}}');--member-mark-fill:{{memberMarkFill}}"{{/memberMarkMask}}></span>
+                        <span class="objekt-member-name">{{memberDisplay}}</span>
+                    </span>
                     {{#class}}<span class="badge badge-sm badge-neutral objekt-card-class">{{class}}</span>{{/class}}
                     {{#mintPending}}<span class="badge badge-sm badge-neutral">확인 중</span>{{/mintPending}}
                 </div>
@@ -121,7 +121,7 @@
                 </button>
             </div>
             <dl class="objekt-detail-meta">
-                <div><dt>멤버</dt><dd><a class="objekt-detail-member-link" id="objektDetailMember">—</a></dd></div>
+                <div><dt>멤버</dt><dd><span class="objekt-detail-member" id="objektDetailMember">—</span></dd></div>
                 <div><dt>시즌</dt><dd id="objektDetailSeason">—</dd></div>
                 <div><dt>클래스</dt><dd id="objektDetailClass">—</dd></div>
                 <div><dt>번호</dt><dd id="objektDetailNo">—</dd></div>

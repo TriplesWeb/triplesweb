@@ -51,10 +51,12 @@ class ArticleObjektOrderingTest {
             var edited = new ExtendedModelMap();
             controller.editArticle(category, 3L, edited);
             var options = controller.objektOptions("", "", "", "", "all", 0, 24, "", "latest");
-        assertThat((List<Map<String, Object>>) options.get("items"))
-                .extracting(item -> item.get("member"))
-                .contains("지연", "윤서연", "김유연 × 박시온");
-        for (var model : List.of(fresh, edited)) {
+            assertThat((List<Map<String, Object>>) options.get("items"))
+                    .extracting(item -> item.get("member"), item -> item.get("memberDisplay"))
+                    .contains(org.assertj.core.api.Assertions.tuple("Jiyeon", "지연"),
+                            org.assertj.core.api.Assertions.tuple("SeoYeon", "윤서연"),
+                            org.assertj.core.api.Assertions.tuple("S5 X S20", "김유연 × 박시온"));
+            for (var model : List.of(fresh, edited)) {
                 assertThat((List<Map<String, Object>>) model.get("memberPickerOptions"))
                         .extracting(row -> row.get("value"))
                         .containsExactly("윤서연", "정혜린", "김유연", "박시온", "지연");

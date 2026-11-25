@@ -216,6 +216,7 @@ public class ArticleController {
         Set<String> seasons = new LinkedHashSet<>();
         Set<String> classes = new LinkedHashSet<>();
         Set<String> kinds = new LinkedHashSet<>();
+        List<Artist> artists = artistSnapshot.findAll();
 
         for (Map<String, Object> item : objektService.findCollections("triples")) {
             String member = stringValue(item.get("member"));
@@ -233,14 +234,13 @@ public class ArticleController {
             boolean inHave = matchesKey(haveSelected, id, collectionId, slug);
             boolean inWant = matchesKey(wantSelected, id, collectionId, slug);
             if (!inHave && !inWant) continue;
-            Map<String, Object> row = pickerItem(item);
+            Map<String, Object> row = pickerItem(item, artists);
             selectedItems.add(row);
             if (inHave) haveItems.add(row);
             else wantItems.add(row);
         }
 
         List<String> soloMembers = MemberPortraitOptions.soloMemberNames(members);
-        List<Artist> artists = artistSnapshot.findAll();
         List<Map<String, Object>> memberPicker = MemberPortraitOptions.forObjektFilter(soloMembers, artists);
         for (Map<String, Object> option : memberPicker) {
             option.put("active", false);
@@ -310,16 +310,17 @@ public class ArticleController {
                 : ("members".equalsIgnoreCase(group) || !selectedMembers.isEmpty() ? "members" : "all");
         List<Map<String, Object>> matched = new ArrayList<>();
         for (Map<String, Object> item : objektService.findCollections("triples")) {
-            if (!MemberPortraitOptions.matchesMemberGroup(selectedGroup, selectedMembers, stringValue(item.get("member")))) continue;
+            String rawMember = stringValue(item.get("member"));
+            if (!MemberPortraitOptions.matchesMemberGroup(selectedGroup, selectedMembers, rawMember)) continue;
             if (!seasonKey.isEmpty() && !stringValue(item.get("season")).toLowerCase(Locale.ROOT).equals(seasonKey)) continue;
             if (!classKey.isEmpty() && !stringValue(item.get("class")).toLowerCase(Locale.ROOT).equals(classKey)) continue;
             if (!ObjektCatalogSort.matchesKind(kind, item)) continue;
             if (!query.isEmpty()) {
-                String haystack = (stringValue(item.get("collectionId")) + " " + stringValue(item.get("member"))
+                String haystack = (stringValue(item.get("collectionId")) + " " + rawMember
                         + " " + stringValue(item.get("collectionNo")) + " " + stringValue(item.get("season"))
                         + " " + stringValue(item.get("class"))).toLowerCase(Locale.ROOT);
                 if (!ObjektSeasonCodes.matches(query, haystack,
-                        stringValue(item.get("season")), stringValue(item.get("collectionNo")))) continue;
+                        stringValue(item.get("season")), stringValue(item.get("collectionNo")), rawMember)) continue;
             }
             matched.add(item);
         }
@@ -327,7 +328,8 @@ public class ArticleController {
         int end = Math.min(matched.size(), start + size);
         List<Map<String, Object>> page = new ArrayList<>();
         if (start < matched.size()) {
-            for (Map<String, Object> item : matched.subList(start, end)) page.add(pickerItem(item));
+            List<Artist> artists = artistSnapshot.findAll();
+            for (Map<String, Object> item : matched.subList(start, end)) page.add(pickerItem(item, artists));
         }
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("total", matched.size());
@@ -336,13 +338,14 @@ public class ArticleController {
         return body;
     }
 
-    private static Map<String, Object> pickerItem(Map<String, Object> item) {
+    private static Map<String, Object> pickerItem(Map<String, Object> item, List<Artist> artists) {
         Map<String, Object> row = new LinkedHashMap<>();
         row.put("id", stringValue(item.get("id")));
         row.put("collectionId", stringValue(item.get("collectionId")));
         row.put("cardTitle", ObjektSeasonCodes.cardTitle(
                 stringValue(item.get("collectionId")), stringValue(item.get("season"))));
-        row.put("member", com.example.triplesweb.util.MemberPortraitOptions.displayMember(stringValue(item.get("member"))));
+        row.put("member", stringValue(item.get("member")));
+        MemberPortraitOptions.addObjektMemberPresentation(row, artists);
         row.put("season", stringValue(item.get("season")));
         row.put("class", stringValue(item.get("class")));
         row.put("collectionNo", stringValue(item.get("collectionNo")));
@@ -844,21 +847,20 @@ public class ArticleController {
 
     private static Map<String, Object> linkedObjektView(ArticleObjekt link, List<Artist> artists) {
         Map<String, Object> row = new LinkedHashMap<>();
-        String memberName = MemberPortraitOptions.displayMember(link.getMemberName());
         String cardTitle = ObjektSeasonCodes.cardTitle(link.getCollectionId(), link.getSeason());
         row.put("objektKey", link.getObjektKey());
         row.put("collectionId", link.getCollectionId());
         row.put("cardTitle", cardTitle);
         row.put("season", link.getSeason());
-        row.put("memberName", memberName);
-        row.put("memberColor", MemberPortraitOptions.artistColor(link.getMemberName(), artists));
+        row.put("memberName", link.getMemberName());
+        MemberPortraitOptions.addObjektMemberPresentation(row, artists);
         row.put("thumbnailImage", link.getThumbnailImage());
         row.put("frontImage", link.getFrontImage());
         row.put("collectionNo", link.getCollectionNo());
         boolean hasImage = link.getThumbnailImage() != null && !link.getThumbnailImage().isBlank()
                 || link.getFrontImage() != null && !link.getFrontImage().isBlank();
         row.put("hasImage", hasImage);
-        String tip = java.util.stream.Stream.of(link.getSeason(), memberName, link.getCollectionNo())
+        String tip = java.util.stream.Stream.of(link.getSeason(), stringValue(row.get("memberDisplay")), link.getCollectionNo())
                 .filter(v -> v != null && !v.isBlank())
                 .collect(Collectors.joining(" · "));
         if (tip.isBlank() && cardTitle != null) tip = cardTitle;

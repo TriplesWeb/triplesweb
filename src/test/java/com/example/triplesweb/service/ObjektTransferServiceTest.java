@@ -34,7 +34,7 @@ class ObjektTransferServiceTest {
         });
         server.start();
         String base = "http://127.0.0.1:" + server.getAddress().getPort();
-        service = new ObjektTransferService(new ObjektIndexClient(base), base);
+        service = new ObjektTransferService(new ObjektIndexClient(base), org.mockito.Mockito.mock(ArtistSnapshotService.class), base);
     }
     @AfterEach void close() { server.stop(0); }
 
@@ -58,6 +58,22 @@ class ObjektTransferServiceTest {
         assertThat(result.toString()).contains("SeoYeon", "reportedSerial=42", "https://images.example/card.jpg").doesNotContain("tokenId");
         body.set("{\"results\":[" + enriched.replace("https://images.example/card.jpg", "javascript:alert(1)") + "]}");
         assertThat(service.account("B", "", "").toString()).doesNotContain("javascript:");
+    }
+
+    @Test void exposesExactNumberAliasesAndSearchTermsForEachRow() {
+        String raw = row("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
+        body.set("{\"results\":[" + raw.replace("\"tokenId\":\"123\"", "\"member\":\"S1 x S20\"") + ","
+                + raw.replace("\"tokenId\":\"123\"", "\"member\":\"S10 x S13\"") + ","
+                + raw.replace("\"tokenId\":\"123\"", "\"member\":\"ChaeWon\"") + "]}");
+
+        var result = service.account("B", "", "");
+        var rows = (java.util.List<java.util.Map<String, Object>>) result.get("transfers");
+        assertThat(rows.get(0)).containsEntry("member", "S1 x S20")
+                .containsEntry("memberDisplay", "윤서연 × 박시온")
+                .containsEntry("memberNumbers", java.util.List.of("s1", "s01", "s20"));
+        assertThat(rows.get(1)).containsEntry("memberNumbers", java.util.List.of("s10", "s13"));
+        assertThat(rows.get(2)).containsEntry("memberNumbers", java.util.List.of("s21"));
+        assertThat(result.toString()).contains("s01", "seoyeon", "시온", "채원");
     }
 
     @Test void forwardsCursorWithoutFetchingOtherPages() {

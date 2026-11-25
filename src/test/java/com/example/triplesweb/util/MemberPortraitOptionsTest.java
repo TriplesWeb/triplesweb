@@ -1,6 +1,11 @@
 package com.example.triplesweb.util;
 
+import com.example.triplesweb.entity.Artist;
 import org.junit.jupiter.api.Test;
+
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -48,6 +53,33 @@ class MemberPortraitOptionsTest {
             assertThat(MemberPortraitOptions.objektMembers(other)).isEmpty();
     }
 
+    @Test void presentsUnitColorsInMemberOrderAndKeepsTheRawMember() {
+        var artists = List.of(artist("박시온", "#F58"), artist("윤서연", "#123456"), artist("공유빈", "#abcdef"));
+        Map<String, Object> row = new LinkedHashMap<>();
+        row.put("member", "S1xS20 X S8");
+        MemberPortraitOptions.addObjektMemberPresentation(row, artists);
+
+        assertThat(row).containsEntry("member", "S1xS20 X S8")
+                .containsEntry("memberDisplay", "윤서연 × 박시온 × 공유빈")
+                .containsEntry("memberColors", List.of("#123456", "#F58", "#abcdef"))
+                .containsEntry("memberMarkFill", "linear-gradient(135deg, #123456, #F58, #abcdef)")
+                .containsEntry("memberMarkMask", "/images/objekt-member-logos/clef.png");
+        assertThat(MemberPortraitOptions.displayMember("S1 x S20")).isEqualTo("윤서연 × 박시온");
+        assertThat(MemberPortraitOptions.displayMember("S8 X S12")).isEqualTo("공유빈 × 곽연지");
+        assertThat(MemberPortraitOptions.displayMember("S10 x S13")).isEqualTo("서다현 × 니엔");
+        assertThat(MemberPortraitOptions.objektMemberColors("S01", artists)).containsExactly("#123456");
+        assertThat(MemberPortraitOptions.objektMemberColors("zenith", artists)).isEmpty();
+        assertThat(MemberPortraitOptions.objektMemberNumbers("S1 x S20")).containsExactly("s1", "s01", "s20");
+        assertThat(MemberPortraitOptions.objektMemberNumbers("S10 x S13")).containsExactly("s10", "s13");
+    }
+
+    private static Artist artist(String name, String color) {
+        var artist = new Artist();
+        artist.setName(name);
+        artist.setColor(color);
+        return artist;
+    }
+
     @Test void findArtistUsesSoloColorFromEitherName() {
         var artist = new com.example.triplesweb.entity.Artist();
         artist.setArtistId(1L);
@@ -59,22 +91,23 @@ class MemberPortraitOptionsTest {
         assertThat(MemberPortraitOptions.artistColor("없는멤버", java.util.List.of(artist))).isEqualTo("#00f5d4");
     }
 
-    @Test void objektMemberLogoCoversS1ThroughS24SoloCards() {
-        assertThat(MemberPortraitOptions.objektMemberLogo("윤서연")).isEqualTo("/images/objekt-member-logos/s01.png");
-        assertThat(MemberPortraitOptions.objektMemberLogo("SeoYeon")).isEqualTo("/images/objekt-member-logos/s01.png");
-        assertThat(MemberPortraitOptions.objektMemberLogo("S1")).isEqualTo("/images/objekt-member-logos/s01.png");
-        assertThat(MemberPortraitOptions.objektMemberLogo("서다현")).isEqualTo("/images/objekt-member-logos/s10.png");
-        assertThat(MemberPortraitOptions.objektMemberLogo("코토네")).isEqualTo("/images/objekt-member-logos/s11.png");
-        assertThat(MemberPortraitOptions.objektMemberLogo("Kotone")).isEqualTo("/images/objekt-member-logos/s11.png");
-        assertThat(MemberPortraitOptions.objektMemberLogo("S11")).isEqualTo("/images/objekt-member-logos/s11.png");
-        assertThat(MemberPortraitOptions.objektMemberLogo("설린")).isEqualTo("/images/objekt-member-logos/s22.png");
-        assertThat(MemberPortraitOptions.objektMemberLogo("지연")).isEqualTo("/images/objekt-member-logos/s24.png");
-        assertThat(MemberPortraitOptions.objektMemberLogo("JiYeon")).isEqualTo("/images/objekt-member-logos/s24.png");
-        assertThat(MemberPortraitOptions.objektMemberLogo("S24")).isEqualTo("/images/objekt-member-logos/s24.png");
-        assertThat(MemberPortraitOptions.objektMemberLogo("S1 X S9")).isEmpty();
-        assertThat(MemberPortraitOptions.objektMemberLogo("S8 X S12")).isEmpty();
-        assertThat(MemberPortraitOptions.objektMemberLogo("윤서연 X 기타")).isEmpty();
-        assertThat(MemberPortraitOptions.objektMemberLogo("zenith")).isEmpty();
+    @Test void soloCardsShareTheClefAndUseArtistColorOrTheDefault() {
+        var artists = List.of(artist("윤서연", "#22AEFF"), artist("설린", "#7BBA8D"));
+        for (String name : List.of("윤서연", "SeoYeon", "S1", "S01")) {
+            Map<String, Object> row = new LinkedHashMap<>(Map.of("member", name));
+            MemberPortraitOptions.addObjektMemberPresentation(row, artists);
+            assertThat(row).containsEntry("memberMarkMask", "/images/objekt-member-logos/clef.png")
+                    .containsEntry("memberMarkFill", "#22AEFF");
+        }
+        for (String name : MemberPortraitOptions.koreanOrder()) {
+            Map<String, Object> row = new LinkedHashMap<>(Map.of("member", name));
+            MemberPortraitOptions.addObjektMemberPresentation(row, List.of());
+            assertThat(row).containsEntry("memberMarkMask", "/images/objekt-member-logos/clef.png")
+                    .containsEntry("memberMarkFill", "#00f5d4");
+        }
+        Map<String, Object> other = new LinkedHashMap<>(Map.of("member", "zenith"));
+        MemberPortraitOptions.addObjektMemberPresentation(other, artists);
+        assertThat(other).containsEntry("memberMarkMask", "").containsEntry("memberMarkFill", "");
     }
 
     @Test void archiveSymbolLogoMapsS1SeoyeonThroughS24Jiyeon() {

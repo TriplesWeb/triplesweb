@@ -13,6 +13,7 @@ import com.example.triplesweb.entity.MediaType;
 import com.example.triplesweb.entity.Schedule;
 import com.example.triplesweb.entity.Unit;
 import com.example.triplesweb.media.MediaTab;
+import com.example.triplesweb.util.MemberPortraitOptions;
 import com.example.triplesweb.util.ObjektLinks;
 import com.example.triplesweb.util.ObjektSeasonCodes;
 import lombok.Getter;
@@ -185,7 +186,7 @@ public class SiteSearchService {
                 .limit(OBJEKT_LIMIT)
                 .toList();
         for (Map<String, Object> objekt : matchingObjekts) {
-            String member = first(objekt, "member", "memberName");
+            String member = MemberPortraitOptions.displayMember(first(objekt, "member", "memberName"));
             String number = first(objekt, "collectionNo", "collectionNumber");
             String season = first(objekt, "season", "seasonKey");
             String label = (member + " " + number).trim();
@@ -345,7 +346,7 @@ public class SiteSearchService {
                 first(objekt, "memberName"), first(objekt, "artist"), first(objekt, "collectionNo"),
                 first(objekt, "class"), first(objekt, "classKey"), first(objekt, "numberValue"))
                 .toLowerCase(Locale.ROOT);
-        return ObjektSeasonCodes.matches(query, base, season, collectionNo);
+        return ObjektSeasonCodes.matches(query, base, season, collectionNo, first(objekt, "member", "memberName"));
     }
 
     private static String normalizeTab(String tab, String query) {

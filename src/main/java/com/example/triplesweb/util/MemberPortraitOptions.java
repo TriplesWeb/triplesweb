@@ -40,13 +40,18 @@ public final class MemberPortraitOptions {
             "서연", "혜린", "지우", "채연", "유연", "수민", "나경", "유빈",
             "카에데", "다현", "코토네", "연지", "니엔", "소현", "신위", "마유",
             "린", "주빈", "하연", "시온", "채원", "설린", "서아", "지연");
-    /** S1 윤서연 ~ S24 지연까지 커스텀 멤버 로고. 유닛·기타는 빈 사진을 쓴다. */
-    private static final int CUSTOM_OBJEKT_LOGO_COUNT = 24;
-    private static final String OBJEKT_MEMBER_LOGO_PATH = "/images/objekt-member-logos/s%02d.png";
+    private static final int MEMBER_COUNT = KOREAN_ORDER.size();
+    private static final String OBJEKT_MEMBER_MARK_MASK = "/images/objekt-member-logos/clef.png";
     private static final Pattern NON_MEMBER_CHARS = Pattern.compile("[^a-z0-9가-힣]");
     private static final Pattern UNIT_CHAIN = Pattern.compile("s\\d{1,2}(?:xs\\d{1,2})+");
     private static final Pattern UNIT_NUMBER = Pattern.compile("s\\d{1,2}");
+    private static final Pattern CSS_HEX_COLOR = Pattern.compile("#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})");
+    private static final String DEFAULT_ARTIST_COLOR = "#00f5d4";
     private static final Map<String, Integer> MEMBER_INDEX = buildMemberIndex();
+    private static final Set<String> OBJEKT_MEMBER_NUMBER_QUERIES = java.util.stream.IntStream
+            .range(0, MEMBER_COUNT).boxed()
+            .flatMap(index -> numberSearchAliases(index).stream())
+            .collect(java.util.stream.Collectors.toUnmodifiableSet());
 
     /** Exact solo identity only: S1 X S9 is an extra entry, not S1. */
     public static int memberIndex(String value) {
@@ -57,15 +62,15 @@ public final class MemberPortraitOptions {
     /** S1~S24가 빠짐없이 들어 있으면 24명 전원이다. */
     public static boolean coversFullLineup(Collection<String> names) {
         if (names == null || names.isEmpty()) return false;
-        boolean[] seen = new boolean[CUSTOM_OBJEKT_LOGO_COUNT];
+        boolean[] seen = new boolean[MEMBER_COUNT];
         int count = 0;
         for (String name : names) {
             int index = memberIndex(name);
-            if (index >= CUSTOM_OBJEKT_LOGO_COUNT || seen[index]) continue;
+            if (index >= MEMBER_COUNT || seen[index]) continue;
             seen[index] = true;
             count++;
         }
-        return count == CUSTOM_OBJEKT_LOGO_COUNT;
+        return count == MEMBER_COUNT;
     }
 
     /** 솔로는 그 멤버, 유닛은 가장 앞 멤버(S1이 S24보다 앞). 기타는 24. */
@@ -111,10 +116,6 @@ public final class MemberPortraitOptions {
         Set<String> members = new LinkedHashSet<>();
         int solo = memberIndex(value);
         if (solo < 24) return Set.of(KOREAN_ORDER.get(solo));
-        for (String token : tokens(value)) {
-            int index = memberIndex(token);
-            if (index < 24) members.add(KOREAN_ORDER.get(index));
-        }
         String compact = normalize(value);
         if (UNIT_CHAIN.matcher(compact).matches()) {
             Matcher matcher = UNIT_NUMBER.matcher(compact);
@@ -122,6 +123,11 @@ public final class MemberPortraitOptions {
                 int index = memberIndex(matcher.group());
                 if (index < 24) members.add(KOREAN_ORDER.get(index));
             }
+            return members;
+        }
+        for (String token : tokens(value)) {
+            int index = memberIndex(token);
+            if (index < 24) members.add(KOREAN_ORDER.get(index));
         }
         return members;
     }
@@ -169,7 +175,7 @@ public final class MemberPortraitOptions {
      */
     public static String archiveSymbolLogo(String name) {
         int index = memberIndex(name);
-        if (index >= CUSTOM_OBJEKT_LOGO_COUNT) return "";
+        if (index >= MEMBER_COUNT) return "";
         return "/images/archive/member-logos/" + (index + 1) + ".png";
     }
 
@@ -251,17 +257,38 @@ public final class MemberPortraitOptions {
     public static String artistColor(String memberField, List<Artist> artists) {
         Artist artist = findArtist(memberField, artists);
         if (artist != null && artist.getColor() != null && !artist.getColor().isBlank()) return artist.getColor();
-        return "#00f5d4";
+        return DEFAULT_ARTIST_COLOR;
     }
 
-    /**
-     * 솔로 S1~S24 카드에 커스텀 음표 로고 경로를 준다.
-     * 유닛·기타는 빈 문자열이라 빈 사진 마크업을 쓴다.
-     */
-    public static String objektMemberLogo(String memberField) {
-        int index = memberIndex(memberField);
-        if (index >= CUSTOM_OBJEKT_LOGO_COUNT) return "";
-        return OBJEKT_MEMBER_LOGO_PATH.formatted(index + 1);
+    /** 구성 순서대로 Artist 색을 반환한다. 기타 오브젝트는 구성 멤버가 없다. */
+    public static List<String> objektMemberColors(String memberField, List<Artist> artists) {
+        return objektMembers(memberField).stream()
+                .map(name -> cssArtistColor(matchArtist(name, artists)))
+                .toList();
+    }
+
+    /** 화면과 JSON에 공통 표시 필드를 추가한다. 원본 멤버 필드는 보존한다. */
+    public static void addObjektMemberPresentation(Map<String, Object> row, List<Artist> artists) {
+        Object raw = row.get("member");
+        if (raw == null || raw.toString().isBlank()) raw = row.get("memberName");
+        String member = raw == null ? "" : raw.toString();
+        List<String> colors = objektMemberColors(member, artists);
+        boolean hasMark = !colors.isEmpty();
+        String memberColor = hasMark ? colors.get(0) : cssArtistColor(matchArtist(member, artists));
+        String fill = "";
+        if (hasMark) {
+            fill = colors.size() == 1 ? memberColor : "linear-gradient(135deg, " + String.join(", ", colors) + ")";
+        }
+        row.put("memberDisplay", displayMember(member));
+        row.put("memberColors", colors);
+        row.put("memberColor", memberColor);
+        row.put("memberMarkMask", hasMark ? OBJEKT_MEMBER_MARK_MASK : "");
+        row.put("memberMarkFill", fill);
+    }
+
+    private static String cssArtistColor(Artist artist) {
+        String color = artist == null ? null : artist.getColor();
+        return color != null && CSS_HEX_COLOR.matcher(color).matches() ? color : DEFAULT_ARTIST_COLOR;
     }
 
     private static Artist matchArtist(String option, List<Artist> artists) {
@@ -297,6 +324,37 @@ public final class MemberPortraitOptions {
         return false;
     }
 
+    /** 구성 멤버별 번호, 영문 이름, 한글 전체 이름, 짧은 한글 이름을 검색에 쓴다. */
+    public static Set<String> memberSearchTerms(String memberField) {
+        Set<String> terms = new LinkedHashSet<>();
+        for (String name : objektMembers(memberField)) {
+            addMemberSearchTerms(terms, memberIndex(name));
+        }
+        return terms;
+    }
+
+    public static Set<String> objektMemberNumberQueries() {
+        return OBJEKT_MEMBER_NUMBER_QUERIES;
+    }
+
+    public static List<String> objektMemberNumbers(String memberField) {
+        return objektMembers(memberField).stream()
+                .flatMap(name -> numberSearchAliases(memberIndex(name)).stream())
+                .toList();
+    }
+
+    private static List<String> numberSearchAliases(int index) {
+        int number = index + 1;
+        return number < 10 ? List.of("s" + number, "s0" + number) : List.of("s" + number);
+    }
+
+    private static void addMemberSearchTerms(Set<String> terms, int index) {
+        terms.add("s" + (index + 1));
+        terms.add(ENGLISH_ORDER.get(index));
+        terms.add(KOREAN_ORDER.get(index));
+        terms.add(SHORT_KOREAN_ORDER.get(index));
+    }
+
     /** 필터·SQL 토큰 매칭용. 한글 풀네임·짧은 이름·영문·S번호. */
     public static Set<String> memberAliases(String selectedMember) {
         Set<String> selectedTokens = tokens(selectedMember);
@@ -310,10 +368,7 @@ public final class MemberPortraitOptions {
             String korean = normalize(KOREAN_ORDER.get(i));
             String number = "s" + (i + 1);
             if (selectedIndex == i || selectedTokens.contains(english) || selectedTokens.contains(korean) || selectedTokens.contains(number)) {
-                aliases.add(english);
-                aliases.add(korean);
-                aliases.add(number);
-                aliases.add(SHORT_KOREAN_ORDER.get(i));
+                addMemberSearchTerms(aliases, i);
             }
         }
         aliases.remove("x");
