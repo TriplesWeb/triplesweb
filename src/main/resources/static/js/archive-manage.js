@@ -696,7 +696,36 @@
 
     function pickerInputOf(form) {
         const input = form?.querySelector('input[name="file"]');
-        return input && input.closest('[data-file-drop]') && window.FilePicker ? input : null;
+        if (!input || !window.FilePicker) return null;
+        const container = input.closest('[data-file-drop]');
+        // 목록 없는 드롭존(data-file-list="none")은 파일만 받고, 목록은 아래 썸네일 타일이 그린다.
+        return container && container.dataset.fileList !== 'none' ? input : null;
+    }
+
+    /** 목록 없는 드롭존에 붙은 입력인지. 드롭존은 파일을 누적해 넘기고, 순서·대표·삭제는 썸네일 타일이 맡는다. */
+    function listlessPickerInput(input) {
+        const container = input?.closest?.('[data-file-drop]');
+        return !!(container && container.dataset.fileList === 'none' && window.FilePicker);
+    }
+
+    function bindListlessPicker(input) {
+        if (!listlessPickerInput(input) || input._archiveListlessBound) return;
+        input._archiveListlessBound = true;
+        input.addEventListener('file-picker:change', event => {
+            input._archivePickerAdded = (event.detail?.added?.length || 0) > 0;
+        });
+    }
+
+    /**
+     * 목록 없는 드롭존은 새 파일이 들어올 때만 처리한다.
+     * 파일 창의 원래 change(선택분만 담김)와 드롭존 초기화(reset)로 생기는 change는 건너뛴다.
+     */
+    function skipListlessChange(input, event) {
+        if (!listlessPickerInput(input)) return false;
+        if (event.isTrusted) return true;
+        const added = input._archivePickerAdded;
+        input._archivePickerAdded = false;
+        return !added;
     }
 
     /** 사진 칸(slot)을 공통 업로드 목록에 그대로 보여 준다. 순서·대표·새 파일을 함께 맞춘다. */
@@ -2043,9 +2072,11 @@
     };
 
     bindPickerSlots(uploadForm);
+    bindListlessPicker(uploadFile);
 
-    uploadFile?.addEventListener("change", () => {
+    uploadFile?.addEventListener("change", event => {
         if (kind === 'image' && pickerInputOf(uploadForm)) return;
+        if (skipListlessChange(uploadFile, event)) return;
         resetUploadIdempotencyKey();
         bumpImageEditToken(uploadFile);
         const files = Array.from(uploadFile.files || []);
@@ -2324,9 +2355,11 @@
     }
 
     bindPickerSlots(editForm);
+    bindListlessPicker(editFile);
 
-    editFile?.addEventListener("change", () => {
+    editFile?.addEventListener("change", event => {
         if (kind === 'image' && pickerInputOf(editForm)) return;
+        if (skipListlessChange(editFile, event)) return;
         bumpImageEditToken(editFile);
         const files = Array.from(editFile.files || []);
         const keptSlots = slotsOf(editForm).filter(slot => slot.kind === 'url');

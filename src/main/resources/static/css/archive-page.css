@@ -1857,6 +1857,27 @@ body.site-page > main.archive-page.is-folder-view {
     border: 1px solid rgba(58, 74, 70, 0.6);
     background: #0d0e12;
 }
+.ar-file--drop {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0;
+    border: 0;
+    background: transparent;
+}
+.ar-file--drop > .file-drop {
+    width: 100%;
+}
+.ar-file--drop > .ar-file-name {
+    min-height: 2.625rem;
+    padding: 0.5rem 0.6rem;
+    border-radius: 0.65rem;
+    border: 1px solid rgba(58, 74, 70, 0.6);
+    background: #0d0e12;
+}
+.ar-file--drop > .ar-file-name:not(.has-files) {
+    display: flex;
+    align-items: center;
+}
 .ar-file input[type="file"] {
     position: absolute;
     width: 1px;
