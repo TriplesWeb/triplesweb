@@ -1,13 +1,10 @@
 package com.example.triplesweb.controller;
 
-import com.example.triplesweb.entity.UploadBlob;
-import com.example.triplesweb.service.UploadContentStore;
 import com.example.triplesweb.service.UploadImageResizeService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +16,6 @@ import java.nio.file.Path;
 import java.nio.file.Files;
 import java.nio.file.attribute.FileTime;
 import java.time.Instant;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -35,51 +31,26 @@ class UploadsControllerTest {
 
     @ParameterizedTest
     @CsvSource({"photo.jfif, image/jpeg", "photo.WEBP, image/webp"})
-    void servesImageFormatsFromLocalAndDatabaseCopies(String filename, String expectedType) throws Exception {
-        var store = mock(UploadContentStore.class);
-        var controller = new UploadsController(temp.toString(), "", store, resize);
+    void servesImageFormatsFromDisk(String filename, String expectedType) throws Exception {
+        var controller = new UploadsController(temp.toString(), "", resize);
         var request = new MockHttpServletRequest("GET", "/uploads/" + filename);
         Files.write(temp.resolve(filename), new byte[]{1, 2, 3});
         assertThat(serve(controller, request).getHeaders().getContentType().toString()).isEqualTo(expectedType);
-
-        Files.delete(temp.resolve(filename));
-        var blob = new UploadBlob();
-        blob.setContentType("application/octet-stream");
-        blob.setData(new byte[]{1, 2, 3});
-        when(store.find(filename)).thenReturn(Optional.of(blob));
-        assertThat(serve(controller, request).getHeaders().getContentType().toString()).isEqualTo(expectedType);
     }
 
-    @Test void servesDatabaseCopyWhenLocalFileIsMissing() {
-        UploadContentStore store = mock(UploadContentStore.class);
-        UploadBlob blob = new UploadBlob();
-        blob.setRelativePath("board/a.jpg");
-        blob.setContentType("image/jpeg");
-        blob.setData(new byte[]{1, 2, 3});
-        when(store.find("board/a.jpg")).thenReturn(Optional.of(blob));
-
-        UploadsController controller = new UploadsController(temp.toString(), "", store, resize);
-        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/uploads/board/a.jpg");
-
-        var response = serve(controller, request);
-
-        assertThat(response.getStatusCode().value()).isEqualTo(200);
-        assertThat(response.getHeaders().getContentType().toString()).contains("image/jpeg");
+    @Test void returnsNotFoundWhenLocalFileIsMissingWithoutFallback() {
+        UploadsController controller = new UploadsController(temp.toString(), "", resize);
+        var response = serve(controller, new MockHttpServletRequest("GET", "/uploads/board/a.jpg"));
+        assertThat(response.getStatusCode().value()).isEqualTo(404);
     }
-    @Test void downloadsActiveContentFromDiskAndDatabase() throws Exception {
-        var store = mock(UploadContentStore.class);
-        var controller = new UploadsController(temp.toString(), "", store, resize);
+
+    @Test void downloadsActiveContentFromDisk() throws Exception {
+        var controller = new UploadsController(temp.toString(), "", resize);
         Files.writeString(temp.resolve("page.html"), "<script>alert(1)</script>");
         var request = new MockHttpServletRequest("GET", "/uploads/page.html");
         var response = serve(controller, request);
         assertThat(response.getHeaders().getFirst("Content-Disposition")).isEqualTo("attachment");
         assertThat(response.getHeaders().getFirst("X-Content-Type-Options")).isEqualTo("nosniff");
-        Files.delete(temp.resolve("page.html"));
-        var blob = new UploadBlob();
-        blob.setContentType("text/html");
-        blob.setData(new byte[]{1});
-        when(store.find("page.html")).thenReturn(Optional.of(blob));
-        assertThat(serve(controller, request).getHeaders().getFirst("Content-Disposition")).isEqualTo("attachment");
     }
 
     @ParameterizedTest
@@ -96,7 +67,7 @@ class UploadsControllerTest {
         Files.write(file, new byte[]{1, 2, 3});
         Files.setLastModifiedTime(file, FileTime.fromMillis(modified));
         var mvc = MockMvcBuilders.standaloneSetup(
-                new UploadsController(temp.toString(), "", mock(UploadContentStore.class), resize)).build();
+                new UploadsController(temp.toString(), "", resize)).build();
         String url = "/uploads/" + relativePath;
 
         var initial = mvc.perform(get(url))
@@ -128,7 +99,7 @@ class UploadsControllerTest {
         Files.setLastModifiedTime(original, FileTime.fromMillis(originalModified));
         Files.setLastModifiedTime(variant, FileTime.fromMillis(variantModified));
         var mvc = MockMvcBuilders.standaloneSetup(
-                new UploadsController(temp.toString(), "", mock(UploadContentStore.class), resize)).build();
+                new UploadsController(temp.toString(), "", resize)).build();
         String url = "/uploads/" + original.getFileName();
 
         var response = mvc.perform(get(url).param("w", "1600"))
@@ -147,37 +118,19 @@ class UploadsControllerTest {
                 .andExpect(header().dateValue(HttpHeaders.LAST_MODIFIED, originalModified));
     }
 
-    @Test void servesImmutableDatabaseBytesWhenDiskCacheCannotBeWritten() throws Exception {
-        var store = mock(UploadContentStore.class);
-        Files.createFile(temp.resolve("board"));
-        String relativePath = "board/0123456789abcdef0123456789abcdef.jpg";
-        var blob = new UploadBlob();
-        blob.setContentType("image/jpeg");
-        blob.setData(new byte[]{1, 2, 3});
-        when(store.find(relativePath)).thenReturn(Optional.of(blob));
-
-        var controller = new UploadsController(temp.toString(), "", store, resize);
-        var response = serve(controller, new MockHttpServletRequest("GET", "/uploads/" + relativePath));
-
-        assertThat(response.getBody()).isInstanceOf(ByteArrayResource.class);
-        assertThat(response.getHeaders().getCacheControl()).isEqualTo("public, max-age=31536000, immutable");
-    }
-
     private static ResponseEntity<Resource> serve(
             UploadsController controller, MockHttpServletRequest request) {
         return controller.serve(request, new MockHttpServletResponse());
     }
 
     @Test void blocksTraversalSymlinksAndPrivateSidecars() throws Exception {
-        var store = mock(UploadContentStore.class);
         Path uploads = temp.resolve("uploads");
         Files.createDirectories(uploads);
-        var controller = new UploadsController(uploads.toString(), "", store, resize);
+        var controller = new UploadsController(uploads.toString(), "", resize);
         Files.writeString(temp.resolve("secret.txt"), "secret");
         Files.createSymbolicLink(uploads.resolve("link.txt"), temp.resolve("secret.txt"));
         assertThat(serve(controller, new MockHttpServletRequest("GET", "/uploads/link.txt")).getStatusCode().value()).isEqualTo(403);
         assertThat(serve(controller, new MockHttpServletRequest("GET", "/uploads/%2e%2e/secret.txt")).getStatusCode().value()).isEqualTo(403);
         assertThat(serve(controller, new MockHttpServletRequest("GET", "/uploads/photo.jpg.orig")).getStatusCode().value()).isEqualTo(404);
-        org.mockito.Mockito.verifyNoInteractions(store);
     }
 }

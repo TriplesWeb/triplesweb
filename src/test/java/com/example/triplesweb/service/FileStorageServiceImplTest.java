@@ -11,19 +11,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 class FileStorageServiceImplTest {
     @TempDir Path directory;
 
     @Test void deletesBothGenerationsOfImageVariantsWithOriginal() throws Exception {
         var sync = mock(UploadSyncService.class);
-        var store = mock(UploadContentStore.class);
-        var storage = new FileStorageServiceImpl(directory.toString(), sync, store, Runnable::run);
+        var storage = new FileStorageServiceImpl(directory.toString(), sync);
         Files.createDirectories(directory.resolve("images"));
         Path original = Files.createFile(directory.resolve("images/photo.jpg"));
         Path legacy = Files.createFile(directory.resolve("images/photo.card-480.jpg"));
@@ -36,7 +32,6 @@ class FileStorageServiceImplTest {
         assertThat(current).doesNotExist();
         assertThat(unrelated).exists();
         verify(sync).deleteRelative("images/photo.jpg");
-        verify(store).delete("images/photo.jpg");
     }
 
     @ParameterizedTest
@@ -49,9 +44,7 @@ class FileStorageServiceImplTest {
     })
     void storesImageFormatsWithoutConversionAndWithCanonicalContentType(String filename, String declaredType, String storedType) throws Exception {
         var sync = mock(UploadSyncService.class);
-        var store = mock(UploadContentStore.class);
-        when(store.maxBytes()).thenReturn(1024L);
-        var storage = new FileStorageServiceImpl(directory.toString(), sync, store, Runnable::run);
+        var storage = new FileStorageServiceImpl(directory.toString(), sync);
         byte[] original = new byte[]{1, 2, 3, 4};
         var saved = storage.saveWithMeta(new MockMultipartFile("file", filename, declaredType, original));
 
@@ -59,28 +52,17 @@ class FileStorageServiceImplTest {
         assertThat(saved.getFileType()).isEqualTo(storedType);
         assertThat(saved.getUrl()).startsWith("/uploads/images/");
         assertThat(Files.readAllBytes(storage.resolvePhysicalPath(saved.getUrl()))).isEqualTo(original);
-        verify(store).save(eq(storage.toRelativePath(saved.getUrl())), any(byte[].class), eq(storedType));
+        verify(sync).pushRelative(storage.toRelativePath(saved.getUrl()));
     }
     @org.junit.jupiter.api.Test
     void rejectsSubdirectoryTraversalBeforeWriting() throws Exception {
         var sync = mock(UploadSyncService.class);
-        var store = mock(UploadContentStore.class);
         var root = directory.resolve("uploads");
-        var storage = new FileStorageServiceImpl(root.toString(), sync, store, Runnable::run);
+        var storage = new FileStorageServiceImpl(root.toString(), sync);
         var file = new MockMultipartFile("file", "photo.jpg", "image/jpeg", new byte[]{1});
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> storage.saveWithMeta(file, "../../escaped"))
                 .isInstanceOf(com.example.triplesweb.media.FileStorageException.class);
         assertThat(Files.exists(directory.resolve("escaped"))).isFalse();
-        org.mockito.Mockito.verifyNoInteractions(sync, store);
-    }
-
-    @org.junit.jupiter.api.Test
-    void skipsOversizedDatabaseCopiesBeforeEnqueueing() {
-        var store = mock(UploadContentStore.class);
-        when(store.maxBytes()).thenReturn(1L);
-        var executor = mock(java.util.concurrent.Executor.class);
-        var storage = new FileStorageServiceImpl(directory.toString(), mock(UploadSyncService.class), store, executor);
-        storage.save(new MockMultipartFile("file", "large.jpg", "image/jpeg", new byte[]{1, 2}));
-        org.mockito.Mockito.verifyNoInteractions(executor);
+        org.mockito.Mockito.verifyNoInteractions(sync);
     }
 }
