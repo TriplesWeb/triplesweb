@@ -219,7 +219,13 @@
                 const shell = document.querySelector('main.media-shell');
                 const nextShell = doc.querySelector('main.media-shell');
                 if (!shell || !nextShell) throw new Error('shell');
-                swapSection(shell, nextShell, 'media-feature');
+                const hasFeature = !!shell.querySelector('.media-feature');
+                const needsFeature = !!nextShell.querySelector('.media-feature');
+                if (hasFeature !== needsFeature) {
+                    swapSection(shell, nextShell, 'media-feature');
+                    capturePlaylist();
+                    renderPlaylist();
+                }
                 swapSection(shell, nextShell, 'media-archive');
                 swapSection(shell, nextShell, 'media-shorts');
                 const eraTabs = shell.querySelector('.media-era-tabs');
@@ -234,8 +240,6 @@
                 const reset = form.querySelector('.ar-reset');
                 const nextReset = nextShell.querySelector('.ar-reset');
                 if (reset && nextReset) reset.hidden = nextReset.hidden;
-                capturePlaylist();
-                renderPlaylist();
                 upgradeStills();
                 const nextUrl = new URL(url, location.href);
                 const same = nextUrl.pathname === location.pathname && nextUrl.search === location.search;
@@ -372,15 +376,17 @@
     let playlistList = null;
     let playlistTitle = null;
     let playlistCount = null;
-    let originalPlaylist = '';
     let originalTitle = '추천 재생목록';
     let originalCount = '00';
+    let featuredVideo = null;
+    let recommendations = new Map();
+    let recommendationAnchor = null;
+    let recommendationRequest = null;
 
     function capturePlaylist() {
         playlistList = document.getElementById('mediaPlaylistList');
         playlistTitle = document.getElementById('mediaPlaylistTitle');
         playlistCount = document.getElementById('mediaPlaylistCount');
-        originalPlaylist = playlistList ? playlistList.innerHTML : '';
         originalTitle = playlistTitle ? playlistTitle.textContent : '추천 재생목록';
         originalCount = playlistCount ? playlistCount.textContent : '00';
     }
@@ -468,14 +474,11 @@
         const items = saved.map((item) => byId.get(item.youtubeId) || item).filter((item) =>
             (tab === 'all' || item.tab === tab) && (!era || item.signalEra === era));
         const playlist = document.getElementById('mediaPlaylist');
-        const feature = document.querySelector('.media-feature');
-        const managing = items.length > 0;
-        playlist?.classList.toggle('is-managing', managing);
-        if (feature) {
-            feature.classList.remove('is-collapsed');
-            feature.hidden = false;
+        playlist?.classList.toggle('is-managing', items.length > 0);
+        if (!playlistList) {
+            paintSuggestions(null);
+            return;
         }
-        if (!playlistList) return;
         if (!items.length) {
             playlistList.replaceChildren();
             if (playlistTitle) playlistTitle.textContent = originalTitle;
@@ -492,6 +495,7 @@
     }
 
     function clearHero() {
+        featuredVideo = null;
         const hero = document.querySelector('.media-feature__hero');
         if (!hero) return;
         hero.classList.add('is-empty');
@@ -549,20 +553,39 @@
         return card;
     }
 
-    function paintSuggestions(anchor) {
+    async function paintSuggestions(anchor) {
         const box = document.getElementById('mediaSuggest');
         const list = document.getElementById('mediaSuggestList');
+        const youtubeId = list ? anchor?.youtubeId || null : null;
+        if (youtubeId === recommendationAnchor) return;
+        recommendationAnchor = youtubeId;
+        recommendationRequest?.abort();
+        recommendationRequest = null;
+        recommendations = new Map();
         if (!box || !list) return;
-        if (!anchor || !anchor.youtubeId) {
-            list.replaceChildren();
-            setCollapsed(box, true);
-            return;
+        list.replaceChildren();
+        setCollapsed(box, true);
+        if (!youtubeId) return;
+
+        const request = new AbortController();
+        recommendationRequest = request;
+        try {
+            const params = new URLSearchParams({ youtubeId, tab: anchor.tab || '' });
+            const response = await fetch('/media/recommendations.json?' + params, {
+                credentials: 'same-origin',
+                signal: request.signal
+            });
+            if (!response.ok) throw new Error(String(response.status));
+            const items = await response.json();
+            if (request !== recommendationRequest || !list.isConnected) return;
+            recommendations = new Map(items.map((item) => [item.youtubeId, item]));
+            list.replaceChildren(...items.map(suggestCard));
+            setCollapsed(box, items.length === 0);
+        } catch (error) {
+            if (request === recommendationRequest) recommendationAnchor = null;
+        } finally {
+            if (request === recommendationRequest) recommendationRequest = null;
         }
-        const pool = archiveVideos().filter((row) => row.youtubeId !== anchor.youtubeId);
-        const same = pool.filter((row) => row.tab && row.tab === anchor.tab);
-        const chosen = (same.length ? same : pool).slice(0, 4);
-        list.replaceChildren(...chosen.map(suggestCard));
-        setCollapsed(box, chosen.length === 0);
     }
 
     function removePlaylist(id) {
@@ -620,18 +643,7 @@
     function openVideo(trigger) {
         const id = trigger.getAttribute('data-ytid');
         if (!ytModal || !ytPlayer || !id) return;
-        const row = byId.get(id) || {
-            youtubeId: id,
-            tab: trigger.dataset.tab || '',
-            tabLabel: trigger.dataset.kind || '',
-            title: trigger.dataset.title || trigger.querySelector('strong')?.textContent || '',
-            description: '',
-            publishedOn: '',
-            publishedLabel: trigger.dataset.published || '',
-            duration: trigger.dataset.duration || '',
-            viewCountFmt: trigger.dataset.views || '',
-            artistNames: ''
-        };
+        const row = videoFrom(trigger);
         currentVideo = row;
         const shortClip = row.tab === 'shorts';
         ytModal.classList.toggle('is-short-player', shortClip);
@@ -800,11 +812,11 @@
 
     function videoFrom(trigger) {
         const id = trigger?.getAttribute('data-ytid') || '';
-        return byId.get(id) || {
+        return byId.get(id) || recommendations.get(id) || (featuredVideo?.youtubeId === id ? featuredVideo : null) || {
             youtubeId: id,
             tab: trigger?.dataset.tab || '',
             tabLabel: trigger?.dataset.kind || '',
-            title: trigger?.dataset.title || '',
+            title: trigger?.dataset.title || trigger?.querySelector('strong')?.textContent || '',
             description: '',
             publishedOn: '',
             publishedLabel: trigger?.dataset.published || '',
@@ -840,6 +852,7 @@
     function applyHero(item) {
         const hero = document.querySelector('.media-feature__hero');
         if (!hero || !item || !item.youtubeId) return;
+        featuredVideo = item;
         hero.classList.remove('is-empty');
         const tab = item.tab || 'mv';
         hero.href = '/media/' + encodeURIComponent(tab) + '/' + encodeURIComponent(item.youtubeId);
@@ -866,26 +879,8 @@
     }
 
     function focusPlaylist() {
-        const current = document.querySelector('#mediaPlaylistList .media-playlist__item.is-current')
-            || document.querySelector('#mediaPlaylistList .media-playlist__item');
-        if (!current) return;
-        document.querySelectorAll('#mediaPlaylistList .media-playlist__item').forEach((item) => {
-            item.classList.toggle('is-current', item === current);
-        });
-        applyHero(videoFrom(current));
-    }
-
-    function shortDuration(raw) {
-        const parts = String(raw || '').trim().split(':');
-        if (parts.length < 2 || parts.length > 3) return false;
-        const nums = parts.map((part) => Number(part));
-        if (nums.some((num) => Number.isNaN(num))) return false;
-        const seconds = nums.length === 2 ? nums[0] * 60 + nums[1] : nums[0] * 3600 + nums[1] * 60 + nums[2];
-        return seconds > 0 && seconds <= 60;
-    }
-
-    function archiveVideos() {
-        return [...byId.values()].filter((row) => row && row.youtubeId && !shortDuration(row.duration));
+        const current = playlistList?.querySelector('.media-playlist__item');
+        if (current) focusPlaylistItem(current);
     }
 
     function durationSeconds(raw) {
@@ -1228,8 +1223,11 @@
     function focusPlaylistItem(link) {
         document.querySelectorAll('#mediaPlaylistList .media-playlist__item').forEach((item) => {
             item.classList.toggle('is-current', item === link);
+            if (item === link) item.setAttribute('aria-current', 'true');
+            else item.removeAttribute('aria-current');
         });
-        applyHero(videoFrom(link));
+        const saved = readPlaylist().find((item) => item.youtubeId === link.dataset.ytid);
+        applyHero(byId.get(link.dataset.ytid) || saved || videoFrom(link));
     }
 
     ytModal?.addEventListener('site-modal:hidden', () => {

@@ -210,6 +210,11 @@ body.media-page {
     min-width: 0;
 }
 
+.media-page .media-filter-search .objekt-search-glyph {
+    left: 0.85rem;
+    font-size: 1rem;
+}
+
 .media-page .media-toolbar .media-pick-mini .ar-search-wrap,
 .media-page .media-toolbar .media-pick-mini .ar-search-wrap .ar-search {
     height: 2.1rem;
@@ -540,10 +545,6 @@ body.media-page {
     width: min(100%, 46rem);
 }
 
-.media-shell:has(.media-feature:not(.is-collapsed)) .media-archive-playlist-add {
-    display: none;
-}
-
 .media-feature__layout.is-solo {
     grid-template-columns: minmax(0, 1fr);
 }
@@ -632,7 +633,7 @@ body.media-page {
     display: flex;
     flex: 1;
     flex-direction: column;
-    gap: 16px;
+    gap: 8px;
     min-height: 0;
     overflow-y: auto;
 }
@@ -1117,7 +1118,6 @@ body.media-page {
     .media-grid[data-cols="5"],
     .media-shorts__grid { grid-template-columns: 1fr; }
     .media-shorts.is-preview .media-short:nth-child(n + 3) { display: none; }
-    .media-suggest__list { grid-template-columns: 1fr 1fr; }
 }
 
 .media-playlist-add {
@@ -1151,15 +1151,11 @@ body.media-page {
     white-space: nowrap;
 }
 
-.media-playlist__item.is-current {
-    background: rgba(0, 245, 212, 0.1);
-    outline: 1px solid rgba(0, 245, 212, 0.45);
-}
-
 .media-suggest {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    margin-top: 20px;
 }
 
 .media-suggest__title {
@@ -1172,8 +1168,14 @@ body.media-page {
 
 .media-suggest__list {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 12px;
+}
+
+@media (max-width: 960px) {
+    .media-suggest__list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }
 
 .media-suggest__card {
@@ -1258,6 +1260,21 @@ body.media-page {
     display: flex;
     align-items: center;
     gap: 8px;
+    padding: 6px;
+    border: 1px solid transparent;
+    border-radius: 12px;
+}
+
+.media-playlist__row:has(.is-current) {
+    border-color: rgba(0, 245, 212, 0.45);
+    background: rgba(0, 245, 212, 0.1);
+}
+
+.media-playlist__item:focus-visible,
+.media-playlist-remove:focus-visible {
+    outline: 2px solid #00f5d4;
+    outline-offset: 2px;
+    border-radius: 8px;
 }
 
 .media-playlist__row .media-playlist__item { flex: 1; }

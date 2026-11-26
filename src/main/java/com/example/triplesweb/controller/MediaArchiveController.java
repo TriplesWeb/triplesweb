@@ -6,6 +6,7 @@ import com.example.triplesweb.dto.GroupIntroDto;
 import com.example.triplesweb.dto.MediaDto;
 import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.entity.Schedule;
+import com.example.triplesweb.media.MediaRecommendations;
 import com.example.triplesweb.media.MediaSignalEra;
 import com.example.triplesweb.media.MediaTab;
 import com.example.triplesweb.media.MediaTabClassifier;
@@ -131,11 +132,7 @@ public class MediaArchiveController {
         List<MediaDto> filtered = new ArrayList<>(all ? media.listAll() : media.allByTab(tab));
         if (!all) {
             String selectedTab = tab;
-            filtered.removeIf(video -> !selectedTab.equals(video.getTab()));
-        }
-        if ("signal".equals(tab)) {
-            filtered.removeIf(v -> !MediaTab.SIGNAL.getKey().equals(
-                    MediaTabClassifier.tabFor(v.getTitle(), v.getDuration())));
+            filtered.removeIf(video -> !belongsToTab(video, selectedTab));
         }
         if (memberFiltered) {
             filtered.removeIf(v -> !matchesMembers(v.getArtistNames(), selectedMembers));
@@ -241,6 +238,22 @@ public class MediaArchiveController {
         }
         attachMemberBadges(videos, artists);
         return catalogJson(videos, false);
+    }
+
+    @GetMapping(value = "/media/recommendations.json", produces = "application/json")
+    @ResponseBody
+    public String playlistRecommendations(@RequestParam String youtubeId,
+                                          @RequestParam(defaultValue = "") String tab) {
+        if (!youtubeId.matches("[A-Za-z0-9_-]{11}")) return "[]";
+        MediaDto anchor = media.findOne(MediaTab.from(tab), youtubeId).orElse(null);
+        if (anchor == null) return "[]";
+        List<MediaDto> candidates = media.allByTab(anchor.getTab()).stream()
+                .filter(video -> belongsToTab(video, anchor.getTab()))
+                .toList();
+        List<MediaDto> chosen = MediaRecommendations.choose(anchor, candidates);
+        if (chosen.isEmpty()) return "[]";
+        attachMemberBadges(chosen, artistRepository.findAll());
+        return catalogJson(chosen, true);
     }
 
     @GetMapping("/media/{tab}/{youtubeId}")
@@ -686,6 +699,12 @@ public class MediaArchiveController {
 
     private static boolean shortForm(MediaDto video) {
         return video != null && MediaTab.SHORTS.getKey().equals(video.getTab());
+    }
+
+    private static boolean belongsToTab(MediaDto video, String tab) {
+        if (!tab.equals(video.getTab())) return false;
+        return !MediaTab.SIGNAL.getKey().equals(tab)
+                || tab.equals(MediaTabClassifier.tabFor(video.getTitle(), video.getDuration()));
     }
 
     private static boolean wantsAjax(HttpServletRequest request) {

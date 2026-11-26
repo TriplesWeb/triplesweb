@@ -3,6 +3,7 @@ package com.example.triplesweb.controller;
 import com.example.triplesweb.config.MustacheConfig;
 import com.example.triplesweb.dto.MediaDto;
 import com.example.triplesweb.entity.Artist;
+import com.example.triplesweb.media.MediaTab;
 import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.repository.ScheduleRepository;
 import com.example.triplesweb.service.AboutAdminAuth;
@@ -13,6 +14,7 @@ import com.example.triplesweb.service.MediaChannelSyncService;
 import com.example.triplesweb.service.MediaService;
 import com.example.triplesweb.service.MediaViewCountService;
 import com.example.triplesweb.service.UnitService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jsoup.Jsoup;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,6 +27,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -34,6 +37,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -42,6 +46,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import(MustacheConfig.class)
 class MediaArchiveControllerTest {
     @Autowired MockMvc mvc;
+    @Autowired ObjectMapper objectMapper;
     @MockitoBean MediaService media;
     @MockitoBean MediaViewCountService mediaViewCounts;
     @MockitoBean MediaChannelSyncService youtubeSync;
@@ -63,6 +68,43 @@ class MediaArchiveControllerTest {
             videos.add(video(i, i < 5 ? "shorts" : "contents", "영상 " + i, i < 5 ? "0:40" : "3:11", "2024-05-06"));
         }
         when(media.listAll()).thenReturn(videos);
+    }
+
+    @Test
+    void showsPlaylistAndSuggestionsOnlyOnTheAllTab() throws Exception {
+        for (String tab : List.of("mv", "signal", "shorts", "music", "contents", "external")) {
+            String html = mvc.perform(get("/media").param("tab", tab))
+                    .andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString();
+            assertThat(Jsoup.parse(html).select("#mediaPlaylist, #mediaSuggest, [data-playlist-add]")).isEmpty();
+        }
+    }
+
+    @Test
+    void recommendsFiveDistinctVideosFromTheFirstItemsActualTab() throws Exception {
+        MediaDto anchor = video(0, "shorts", "서연 지우", "0:37", "2026-11-07");
+        List<MediaDto> candidates = new ArrayList<>();
+        candidates.add(anchor);
+        candidates.add(video(1, "mv", "뮤직비디오", "4:00", "2026-11-07"));
+        for (int i = 2; i <= 10; i++) {
+            candidates.add(video(i, "shorts", "쇼츠 " + i, "0:38", "2026-11-08"));
+        }
+        candidates.add(candidates.get(2));
+        when(media.findOne(MediaTab.MV, anchor.getYoutubeId())).thenReturn(Optional.of(anchor));
+        when(media.allByTab("shorts")).thenReturn(candidates);
+
+        String response = mvc.perform(get("/media/recommendations.json")
+                        .param("youtubeId", anchor.getYoutubeId()).param("tab", "mv"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(5))
+                .andReturn().getResponse().getContentAsString();
+        var rows = objectMapper.readTree(response);
+        List<String> ids = new ArrayList<>();
+        for (var row : rows) {
+            assertThat(row.get("tab").asText()).isEqualTo("shorts");
+            ids.add(row.get("youtubeId").asText());
+        }
+        assertThat(ids).doesNotContain(anchor.getYoutubeId()).doesNotHaveDuplicates();
     }
 
     @Test
