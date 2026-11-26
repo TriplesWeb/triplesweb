@@ -47,6 +47,7 @@ public class MediaChannelSyncService {
 
     private static final int SAVE_BATCH = 50;
     private static final int TITLE_MAX = 255;
+    private static final Set<String> EXCLUDED_VIDEO_IDS = Set.of("PR6mJ59QMNc", "OYx2SGkx6f0");
 
     private final YoutubeDataApiClient youtube;
     private final NamuWikiYoutubeClient namu;
@@ -273,7 +274,7 @@ public class MediaChannelSyncService {
         int skipped = 0;
         List<Media> batch = new ArrayList<>();
         for (YoutubeDataApiClient.ChannelVideo video : videos) {
-            if (video == null || video.id() == null) {
+            if (video == null || video.id() == null || EXCLUDED_VIDEO_IDS.contains(video.id())) {
                 skipped++;
                 continue;
             }
@@ -309,7 +310,7 @@ public class MediaChannelSyncService {
                 boolean wasShort = MediaTab.SHORTS.getKey().equals(current.getTab());
                 boolean formatChanged = (!wasShort && platformShort)
                         || (wasShort && !platformShort && formats.regular().contains(video.id()));
-                if (!current.isCuratedExternal() && formatChanged) {
+                if (!current.isCuratedTab() && formatChanged) {
                     current.setTab(targetTab);
                     changed = true;
                 }
@@ -378,7 +379,7 @@ public class MediaChannelSyncService {
     ) {
         List<Media> candidates = existing.values().stream()
                 .filter(media -> media.getYoutubeId() != null && !blank(media.getYoutubeId()))
-                .filter(media -> !media.isCuratedExternal() && blank(media.getDescription()))
+                .filter(media -> !media.isCuratedTab() && blank(media.getDescription()))
                 .toList();
         if (candidates.isEmpty()) return 0;
         Map<String, YoutubeDataApiClient.ChannelVideo> live = new java.util.LinkedHashMap<>();
