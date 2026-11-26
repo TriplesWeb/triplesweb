@@ -807,7 +807,14 @@
         window.MemberSelectionSummary?.paintArtistMeta(root);
     }
 
-    bindMemberForm(document.getElementById('mediaEditForm'));
+    const mediaEditForm = document.getElementById('mediaEditForm');
+    bindMemberForm(mediaEditForm);
+    mediaEditForm?.addEventListener('submit', () => {
+        const returnTo = mediaEditForm.elements.namedItem('returnTo');
+        if (returnTo && location.pathname === '/media') {
+            returnTo.value = location.pathname + location.search;
+        }
+    });
     bindMemberForm(document.getElementById('mediaAddForm'));
 
     function videoFrom(trigger) {
@@ -959,6 +966,7 @@
                 if (!day || (from && day < from) || (to && day > to)) return false;
             }
             if (members.length) {
+                if (row.memberBadges?.some((badge) => badge.fullLineup) && members.length < 24) return false;
                 const names = String(row.artistNames || '').split(',').map((name) => name.trim().toLowerCase().replace(/\s+/g, '')).filter(Boolean);
                 if (!members.some((member) => names.includes(member))) return false;
             }

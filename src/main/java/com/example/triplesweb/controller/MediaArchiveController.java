@@ -40,6 +40,7 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
@@ -135,7 +136,8 @@ public class MediaArchiveController {
             filtered.removeIf(video -> !belongsToTab(video, selectedTab));
         }
         if (memberFiltered) {
-            filtered.removeIf(v -> !matchesMembers(v.getArtistNames(), selectedMembers));
+            boolean allMembersSelected = MemberPortraitOptions.coversFullLineup(selectedMembers);
+            filtered.removeIf(v -> !matchesMembers(v.getArtistNames(), selectedMembers, allMembersSelected));
         }
         if (!query.isEmpty()) {
             filtered.removeIf(v -> !MediaSearch.matches(v.getTitle(), query));
@@ -197,6 +199,8 @@ public class MediaArchiveController {
         String eraKey = selectedEra == null ? null : selectedEra.getKey();
         String filterQuery = mediaQuery(tab, sortKey, query, selectedMembers, rangeStart, rangeEnd, legacyShortsFilter, eraKey);
         model.addAttribute("mediaQuery", filterQuery);
+        String requestQuery = request.getQueryString();
+        model.addAttribute("mediaEditReturnTo", requestQuery == null ? "/media" : "/media?" + requestQuery);
         model.addAttribute("shortsTabHref", "/media?tab=shorts" + mediaQuery("", sortKey, query, selectedMembers, rangeStart, rangeEnd, false, null));
         model.addAttribute("signalEra", selectedEra == null ? "" : selectedEra.getKey());
         model.addAttribute("hasSignalEra", selectedEra != null);
@@ -367,12 +371,25 @@ public class MediaArchiveController {
                               @RequestParam(required = false) String publishedOn,
                               @RequestParam(value = "artistNames", required = false) List<String> artistNames,
                               @RequestParam(defaultValue = "all") String tab,
+                              @RequestParam(required = false) String returnTo,
                               HttpServletRequest request,
                               HttpSession session) {
         aboutAdminAuth.requireAdmin(request, session);
         String names = artistNames == null ? "" : String.join(",", artistNames);
         media.updateDetails(youtubeId, description, publishedOn, names, tab);
+        if (isMediaListLocation(returnTo)) return "redirect:" + returnTo;
         return "redirect:/media?tab=" + normalizeTab(tab);
+    }
+
+    private static boolean isMediaListLocation(String value) {
+        if (value == null || value.isBlank()) return false;
+        try {
+            URI uri = URI.create(value);
+            return !uri.isAbsolute() && uri.getRawAuthority() == null
+                    && "/media".equals(uri.getRawPath()) && uri.getRawFragment() == null;
+        } catch (IllegalArgumentException ignored) {
+            return false;
+        }
     }
 
     private static LocalDate parseDate(String raw) {
@@ -437,10 +454,12 @@ public class MediaArchiveController {
         return List.copyOf(names);
     }
 
-    private static boolean matchesMembers(String artistNames, List<String> selected) {
+    private static boolean matchesMembers(String artistNames, List<String> selected, boolean allMembersSelected) {
         if (selected == null || selected.isEmpty()) return true;
+        List<String> cast = splitNames(artistNames);
+        if (MemberPortraitOptions.coversFullLineup(cast)) return allMembersSelected;
         Set<String> names = new LinkedHashSet<>();
-        for (String name : splitNames(artistNames)) names.add(MediaOrdering.memberKey(name));
+        for (String name : cast) names.add(MediaOrdering.memberKey(name));
         for (String member : selected) {
             if (names.contains(MediaOrdering.memberKey(member))) return true;
         }

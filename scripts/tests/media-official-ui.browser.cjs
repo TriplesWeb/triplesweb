@@ -133,10 +133,18 @@ ${read('css/media-page.css')}
   <section class="media-shorts is-preview">
     <article class="media-short">
       <a class="media-short__open" href="/media/shorts/qdQ6RN_aOO4" data-tab="shorts" data-kind="" data-title="'ANDLESS' in Chicago" data-duration="0:57">
+        <span class="media-short__thumb">
+          <span class="media-card__time" aria-label="재생시간 0:57">0:57</span>
+        </span>
         <span class="media-short__caption">
           <strong>'ANDLESS' in Chicago</strong>
+          <span class="media-card__members">
+            <span class="archive-member-chip archive-symbol-chip" aria-label="코토네">
+              <img src="${kotoneLogo}" alt="">
+            </span>
+          </span>
           <span class="media-short__meta">
-            <span aria-label="재생시간 0:57">0:57</span>
+            <span>조회수 123</span>
             <time datetime="2026-11-22" aria-label="유튜브 등록일 2026.11.22">2026.11.22</time>
           </span>
         </span>
@@ -311,11 +319,11 @@ ${read('css/media-page.css')}
     assert.equal(await page.locator('[data-media-cols-option]').count(), 3);
     assert.deepEqual(await page.locator('[data-media-cols-option]').allTextContents(), ['3줄', '4줄', '5줄']);
     assert.equal(await page.locator('.media-grid').getAttribute('data-cols'), '3');
-    const members = page.locator('.media-card__members');
+    const members = page.locator('.media-card .media-card__members');
     const chip = members.locator('.archive-member-chip').first();
     await chip.locator('img').waitFor();
     await page.waitForFunction(() => {
-      const img = document.querySelector('.media-card__members .archive-symbol-chip img');
+      const img = document.querySelector('.media-card .media-card__members .archive-symbol-chip img');
       return img && img.complete && img.naturalWidth > 1;
     });
     assert.equal(await chip.getAttribute('aria-label'), '코토네');
@@ -421,7 +429,15 @@ ${read('css/media-page.css')}
     assert.ok(Math.abs(pagerTopOpen - sizes.pagerTop) < 2, 'pager should not move when member modal opens');
     await page.locator('#mediaPickMemberModal .site-modal-dialog').screenshot({ path: '/opt/cursor/artifacts/media-member-select-modal.png' });
     await page.locator('#mediaPickMemberModal [data-site-dismiss="modal"]').click().catch(() => {});
-    assert.equal(await page.locator('.media-short__meta [aria-label="재생시간 0:57"]').textContent(), '0:57');
+    const shortsThumb = page.locator('.media-short__thumb');
+    const shortTime = shortsThumb.getByLabel('재생시간 0:57');
+    assert.equal(await shortTime.textContent(), '0:57');
+    const thumbBox = await shortsThumb.boundingBox();
+    const timeBox = await shortTime.boundingBox();
+    assert.ok(timeBox.x > thumbBox.x + thumbBox.width / 2, 'duration should be on the right of the thumbnail');
+    assert.ok(timeBox.y > thumbBox.y + thumbBox.height / 2, 'duration should be at the bottom of the thumbnail');
+    assert.match(await page.locator('.media-short__meta').textContent(), /조회수 123/);
+    assert.equal(await page.locator('.media-short__caption .archive-symbol-chip img').getAttribute('src'), kotoneLogo);
     assert.equal(await page.locator('.media-short__meta time').getAttribute('datetime'), '2026-11-22');
     assert.equal(await page.locator('.media-short__caption strong').first().textContent(), "'ANDLESS' in Chicago");
 

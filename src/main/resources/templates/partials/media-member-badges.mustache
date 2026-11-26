@@ -1,0 +1,10 @@
+{{#hasMembers}}
+<span class="media-card__members">
+    {{#memberBadges}}
+    <span class="archive-member-chip{{#fullLineup}} media-full-lineup{{/fullLineup}}{{#hasSymbol}} archive-symbol-chip{{/hasSymbol}}" style="--member-color: {{color}};" title="{{#fullLineup}}{{title}}{{/fullLineup}}{{^fullLineup}}{{name}}{{/fullLineup}}" aria-label="{{name}}">
+        {{#hasImage}}<img src="{{image}}" alt="" referrerpolicy="no-referrer" loading="lazy" decoding="async">{{/hasImage}}
+        <span class="archive-chip-name">{{name}}</span>
+    </span>
+    {{/memberBadges}}
+</span>
+{{/hasMembers}}

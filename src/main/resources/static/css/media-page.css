@@ -906,11 +906,18 @@ body.media-page {
 }
 
 .media-short__open {
-    position: relative;
-    display: block;
+    display: flex;
+    flex-direction: column;
     height: 100%;
     color: inherit;
     text-decoration: none;
+}
+
+.media-short__thumb {
+    position: relative;
+    flex: 1 1 0;
+    min-height: 0;
+    overflow: hidden;
 }
 
 .media-short:nth-child(4n + 1) {
@@ -936,25 +943,25 @@ body.media-page {
 
 .media-short__play {
     position: absolute;
-    top: 42%;
+    top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
 }
 
 .media-short__caption {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    left: 0;
     display: flex;
+    flex: 0 0 auto;
     flex-direction: column;
     justify-content: flex-end;
     gap: 6px;
     min-height: 72px;
-    height: auto;
     padding: 18px 16px 16px;
     background: #10161c;
     line-height: 1.5;
+}
+
+.media-short__caption .media-card__members {
+    padding: 0;
 }
 
 .media-short__meta {

@@ -181,16 +181,7 @@
                         <span class="media-card__title">{{title}}</span>
                     </span>
                 </a>
-                {{#hasMembers}}
-                <div class="media-card__members">
-                    {{#memberBadges}}
-                    <span class="archive-member-chip{{#fullLineup}} media-full-lineup{{/fullLineup}}{{#hasSymbol}} archive-symbol-chip{{/hasSymbol}}" style="--member-color: {{color}};" title="{{#fullLineup}}{{title}}{{/fullLineup}}{{^fullLineup}}{{name}}{{/fullLineup}}" aria-label="{{name}}">
-                        {{#hasImage}}<img src="{{image}}" alt="" referrerpolicy="no-referrer" loading="lazy" decoding="async">{{/hasImage}}
-                        <span class="archive-chip-name">{{name}}</span>
-                    </span>
-                    {{/memberBadges}}
-                </div>
-                {{/hasMembers}}
+                {{>partials/media-member-badges}}
                 <div class="media-card__foot">
                     <span class="media-card__meta">
                         <span class="media-card__views">조회수 {{viewCountFmt}}</span>
@@ -237,12 +228,18 @@
                    data-duration="{{duration}}"
                    data-views="{{viewCountFmt}}"
                    data-published="{{publishedLabel}}">
-                    <img class="media-short__still" src="https://img.youtube.com/vi/{{youtubeId}}/hqdefault.jpg" alt="" loading="lazy" decoding="async">
-                    <img class="media-short__play" src="{{#asset}}/images/media/play-short.svg{{/asset}}" width="46" height="46" alt="" decoding="async">
+                    <span class="media-short__thumb">
+                        <img class="media-short__still" src="https://img.youtube.com/vi/{{youtubeId}}/hqdefault.jpg" alt="" loading="lazy" decoding="async">
+                        <img class="media-short__play" src="{{#asset}}/images/media/play-short.svg{{/asset}}" width="46" height="46" alt="" decoding="async">
+                        {{#duration}}<span class="media-card__time" aria-label="재생시간 {{duration}}">{{duration}}</span>{{/duration}}
+                    </span>
                     <span class="media-short__caption">
                         <strong>{{title}}</strong>
-                        {{#duration}}<span class="media-short__meta"><span aria-label="재생시간 {{duration}}">{{duration}}</span>{{#publishedLabel}}<time datetime="{{publishedOn}}" aria-label="유튜브 등록일 {{publishedLabel}}">{{publishedLabel}}</time>{{/publishedLabel}}</span>{{/duration}}
-                        {{^duration}}{{#publishedLabel}}<span class="media-short__meta"><time datetime="{{publishedOn}}" aria-label="유튜브 등록일 {{publishedLabel}}">{{publishedLabel}}</time></span>{{/publishedLabel}}{{/duration}}
+                        {{>partials/media-member-badges}}
+                        <span class="media-short__meta">
+                            <span>조회수 {{viewCountFmt}}</span>
+                            {{#publishedLabel}}<time datetime="{{publishedOn}}" aria-label="유튜브 등록일 {{publishedLabel}}">{{publishedLabel}}</time>{{/publishedLabel}}
+                        </span>
                     </span>
                 </a>
             </article>
@@ -483,6 +480,7 @@
             </div>
             <div class="ar-dialog-body">
                 <input type="hidden" name="youtubeId" id="mediaEditId" value="">
+                <input type="hidden" name="returnTo" value="{{mediaEditReturnTo}}">
                 <label class="ar-field">미디어 카테고리
                     <select name="tab" id="mediaEditTab">
                         <option value="mv">MV</option>

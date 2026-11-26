@@ -14,6 +14,7 @@ import com.example.triplesweb.service.MediaChannelSyncService;
 import com.example.triplesweb.service.MediaService;
 import com.example.triplesweb.service.MediaViewCountService;
 import com.example.triplesweb.service.UnitService;
+import com.example.triplesweb.util.MemberPortraitOptions;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jsoup.Jsoup;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,6 +37,7 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
@@ -163,10 +165,48 @@ class MediaArchiveControllerTest {
     }
 
     @Test
+    void updatingMediaKeepsTheOriginalTabAndFilters() throws Exception {
+        String returnTo = "/media?tab=all&page=2&sort=oldest&members=%EC%9C%A4%EC%84%9C%EC%97%B0";
+        mvc.perform(post("/media_update").param("youtubeId", "HwTZTz9j2e0")
+                        .param("tab", "behind").param("returnTo", returnTo)
+                        .param("description", "설명").param("publishedOn", "2026-11-23").param("artistNames", "윤서연"))
+                .andExpect(redirectedUrl(returnTo));
+        verify(media).updateDetails("HwTZTz9j2e0", "설명", "2026-11-23", "윤서연", "behind");
+
+        mvc.perform(post("/media_update").param("youtubeId", "HwTZTz9j2e0")
+                        .param("tab", "behind").param("returnTo", "//example.com/media"))
+                .andExpect(redirectedUrl("/media?tab=behind"));
+    }
+
+    @Test
+    void partialMemberFiltersExcludeTheFullLineupButKeepIndividualVideos() throws Exception {
+        List<String> lineup = MemberPortraitOptions.koreanOrder();
+        MediaDto full = video(1, "contents", "단체 무대", "3:20", "2026-11-02");
+        full.setArtistNames(String.join(",", lineup));
+        MediaDto duo = video(2, "contents", "두 명 영상", "3:30", "2026-11-01");
+        duo.setArtistNames("윤서연,정혜린");
+        when(media.allByTab("contents")).thenReturn(List.of(full, duo));
+
+        for (int memberCount : List.of(0, 2, 23, 24)) {
+            var request = get("/media").queryParam("tab", "contents");
+            if (memberCount > 0) {
+                request.queryParam("members", lineup.subList(0, memberCount).toArray(String[]::new));
+            }
+            var html = mvc.perform(request).andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString();
+            var page = Jsoup.parse(html);
+            assertThat(page.select(".media-card__title").eachText()).contains("두 명 영상");
+            assertThat(page.select(".media-card__members .media-full-lineup"))
+                    .hasSize(memberCount == 0 || memberCount == 24 ? 1 : 0);
+        }
+    }
+
+    @Test
     void shortsTabUsesStoredFormatAndShowsMetadata() throws Exception {
         MediaDto shortClip = video(20, "shorts",
                 "트리플에스가 말아주는 폭풍 칼군무 퍼포먼스 #MCOUNTDOWN #엠카운트다운 #tripleS",
                 "1:39", "2026-10-24");
+        shortClip.setArtistNames("코토네");
         MediaDto stage = video(21, "music", "tripleS - Baby Flower 260614 @ INKIGAYO",
                 "0:44", "2026-06-14");
         when(media.listAll()).thenReturn(List.of(shortClip, stage));
@@ -177,8 +217,11 @@ class MediaArchiveControllerTest {
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         org.jsoup.nodes.Document shortsPage = Jsoup.parse(shorts);
-        assertThat(shortsPage.select(".media-short__meta").text()).contains("1:39", "2026.10.24");
+        assertThat(shortsPage.select(".media-short__thumb .media-card__time").text()).isEqualTo("1:39");
+        assertThat(shortsPage.select(".media-short__meta").text()).contains("조회수 10", "2026.10.24").doesNotContain("1:39");
         assertThat(shortsPage.select(".media-short__meta time").attr("datetime")).isEqualTo("2026-10-24");
+        assertThat(shortsPage.select(".media-short__caption .archive-symbol-chip img").attr("src"))
+                .isEqualTo("/images/archive/member-logos/11.png");
         assertThat(shortsPage.select(".ar-reset[hidden]")).hasSize(1);
         String searched = mvc.perform(get("/media").param("tab", "shorts").param("q", "말아주는"))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
