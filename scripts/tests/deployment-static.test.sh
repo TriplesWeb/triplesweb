@@ -65,10 +65,20 @@ grep -Fq 'driver: json-file' docker-compose.yml
 grep -Fq 'max-size: "10m"' docker-compose.yml
 grep -Fq 'max-file: "3"' docker-compose.yml
 grep -Fq 'mkdir -p -m 0750 logs' scripts/deploy-pi-app.sh
-grep -Eq '^[[:space:]]+docker/mariadb$' .github/workflows/deploy-main.yml
-grep -Fq "ssh pi \"mkdir -p '\${PI_DEPLOY_PATH}/docker/mariadb'\"" .github/workflows/deploy-main.yml
-grep -Fq 'scp docker/mariadb/empty.cnf "pi:${PI_DEPLOY_PATH}/docker/mariadb/empty.cnf"' .github/workflows/deploy-main.yml
-grep -Fq 'scp docker-compose.yml "pi:${PI_DEPLOY_PATH}/docker-compose.yml"' .github/workflows/deploy-main.yml
+deploy_workflow=.github/workflows/deploy-main.yml
+grep -Fq "if: github.ref == 'refs/heads/main'" "$deploy_workflow"
+grep -Fxq '          ref: ${{ github.sha }}' "$deploy_workflow"
+grep -Fq 'test "$(git rev-parse HEAD)" = "$GITHUB_SHA"' "$deploy_workflow"
+grep -Eq '^[[:space:]]+docker/mariadb$' "$deploy_workflow"
+sync_step="$(awk '
+  /^      - name: Preflight / { exit }
+  /^      - name: / { syncing = ($0 == "      - name: Sync production Compose files") }
+  syncing { print }
+' "$deploy_workflow")"
+reject_match -Eq '^[[:space:]]+if:' <<< "$sync_step"
+grep -Fq "ssh pi \"mkdir -p '\${PI_DEPLOY_PATH}/docker/mariadb'\"" <<< "$sync_step"
+grep -Fq 'scp docker/mariadb/empty.cnf "pi:${PI_DEPLOY_PATH}/docker/mariadb/empty.cnf"' <<< "$sync_step"
+grep -Fq 'scp docker-compose.yml "pi:${PI_DEPLOY_PATH}/docker-compose.yml"' <<< "$sync_step"
 reject_match -Fq 'profiles: [legacy]' docker-compose.yml
 grep -Fq 'flock -w 900' scripts/deploy-pi-app.sh
 reject_match -Fq -- '--remove-orphans' scripts/deploy-pi-app.sh
