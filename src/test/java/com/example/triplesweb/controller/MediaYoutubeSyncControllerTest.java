@@ -10,8 +10,10 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -22,6 +24,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class MediaYoutubeSyncControllerTest {
     @Autowired MockMvc mvc;
     @MockitoBean MediaChannelSyncService sync;
+
+    @Test
+    void anonymousCanReadSearchStatusAndKickSearch() throws Exception {
+        when(sync.externalSearchReady()).thenReturn(false);
+        when(sync.externalSearchRunning()).thenReturn(true);
+        mvc.perform(get("/api/media/youtube/search-status"))
+                .andExpect(status().isOk())
+                .andExpect(content().json("{\"ready\":false,\"running\":true}", true));
+        verify(sync).ensureExternalSearch();
+    }
 
     @Test
     void anonymousCannotSync() throws Exception {

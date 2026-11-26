@@ -2,12 +2,17 @@ package com.example.triplesweb.controller;
 
 import com.example.triplesweb.config.MustacheConfig;
 import com.example.triplesweb.dto.MediaDto;
+import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.repository.ScheduleRepository;
 import com.example.triplesweb.service.AboutAdminAuth;
 import com.example.triplesweb.service.ArtistAdminService;
+import com.example.triplesweb.service.ChemistryGroupService;
+import com.example.triplesweb.service.ChemistryService;
+import com.example.triplesweb.service.MediaChannelSyncService;
 import com.example.triplesweb.service.MediaService;
 import com.example.triplesweb.service.MediaViewCountService;
+import com.example.triplesweb.service.UnitService;
 import org.jsoup.Jsoup;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -38,10 +44,14 @@ class MediaArchiveControllerTest {
     @Autowired MockMvc mvc;
     @MockitoBean MediaService media;
     @MockitoBean MediaViewCountService mediaViewCounts;
+    @MockitoBean MediaChannelSyncService youtubeSync;
     @MockitoBean ArtistRepository artistRepository;
     @MockitoBean ScheduleRepository scheduleRepository;
     @MockitoBean AboutAdminAuth aboutAdminAuth;
     @MockitoBean ArtistAdminService artistAdmin;
+    @MockitoBean UnitService unitService;
+    @MockitoBean ChemistryService chemistryService;
+    @MockitoBean ChemistryGroupService chemistryGroupService;
 
     @BeforeEach
     void stubs() {
@@ -50,7 +60,7 @@ class MediaArchiveControllerTest {
                 .thenReturn(false);
         List<MediaDto> videos = new ArrayList<>();
         for (int i = 0; i < 30; i++) {
-            videos.add(video(i, i < 5 ? "0:40" : "3:11"));
+            videos.add(video(i, i < 5 ? "shorts" : "contents", "영상 " + i, i < 5 ? "0:40" : "3:11", "2024-05-06"));
         }
         when(media.listAll()).thenReturn(videos);
     }
@@ -60,23 +70,47 @@ class MediaArchiveControllerTest {
         String first = mvc.perform(get("/media"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("@triplescosmos")))
+                .andExpect(content().string(containsString("등록순")))
+                .andExpect(content().string(containsString("삭제 하시겠습니까?")))
+                .andExpect(content().string(not(containsString("채널 동기화"))))
                 .andExpect(content().string(containsString("ar-page-jump")))
                 .andExpect(content().string(containsString("name=\"go\"")))
                 .andExpect(content().string(containsString("더보기")))
                 .andExpect(content().string(containsString("추천 동영상")))
                 .andExpect(content().string(not(containsString("쇼츠 추가"))))
                 .andExpect(content().string(containsString("Shorts &amp; 릴스")))
+                .andExpect(content().string(containsString("직캠")))
+                .andExpect(content().string(containsString("음방")))
+                .andExpect(content().string(containsString("외부 콘텐츠")))
                 .andReturn().getResponse().getContentAsString();
         org.jsoup.nodes.Document document = Jsoup.parse(first);
         assertThat(document.select("article.media-card")).hasSize(24);
         assertThat(document.select(".media-playlist__head .media-playlist-add")).hasSize(1);
         assertThat(document.select("article.media-card .media-card__edit.site-btn--primary[data-admin-only]")).hasSize(24);
         assertThat(document.select("article.media-card .media-card__delete")).isEmpty();
-        assertThat(document.select(".media-short__actions, [data-short-add], #mediaAddModal")).isEmpty();
+        assertThat(document.select(".media-short__actions, [data-short-add]")).isEmpty();
+        assertThat(document.select("#mediaAddModal")).hasSize(1);
+        assertThat(document.select("#mediaAddOpen.ar-submit")).hasSize(1);
         assertThat(document.select("#mediaPickModal #mediaPickConfirm").text()).isEqualTo("선택 완료");
-        assertThat(document.select("#mediaEditTab option")).hasSize(5);
+        assertThat(document.select("#mediaPickMini")).hasSize(1);
+        assertThat(document.select("#mediaMemberPanel")).hasSize(1);
+        assertThat(document.select("#mediaPickPager")).hasSize(1);
+        assertThat(document.select("#ytModalUnit.ar-unit-badge")).hasSize(1);
+        assertThat(document.select("#ytModalDelete[data-confirm-compact]")).hasSize(1);
+        assertThat(document.select("#ytModalDelete").attr("data-confirm-accept")).isEqualTo("삭제");
+        assertThat(document.select("#mediaEditTab option")).hasSize(9);
+        assertThat(document.select("#mediaPickMemberToggle")).hasSize(1);
+        assertThat(document.select("#mediaPickMemberModal")).hasSize(1);
+        assertThat(document.select(".media-cols-icon span")).hasSize(3);
+        assertThat(document.select("[data-media-cols-option]")).hasSize(3);
+        assertThat(document.select("[data-media-cols-option]").eachText()).containsExactly("3줄", "4줄", "5줄");
+        assertThat(document.select(".media-feature__head h2").text()).isEqualTo("재생목록");
+        assertThat(document.select(".media-channel").attr("aria-label")).isEqualTo("YouTube 채널");
+        assertThat(document.select(".media-channel").text().trim()).isEmpty();
+        assertThat(document.select(".media-short__caption small")).isEmpty();
         assertThat(document.select(".media-archive .media-card__title").eachText())
                 .noneMatch(title -> title.equals("영상 0") || title.equals("영상 1"));
+        verify(youtubeSync).ensureExternalSearch();
 
         String second = mvc.perform(get("/media").param("page", "2"))
                 .andExpect(status().isOk())
@@ -84,6 +118,60 @@ class MediaArchiveControllerTest {
         org.jsoup.nodes.Document secondPage = Jsoup.parse(second);
         assertThat(secondPage.select("article.media-card")).hasSize(1);
         assertThat(secondPage.select(".ar-page-jump-meta").text()).isEqualTo("2/2");
+    }
+
+    @Test
+    void shortsTabUsesStoredFormatAndShowsMetadata() throws Exception {
+        MediaDto shortClip = video(20, "shorts",
+                "트리플에스가 말아주는 폭풍 칼군무 퍼포먼스 #MCOUNTDOWN #엠카운트다운 #tripleS",
+                "1:39", "2026-10-24");
+        MediaDto stage = video(21, "music", "tripleS - Baby Flower 260614 @ INKIGAYO",
+                "0:44", "2026-06-14");
+        when(media.listAll()).thenReturn(List.of(shortClip, stage));
+        when(media.allByTab("music")).thenReturn(List.of(stage));
+
+        String shorts = mvc.perform(get("/media").param("tab", "shorts"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        org.jsoup.nodes.Document shortsPage = Jsoup.parse(shorts);
+        assertThat(shortsPage.select(".media-short__meta").text()).contains("1:39", "2026.10.24");
+        assertThat(shortsPage.select(".media-short__meta time").attr("datetime")).isEqualTo("2026-10-24");
+        assertThat(shortsPage.select(".ar-reset[hidden]")).hasSize(1);
+        String searched = mvc.perform(get("/media").param("tab", "shorts").param("q", "말아주는"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertThat(Jsoup.parse(searched).select(".ar-reset:not([hidden])")).hasSize(1);
+        assertThat(shortsPage.select(".media-short__caption strong").eachText())
+                .anyMatch(title -> title.contains("말아주는"));
+        assertThat(shortsPage.select(".media-short__caption strong").eachText())
+                .noneMatch(title -> title.contains("Baby Flower"));
+
+        String music = mvc.perform(get("/media").param("tab", "music"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        org.jsoup.nodes.Document musicPage = Jsoup.parse(music);
+        assertThat(musicPage.select(".media-archive .media-card__title").eachText())
+                .anyMatch(title -> title.contains("Baby Flower"))
+                .noneMatch(title -> title.contains("말아주는"));
+        assertThat(musicPage.select(".media-shorts")).isEmpty();
+    }
+
+    @Test
+    void signalEraSubtabsFilterByHausPeriod() throws Exception {
+        MediaDto gapyeong = video(1, "signal", "SIGNAL 221130", "8:00", "2022-11-30");
+        MediaDto debut = video(2, "signal", "SIGNAL 240520", "8:00", "2024-05-20");
+        when(media.allByTab("signal")).thenReturn(List.of(gapyeong, debut));
+
+        String html = mvc.perform(get("/media").param("tab", "signal").param("era", "gapyeong"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        org.jsoup.nodes.Document document = Jsoup.parse(html);
+        assertThat(document.select(".media-era-tabs .site-section-tab").eachText())
+                .contains("가평 HAUS", "성수/여의도/남산", "모두 HAUS", "24명 데뷔 이후");
+        assertThat(document.select(".media-era-tabs a[href*=era=gapyeong]")).isNotEmpty();
+        assertThat(document.select("input[name=era]").attr("value")).isEqualTo("gapyeong");
+        assertThat(document.select(".media-archive .media-card__title").eachText())
+                .anyMatch(title -> title.contains("221130"))
+                .noneMatch(title -> title.contains("240520"));
     }
 
     @Test
@@ -105,22 +193,74 @@ class MediaArchiveControllerTest {
                 video(1, "mv", "ANDLESS Official MV", "3:40", "2026-11-01"),
                 video(2, "mv", "Other Official MV", "3:20", "2026-11-02"),
                 video(3, "contents", "ANDLESS behind", "4:00", "2026-11-03"),
-                video(4, "mv", "ANDLESS teaser", "0:40", "2026-11-04"),
+                video(4, "contents", "ANDLESS teaser", "0:40", "2026-11-04"),
+                video(6, "shorts", "ANDLESS official short", "0:35", "2026-11-04"),
                 video(5, "mv", "andless live clip", "2:10", "2026-10-01")));
 
         String html = mvc.perform(get("/media"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         org.jsoup.nodes.Document document = Jsoup.parse(html);
-        assertThat(document.select(".media-feature.is-collapsed")).isNotEmpty();
+        assertThat(document.select("section.media-feature")).isNotEmpty();
+        assertThat(document.select("section.media-feature[hidden]")).isEmpty();
+        assertThat(document.select(".media-feature.is-collapsed")).isEmpty();
+        assertThat(document.select(".media-feature__hero.is-empty")).isNotEmpty();
+        assertThat(document.select(".media-feature__still[data-no-placeholder]")).isNotEmpty();
+        assertThat(document.select("#mediaPlaylist")).isNotEmpty();
         assertThat(document.select(".media-suggest.is-collapsed")).isNotEmpty();
         assertThat(document.select(".media-playlist__item")).isEmpty();
         assertThat(document.select(".media-feature__hero").attr("data-ytid")).isEmpty();
         assertThat(document.select(".media-suggest__card")).isEmpty();
         assertThat(document.select(".media-card__views")).isNotEmpty();
         assertThat(document.select(".media-archive .media-card__title").eachText())
-                .doesNotContain("ANDLESS teaser");
+                .contains("ANDLESS teaser").doesNotContain("ANDLESS official short");
         assertThat(document.select(".media-short")).hasSize(1);
+    }
+
+    @Test
+    void pickCatalogJsonOmitsShortsAndLoadsOnDemand() throws Exception {
+        String json = mvc.perform(get("/media/pick-catalog.json"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        org.assertj.core.api.Assertions.assertThat(json).contains("영상 5");
+        org.assertj.core.api.Assertions.assertThat(json).doesNotContain("영상 0");
+        org.assertj.core.api.Assertions.assertThat(json).doesNotContain("\"description\"");
+    }
+
+    @Test
+    void kotoneCardUsesArchiveSymbolChipNotPortrait() throws Exception {
+        Artist kotone = new Artist();
+        kotone.setArtistId(11L);
+        kotone.setName("코토네");
+        kotone.setEngName("Kotone");
+        kotone.setColor("#ffde00");
+        kotone.setProfileImage("/portrait-kotone.png");
+        when(artistRepository.findAll()).thenReturn(List.of(kotone));
+        MediaDto video = video(10, "mv", "코토네 영상", "3:11", "2024-05-06");
+        video.setArtistNames("코토네");
+        when(media.listAll()).thenReturn(List.of(video));
+
+        String html = mvc.perform(get("/media"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("archive-symbol-chip")))
+                .andExpect(content().string(containsString("/images/archive/member-logos/11.png")))
+                .andReturn().getResponse().getContentAsString();
+        org.jsoup.nodes.Document document = Jsoup.parse(html);
+        org.jsoup.nodes.Element chip = document.select(".media-card__members .archive-member-chip").first();
+        assertThat(chip).isNotNull();
+        assertThat(chip.hasClass("archive-symbol-chip")).isTrue();
+        assertThat(chip.select("img").attr("src")).isEqualTo("/images/archive/member-logos/11.png");
+        String catalog = document.select("#mediaCatalog").html();
+        assertThat(catalog).contains("\"hasSymbol\":true");
+        assertThat(catalog).contains("/images/archive/member-logos/11.png");
+        assertThat(catalog).contains("/portrait-kotone.png");
+    }
+
+    @Test
+    void newMediaFormRedirectsToAddModal() throws Exception {
+        mvc.perform(get("/media_new").param("tab", "signal"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/media?tab=signal&add=1"));
     }
 
     @Test

@@ -28,6 +28,7 @@ public final class MediaOrdering {
             case "long" -> videos.sort(Comparator
                     .comparing(MediaOrdering::seconds, Comparator.nullsLast(Comparator.reverseOrder()))
                     .thenComparing(newestId));
+            case "registered" -> videos.sort(newestId);
             default -> videos.sort(Comparator
                     .comparing(MediaOrdering::published, Comparator.nullsLast(Comparator.reverseOrder()))
                     .thenComparing(newestId));

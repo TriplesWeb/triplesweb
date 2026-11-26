@@ -24,6 +24,9 @@ const urls={
    const request=route.request(),url=new URL(request.url());
    if(libraries[request.url()])return route.fulfill({body:libraries[request.url()],contentType:request.url().endsWith('.css')?'text/css':'application/javascript'});
    if(url.origin!=='https://filters.test')return route.fulfill({body:'',contentType:url.pathname.endsWith('.css')?'text/css':'application/javascript'});
+   if(/\.(png|jpe?g|webp|gif)$/i.test(url.pathname)){
+    return route.fulfill({contentType:'image/png',body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==','base64')});
+   }
    if(url.pathname==='/api/artist/admin/status')return route.fulfill({json:{configured:true,admin:true}});
     if(url.pathname==='/api/calendar-decorations/birthdays')return route.fulfill({status:503});
     if(url.pathname==='/api/schedule/events'){
@@ -148,10 +151,12 @@ const urls={
   const day=new Date().toISOString().slice(0,10);
   await page.locator('#startInput').fill(day);
   await page.locator('#addScheduleCategory').selectOption('ANNIVERSARY');
-  await page.locator('#addArtistNames').selectOption({label:'윤서연'});
+  await page.locator('#addSchedulePager .ar-page-jump').waitFor();
+  await page.locator('#add-schedule-picker .mpp-item[data-name="윤서연"]').click();
+  assert.equal(await page.locator('#add-schedule-picker .mpp-item[data-name="윤서연"]').getAttribute('aria-pressed'),'true');
   assert.equal(await page.locator('#addSchedulePreview').textContent(),'🎂 새 기념일');
   assert.equal(await page.locator('#addSchedulePreview').evaluate(el=>getComputedStyle(el).borderLeftColor),'rgb(34, 174, 255)');
-  await page.locator('#addScheduleForm button[type=submit]').click();
+  await page.locator('#addScheduleForm .ar-submit').click();
   await page.locator('.site-feedback-dialog button[value=accept]').click();
   await page.waitForFunction(()=>!document.getElementById('addScheduleModal').classList.contains('show'));
   assert.equal(posts[0].params.get('category'),'ANNIVERSARY');
@@ -176,7 +181,7 @@ const urls={
   assert.equal(await page.locator('#editScheduleCategory').inputValue(),'ANNIVERSARY');
   await page.locator('#editScheduleCategory').selectOption('RELEASE');
   await page.locator('#editTitleInput').fill('새 음원 발매');
-  await page.locator('#editScheduleForm button[type=submit]').click();
+  await page.locator('#editScheduleForm .ar-submit').click();
   await page.locator('.site-feedback-dialog button[value=accept]').click();
   await page.waitForFunction(()=>!document.getElementById('editScheduleModal').classList.contains('show'));
   assert.equal(posts[1].params.get('category'),'RELEASE');
@@ -191,7 +196,7 @@ const urls={
   await page.locator('#titleInput').fill(longTitle);
   await page.locator('#startInput').fill(day.slice(0,8)+'01');
   await page.locator('#addScheduleCategory').selectOption('FANSIGN');
-  await page.locator('#addScheduleForm button[type=submit]').click();
+  await page.locator('#addScheduleForm .ar-submit').click();
   await page.locator('.site-feedback-dialog button[value=accept]').click();
   await page.waitForFunction(()=>!document.getElementById('addScheduleModal').classList.contains('show'));
   async function visibleScheduleEvent(title){

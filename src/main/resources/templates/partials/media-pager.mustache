@@ -22,6 +22,7 @@
         {{#to}}<input type="hidden" name="to" value="{{to}}">{{/to}}
         {{#selectedMembers}}<input type="hidden" name="members" value="{{.}}">{{/selectedMembers}}
         {{#shortsOnly}}<input type="hidden" name="kind" value="shorts">{{/shortsOnly}}
+        {{#hasSignalEra}}<input type="hidden" name="era" value="{{signalEra}}">{{/hasSignalEra}}
         <span class="ar-page-jump-meta">{{mediaPageDisplay}}<span aria-hidden="true">/</span>{{mediaTotalPages}}</span>
         <label class="ar-page-jump-field">
             <span class="visually-hidden">이동할 페이지</span>

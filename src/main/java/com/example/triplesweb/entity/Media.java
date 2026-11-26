@@ -53,6 +53,9 @@ public class Media {
     @Column(name = "published_on")
     private LocalDate publishedOn;
 
+    @Column(name = "channel_id", length = 64)
+    private String channelId;
+
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "media_artist",

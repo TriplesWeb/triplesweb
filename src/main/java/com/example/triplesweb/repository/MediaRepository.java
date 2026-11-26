@@ -29,6 +29,10 @@ public interface MediaRepository extends JpaRepository<Media, Long> {
     @Query("select distinct m from Media m where m.tab = :tab order by m.sortOrder asc, m.id asc")
     List<Media> findAllWithArtistsByTab(@Param("tab") String tab);
 
+    @EntityGraph(attributePaths = "artists")
+    @Query("select distinct m from Media m where m.tab in :tabs order by m.sortOrder asc, m.id asc")
+    List<Media> findAllWithArtistsByTabs(@Param("tabs") Collection<String> tabs);
+
     @Query("select m.youtubeId from Media m order by m.id asc")
     List<String> findAllYoutubeIds();
 

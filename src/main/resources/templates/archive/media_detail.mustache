@@ -4,6 +4,8 @@
     <title>{{video.title}} - 트리플에스 미디어</title>
     <style>
         body{ background:#000; color:#fff; overflow-x:hidden }
+        .media-detail-short { width:min(100%, 26rem, calc(76dvh * .5625)); margin-inline:auto; }
+        .media-detail-short iframe { display:block; width:100%; aspect-ratio:9 / 16; border:0; background:#000; }
         .video-title{ font-size:1.25rem; font-weight:700; margin-top:12px }
         .video-meta{ color:#9aa0a6; font-size:.9rem }
         .desc{ white-space:pre-wrap; color:#ddd; margin-top:1rem }
@@ -22,7 +24,7 @@
         <a href="/media?tab={{currentTab}}">← 미디어 목록</a>
     </nav>
     {{#video}}
-        <div class="site-ratio-16x9">
+        <div class="{{#shortsVideo}}media-detail-short{{/shortsVideo}}{{^shortsVideo}}site-ratio-16x9{{/shortsVideo}}">
             <iframe
                     data-site-youtube src="https://www.youtube.com/embed/{{youtubeId}}?rel=0&amp;enablejsapi=1"
                     title="{{title}}" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -30,7 +32,7 @@
         </div>
 
         <div class="video-title">{{title}}</div>
-        <div class="video-meta">조회수 {{viewCountFmt}}{{#publishedAtFmt}} · {{publishedAtFmt}}{{/publishedAtFmt}}</div>
+        <div class="video-meta">조회수 {{viewCountFmt}}{{#publishedLabel}} · {{publishedLabel}}{{/publishedLabel}}{{#duration}} · {{duration}}{{/duration}}</div>
 
         {{#description}}<div class="desc">{{.}}</div>{{/description}}
         {{#taggedArtists}}
@@ -50,7 +52,7 @@
     <h5 style="margin-bottom:1rem">다른 영상</h5>
     <div class="related-grid">
         {{#related}}
-            <a class="related-card" href="/media/{{../currentTab}}/{{youtubeId}}">
+            <a class="related-card" href="/media/{{tab}}/{{youtubeId}}">
                 <div class="related-thumb">
                     <img src="https://img.youtube.com/vi/{{youtubeId}}/hqdefault.jpg" alt="{{title}}">
                 </div>

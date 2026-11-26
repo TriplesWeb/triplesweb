@@ -31,6 +31,9 @@ class ScheduleCategoryControllerTest {
     @MockitoBean ArtistRepository artists;
     @MockitoBean ArtistSnapshotService artistSnapshot;
     @MockitoBean AboutAdminAuth auth;
+    @MockitoBean UnitService unitService;
+    @MockitoBean ChemistryService chemistryService;
+    @MockitoBean ChemistryGroupService chemistryGroupService;
     Artist artist;
     LocalDate day=LocalDate.now();
 
@@ -39,8 +42,20 @@ class ScheduleCategoryControllerTest {
     }
     @BeforeEach void setup() {
         artist=new Artist();artist.setArtistId(1L);artist.setName("윤서연");artist.setEngName("SeoYeon");artist.setColor("#22aeff");
-        when(artists.findAll()).thenReturn(List.of(artist));
-        when(artistSnapshot.findAll()).thenReturn(List.of(artist));
+        artist.setProfileImage("/images/artist/tab-frames/1.png");
+        List<Artist> roster=new ArrayList<>();
+        roster.add(artist);
+        for(int i=2;i<=13;i++){
+            Artist extra=new Artist();
+            extra.setArtistId((long)i);
+            extra.setName("테스트멤버"+i);
+            extra.setEngName("test"+i);
+            extra.setProfileImage("/images/artist/tab-frames/1.png");
+            extra.setColor("#00f5d4");
+            roster.add(extra);
+        }
+        when(artists.findAll()).thenReturn(roster);
+        when(artistSnapshot.findAll()).thenReturn(roster);
         when(auth.isAdmin(any(),any())).thenReturn(true);
         when(service.findOverlapping(any(), any(), isNull())).thenReturn(List.of(
             schedule(1,"팬사인회",ScheduleCategory.FANSIGN),schedule(2,"방송",ScheduleCategory.BROADCAST),
@@ -50,6 +65,7 @@ class ScheduleCategoryControllerTest {
         String html=mvc.perform(get("/schedule").requestAttr(org.springframework.security.web.csrf.CsrfToken.class.getName(),
                 new org.springframework.security.web.csrf.DefaultCsrfToken("X-XSRF-TOKEN","_csrf","fixture-csrf"))).andExpect(status().isOk()).andReturn().getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
         assertThat(html).contains("addScheduleCategory","editScheduleCategory","#a78bfa","#fb923c","#22aeff","#f87171","#7dd3fc","🎂 윤서연 생일");
+        assertThat(html).contains("id=\"addSchedulePager\"","add-schedule-picker","data-member-pager");
         assertThat(html).contains("유닛·기념일 관리","/api/calendar-decorations/birthdays");
         Files.createDirectories(Path.of("build/filter-pages"));
         Files.writeString(Path.of("build/filter-pages/schedule.html"),html);

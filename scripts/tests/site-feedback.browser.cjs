@@ -99,6 +99,24 @@ const css = fs.readFileSync(path.join(staticRoot, 'css/site-ui.css'), 'utf8');
     await page.evaluate(() => window.finishBusyTwo());
     await busy.waitFor({ state: 'hidden' });
 
+    const compact = await page.evaluate(async () => {
+      const pending = window.SiteFeedback.confirm('삭제 하시겠습니까?', { accept: '삭제', compact: true });
+      const box = document.querySelector('.site-feedback-dialog');
+      const state = {
+        compact: box.classList.contains('is-compact'),
+        titleHidden: box.querySelector('h2').hidden,
+        message: box.querySelector('p').textContent,
+        accept: box.querySelector('button[value=accept]').textContent
+      };
+      box.querySelector('button[value=cancel]').click();
+      await pending;
+      return state;
+    });
+    assert.equal(compact.compact, true);
+    assert.equal(compact.titleHidden, true);
+    assert.equal(compact.message, '삭제 하시겠습니까?');
+    assert.equal(compact.accept, '삭제');
+
     const save = page.getByRole('button', { name: '저장', exact: true });
     await save.click();
     assert.equal(await dialog.isVisible(), false);

@@ -11,7 +11,11 @@ public enum MediaTab {
     SIGNAL("signal","SIGNAL"),
     BEHIND("behind","비하인드"),
     SECRET("secret","시크릿베이스"),
-    CONTENTS("contents","기타 컨텐츠");
+    SHORTS("shorts","Shorts & 릴스"),
+    MUSIC("music","음방"),
+    FANCAM("fancam","직캠"),
+    CONTENTS("contents","기타 컨텐츠"),
+    EXTERNAL("external","외부 콘텐츠");
 
     private final String key;
     private final String kor;

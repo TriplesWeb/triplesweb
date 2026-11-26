@@ -2,11 +2,14 @@ package com.example.triplesweb.infra;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +17,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withServerError;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 import static org.hamcrest.Matchers.containsString;
 
@@ -90,6 +94,42 @@ class YoutubeDataApiClientTest {
         assertThat(videos.get(0).liveOrUpcoming()).isFalse();
         assertThat(videos.get(0).duration()).isEqualTo("3:11");
         assertThat(videos.get(1).liveOrUpcoming()).isTrue();
+        server.verify();
+    }
+
+    @Test
+    void searchesVideoIdsAndResolvesHandleToChannelId() {
+        server.expect(requestTo(containsString("/search")))
+                .andExpect(requestTo(containsString("q=%23tripleS")))
+                .andExpect(requestTo(containsString("channelId=UCSBSkpopxxxxxxxxxxxxx")))
+                .andRespond(withSuccess("""
+                        {"items":[{"id":{"videoId":"abcdefghijk"}}]}
+                        """, MediaType.APPLICATION_JSON));
+        server.expect(requestTo(containsString("/channels")))
+                .andExpect(requestTo(containsString("forHandle=SBSKPOP")))
+                .andRespond(withSuccess("""
+                        {"items":[{"id":"UCSBSkpopxxxxxxxxxxxxx"}]}
+                        """, MediaType.APPLICATION_JSON));
+
+        assertThat(client.searchVideoIds("#tripleS", "UCSBSkpopxxxxxxxxxxxxx", 1)).containsExactly("abcdefghijk");
+        assertThat(client.resolveChannelId("@SBSKPOP")).isEqualTo("UCSBSkpopxxxxxxxxxxxxx");
+        server.verify();
+    }
+
+    @Test
+    void pausesFurtherSearchesAfter429WhilePlaylistReadsContinue() {
+        Instant before = Instant.now();
+        server.expect(requestTo(containsString("/search")))
+                .andRespond(withStatus(HttpStatus.TOO_MANY_REQUESTS).header(HttpHeaders.RETRY_AFTER, "3600"));
+        server.expect(requestTo(containsString("/playlistItems")))
+                .andRespond(withSuccess("""
+                        {"items":[{"contentDetails":{"videoId":"abcdefghijk"}}]}
+                        """, MediaType.APPLICATION_JSON));
+
+        assertThat(client.searchVideoIds("#tripleS", null, 1)).isEmpty();
+        assertThat(client.searchVideoIds("#트리플에스", null, 1)).isEmpty();
+        assertThat(client.listUploadedVideoIds("UUJnL123", 1)).containsExactly("abcdefghijk");
+        assertThat((Instant) ReflectionTestUtils.getField(client, "searchRetryAt")).isAfterOrEqualTo(before.plusSeconds(3600));
         server.verify();
     }
 

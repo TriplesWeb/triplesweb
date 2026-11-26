@@ -44,6 +44,17 @@ class MediaOrderingTest {
         assertThat(videos).extracting(MediaDto::getId).containsExactly(2L, 1L, 3L, 4L);
     }
 
+    @Test
+    void sortsByAdminRegistrationId() {
+        List<MediaDto> videos = new ArrayList<>(List.of(
+                video(1L, "2026-02-06", 10, "10:00"),
+                video(4L, "2024-01-01", 10, "10:00"),
+                video(2L, "2025-06-01", 10, "10:00")
+        ));
+        MediaOrdering.sort(videos, "registered");
+        assertThat(videos).extracting(MediaDto::getId).containsExactly(4L, 2L, 1L);
+    }
+
     private static MediaDto video(long id, String publishedOn, long views, String duration) {
         return MediaDto.builder()
                 .id(id)
