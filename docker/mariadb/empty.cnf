@@ -1,0 +1,1 @@
+# 서버는 .env의 MARIADB_TUNING_CNF로 실제 MariaDB 튜닝 설정 파일을 지정한다.
