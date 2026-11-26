@@ -213,7 +213,9 @@
                 const response = await fetch(url, { credentials: 'same-origin' });
                 if (seq !== filterSeq) return;
                 if (!response.ok) throw new Error(String(response.status));
-                const doc = new DOMParser().parseFromString(await response.text(), 'text/html');
+                const html = await response.text();
+                if (seq !== filterSeq) return;
+                const doc = new DOMParser().parseFromString(html, 'text/html');
                 const shell = document.querySelector('main.media-shell');
                 const nextShell = doc.querySelector('main.media-shell');
                 if (!shell || !nextShell) throw new Error('shell');
@@ -270,6 +272,7 @@
 
         function scheduleResults() {
             window.clearTimeout(filterTimer);
+            ++filterSeq;
             filterTimer = window.setTimeout(() => {
                 if (composing) return;
                 applyResults();
@@ -348,7 +351,8 @@
                     if (!response.ok || !type.includes('application/json')) return;
                     const status = await response.json();
                     if (status.ready) {
-                        if (sawPending && !document.querySelector('#mediaPickModal.is-open, #ytModal.is-open, #mediaPickMemberModal.is-open')) {
+                        if (sawPending && filterSeq === 0 && !composing &&
+                            !document.querySelector('#mediaPickModal.is-open, #ytModal.is-open, #mediaPickMemberModal.is-open')) {
                             await applyResults(location.href);
                         }
                         return;
@@ -457,8 +461,12 @@
     }
 
     function renderPlaylist() {
-        const items = readPlaylist();
-        paintAddButtons(items);
+        const saved = readPlaylist();
+        paintAddButtons(saved);
+        const tab = form?.elements.namedItem('tab')?.value || 'all';
+        const era = form?.elements.namedItem('era')?.value;
+        const items = saved.map((item) => byId.get(item.youtubeId) || item).filter((item) =>
+            (tab === 'all' || item.tab === tab) && (!era || item.signalEra === era));
         const playlist = document.getElementById('mediaPlaylist');
         const feature = document.querySelector('.media-feature');
         const managing = items.length > 0;

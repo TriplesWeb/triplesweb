@@ -93,7 +93,9 @@ public class MediaArchiveController {
         boolean all = "all".equals(tab);
         boolean shortsTab = "shorts".equals(tab);
         String sortKey = normalizeSort(sort);
-        boolean shortsOnly = shortsTab || "shorts".equalsIgnoreCase(kind);
+        boolean legacyShortsFilter = all && "shorts".equalsIgnoreCase(kind);
+        boolean shortsOnly = shortsTab || legacyShortsFilter;
+        model.addAttribute("legacyShortsFilter", legacyShortsFilter);
 
         model.addAttribute("isAdmin", aboutAdminAuth.isAdmin(request, session));
         model.addAttribute("currentTab", tab);
@@ -126,7 +128,11 @@ public class MediaArchiveController {
         String query = q == null ? "" : q.trim();
         boolean dateFiltered = rangeStart != null || rangeEnd != null;
         List<Artist> artists = artistRepository.findAll();
-        List<MediaDto> filtered = new ArrayList<>((all || shortsTab) ? media.listAll() : media.allByTab(tab));
+        List<MediaDto> filtered = new ArrayList<>(all ? media.listAll() : media.allByTab(tab));
+        if (!all) {
+            String selectedTab = tab;
+            filtered.removeIf(video -> !selectedTab.equals(video.getTab()));
+        }
         if ("signal".equals(tab)) {
             filtered.removeIf(v -> !MediaTab.SIGNAL.getKey().equals(
                     MediaTabClassifier.tabFor(v.getTitle(), v.getDuration())));
@@ -192,7 +198,7 @@ public class MediaArchiveController {
         model.addAttribute("openMediaAdd", add != null && (add.equals("1") || add.equalsIgnoreCase("true")));
         bindPager(model, total, shortsOnly ? shorts.size() : videos.size(), current, totalPages);
         String eraKey = selectedEra == null ? null : selectedEra.getKey();
-        String filterQuery = mediaQuery(tab, sortKey, query, selectedMembers, rangeStart, rangeEnd, shortsOnly && !shortsTab, eraKey);
+        String filterQuery = mediaQuery(tab, sortKey, query, selectedMembers, rangeStart, rangeEnd, legacyShortsFilter, eraKey);
         model.addAttribute("mediaQuery", filterQuery);
         model.addAttribute("shortsTabHref", "/media?tab=shorts" + mediaQuery("", sortKey, query, selectedMembers, rangeStart, rangeEnd, false, null));
         model.addAttribute("signalEra", selectedEra == null ? "" : selectedEra.getKey());
@@ -214,7 +220,7 @@ public class MediaArchiveController {
         model.addAttribute("query", query);
         model.addAttribute("memberPickerOptions", portraitOptions(selectedMembers));
         model.addAttribute("editMemberOptions", portraitOptions(List.of()));
-        model.addAttribute("hasActiveFilters", memberFiltered || dateFiltered || !query.isEmpty() || !"latest".equals(sortKey) || (shortsOnly && !shortsTab));
+        model.addAttribute("hasActiveFilters", memberFiltered || dateFiltered || !query.isEmpty() || !"latest".equals(sortKey) || legacyShortsFilter);
         model.addAttribute("videos", videos);
         model.addAttribute("hasVideos", total > 0);
         model.addAttribute("total", total);
@@ -574,6 +580,9 @@ public class MediaArchiveController {
             row.put("youtubeId", video.getYoutubeId());
             row.put("tab", video.getTab());
             row.put("tabLabel", video.getTabLabel());
+            if (MediaTab.SIGNAL.getKey().equals(video.getTab())) {
+                row.put("signalEra", MediaSignalEra.from(video.getPublishedOn(), video.getTitle()).getKey());
+            }
             row.put("title", video.getTitle() == null ? "" : video.getTitle());
             if (includeDescription) {
                 row.put("description", video.getDescription() == null ? "" : video.getDescription());

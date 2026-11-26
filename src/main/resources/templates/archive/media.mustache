@@ -59,7 +59,7 @@
         <section class="ar-panel ar-toolbar media-toolbar">
             <form class="ar-filters" id="mediaFilterForm" method="get" action="/media">
                 <input type="hidden" name="tab" value="{{currentTab}}">
-                {{#shortsOnly}}<input type="hidden" name="kind" value="shorts">{{/shortsOnly}}
+                {{#legacyShortsFilter}}<input type="hidden" name="kind" value="shorts">{{/legacyShortsFilter}}
                 {{#hasSignalEra}}<input type="hidden" name="era" value="{{signalEra}}">{{/hasSignalEra}}
                 <div id="mediaMemberInputs">
                     {{#selectedMembers}}

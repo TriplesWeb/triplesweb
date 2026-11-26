@@ -128,7 +128,8 @@ class MediaArchiveControllerTest {
         MediaDto stage = video(21, "music", "tripleS - Baby Flower 260614 @ INKIGAYO",
                 "0:44", "2026-06-14");
         when(media.listAll()).thenReturn(List.of(shortClip, stage));
-        when(media.allByTab("music")).thenReturn(List.of(stage));
+        when(media.allByTab("music")).thenReturn(List.of(stage, shortClip));
+        when(media.allByTab("shorts")).thenReturn(List.of(shortClip, stage));
 
         String shorts = mvc.perform(get("/media").param("tab", "shorts"))
                 .andExpect(status().isOk())
@@ -172,6 +173,32 @@ class MediaArchiveControllerTest {
         assertThat(document.select(".media-archive .media-card__title").eachText())
                 .anyMatch(title -> title.contains("221130"))
                 .noneMatch(title -> title.contains("240520"));
+    }
+
+    @Test
+    void signalFiltersKeepTheSelectedTabAndHausPeriod() throws Exception {
+        MediaDto earlier = video(1, "signal", "코토네 SIGNAL 221130", "8:00", "2022-11-30");
+        MediaDto oldest = video(2, "signal", "코토네 SIGNAL 230720", "8:00", "2023-07-20");
+        MediaDto newer = video(3, "signal", "코토네 SIGNAL 240420", "8:00", "2024-04-20");
+        MediaDto otherTab = video(4, "contents", "코토네 SIGNAL 230730", "8:00", "2023-07-30");
+        oldest.setArtistNames("코토네");
+        newer.setArtistNames("코토네");
+        earlier.setArtistNames("코토네");
+        otherTab.setArtistNames("코토네");
+        when(media.allByTab("signal")).thenReturn(List.of(newer, otherTab, earlier, oldest));
+
+        String html = mvc.perform(get("/media").param("tab", "signal").param("era", "allHaus")
+                        .param("sort", "oldest").param("q", "코토네").param("members", "코토네")
+                        .param("from", "2022-01-01").param("to", "2024-12-31").param("kind", "shorts"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+
+        var document = Jsoup.parse(html);
+        assertThat(document.select(".media-archive .media-card__title").eachText())
+                .containsExactly(oldest.getTitle(), newer.getTitle());
+        assertThat(document.select("#mediaFilterForm input[name=tab]").val()).isEqualTo("signal");
+        assertThat(document.select("#mediaFilterForm input[name=era]").val()).isEqualTo("allHaus");
+        assertThat(document.select("#mediaFilterForm input[name=kind], .media-shorts")).isEmpty();
+        assertThat(document.getElementById("mediaCatalog").data()).contains("\"signalEra\":\"allHaus\"");
     }
 
     @Test

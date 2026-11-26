@@ -46,11 +46,13 @@ ${read('css/media-page.css')}
   </header>
   <section class="media-filters">
     <form class="ar-filters" id="mediaFilterForm" method="get" action="/media">
+      <input type="hidden" name="tab" value="all">
       <div class="ar-sort">
         <span class="ar-sort-control">
           <select id="mediaSort" name="sort" aria-label="정렬">
             <option value="latest">최신순</option>
             <option value="registered">등록순</option>
+            <option value="oldest">오래된순</option>
           </select>
         </span>
       </div>
@@ -268,7 +270,13 @@ ${read('css/media-page.css')}
           return route.fulfill({ path: file, contentType: 'image/png' });
         }
       }
-      return route.fulfill({ contentType: 'text/html', body: html });
+      const params = new URL(url).searchParams;
+      const body = params.get('tab') === 'signal' && params.get('era') === 'allHaus'
+        ? html.replace('<input type="hidden" name="tab" value="all">',
+            '<input type="hidden" name="tab" value="signal"><input type="hidden" name="era" value="allHaus">')
+            .replace(JSON.stringify(videos), JSON.stringify([{ ...videos[0], signalEra: 'allHaus' }]))
+        : html;
+      return route.fulfill({ contentType: 'text/html', body });
     });
     await page.route(/i\.ytimg\.com|img\.youtube\.com|portrait-|\.svg$/, (route) => {
       route.fulfill({
@@ -276,10 +284,15 @@ ${read('css/media-page.css')}
         body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64')
       });
     });
-    await page.addInitScript(() => {
-      localStorage.removeItem('triples-media-playlist');
+    await page.addInitScript((saved) => {
+      if (window !== window.top) return;
+      if (new URLSearchParams(location.search).get('era') === 'allHaus') {
+        localStorage.setItem('triples-media-playlist', JSON.stringify(saved));
+      } else {
+        localStorage.removeItem('triples-media-playlist');
+      }
       localStorage.removeItem('triples-media-archive-cols');
-    });
+    }, [videos[1], { ...videos[2], signalEra: 'gapyeong' }, { ...videos[0], signalEra: 'allHaus' }]);
     await page.goto('https://media.test/media');
 
     assert.equal(await page.locator('text=채널 동기화').count(), 0);
@@ -443,6 +456,18 @@ ${read('css/media-page.css')}
     assert.equal(await dialog.getByRole('button', { name: '삭제', exact: true }).count(), 1);
     await dialog.getByRole('button', { name: '취소', exact: true }).click();
     await dialog.waitFor({ state: 'hidden' });
+
+    await page.goto('https://media.test/media?tab=signal&era=allHaus');
+    const playlist = page.locator('#mediaPlaylistList .media-playlist__item');
+    assert.deepEqual(await playlist.evaluateAll((rows) => rows.map((row) => row.dataset.ytid)), ['vid000']);
+    await page.locator('#mediaFilterForm .ar-sort-trigger').click();
+    await page.getByRole('option', { name: '오래된순' }).click();
+    await page.waitForURL((url) => url.searchParams.get('sort') === 'oldest');
+    const scope = new URL(page.url()).searchParams;
+    assert.equal(scope.get('tab'), 'signal');
+    assert.equal(scope.get('era'), 'allHaus');
+    assert.deepEqual(await playlist.evaluateAll((rows) => rows.map((row) => row.dataset.ytid)), ['vid000']);
+    assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('triples-media-playlist')).length), 3);
   } finally {
     await browser.close();
   }
