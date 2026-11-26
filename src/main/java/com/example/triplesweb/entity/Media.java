@@ -56,6 +56,9 @@ public class Media {
     @Column(name = "channel_id", length = 64)
     private String channelId;
 
+    @Column(name = "curated_external", nullable = false)
+    private boolean curatedExternal;
+
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "media_artist",

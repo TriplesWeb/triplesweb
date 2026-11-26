@@ -473,6 +473,30 @@ class MediaChannelSyncServiceTest {
     }
 
     @Test
+    void curatedExternalVideosAreNeitherRemovedNorMovedToShorts() {
+        when(transactionManager.getTransaction(any())).thenReturn(new SimpleTransactionStatus());
+        when(youtube.hasApiKey()).thenReturn(true);
+        when(youtube.resolveUploadsPlaylist(any(), any())).thenReturn("UU1");
+        when(youtube.listUploadedVideoIds(any(), anyInt())).thenReturn(List.of());
+        when(namu.externalVideoIds()).thenReturn(List.of("0hNuXQ0-FZM"));
+        when(youtube.hasUploadFormat("UC1thekxxxxxxxxxxxxxxx", "0hNuXQ0-FZM", true)).thenReturn(true);
+        when(youtube.fetchChannelVideos(any())).thenReturn(List.of(
+                new YoutubeDataApiClient.ChannelVideo("0hNuXQ0-FZM", "배지전쟁", "2025-06-04", "1:00", "PT1M",
+                        10L, "none", "UC1thekxxxxxxxxxxxxxxx", "1theK Originals", ""),
+                new YoutubeDataApiClient.ChannelVideo("DRB_vCLbu7A", "아침 민낯 김채연", "2026-11-01", "7:02", "PT7M2S",
+                        20L, "none", "UCchaeyeonxxxxxxxxxxx", "13년 차 신인 김채연", "")));
+        Media shortClip = Media.builder().youtubeId("0hNuXQ0-FZM").tab("external").curatedExternal(true).build();
+        Media vlog = Media.builder().youtubeId("DRB_vCLbu7A").tab("external").curatedExternal(true).build();
+        when(mediaRepository.findAllWithArtists()).thenReturn(List.of(shortClip, vlog));
+        when(artistRepository.findAll()).thenReturn(List.of());
+
+        service.syncFull();
+
+        assertThat(shortClip.getTab()).isEqualTo("external");
+        verify(mediaRepository, never()).deleteAll(any());
+    }
+
+    @Test
     void insertsAllowedShortFormClipOnShortsTabEvenOverOneMinute() {
         when(transactionManager.getTransaction(any())).thenReturn(new SimpleTransactionStatus());
         when(youtube.hasApiKey()).thenReturn(true);

@@ -234,7 +234,7 @@ public class MediaService {
         }
         int changed = 0;
         for (Media media : mediaRepository.findAll()) {
-            if (MediaTab.SHORTS.getKey().equals(media.getTab())) continue;
+            if (media.isCuratedExternal() || MediaTab.SHORTS.getKey().equals(media.getTab())) continue;
             boolean official = MediaTabClassifier.legacyOfficial(media.getChannelId(), officialChannelId);
             boolean musicShow = !official && MediaTabClassifier.isMusicShow(media.getMediaTitle())
                     && !MediaTabClassifier.isFancam(media.getMediaTitle());

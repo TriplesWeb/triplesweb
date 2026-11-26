@@ -307,7 +307,9 @@ public class MediaChannelSyncService {
             if (current != null) {
                 boolean changed = fillExisting(current, video, artists, official);
                 boolean wasShort = MediaTab.SHORTS.getKey().equals(current.getTab());
-                if ((!wasShort && platformShort) || (wasShort && !platformShort && formats.regular().contains(video.id()))) {
+                boolean formatChanged = (!wasShort && platformShort)
+                        || (wasShort && !platformShort && formats.regular().contains(video.id()));
+                if (!current.isCuratedExternal() && formatChanged) {
                     current.setTab(targetTab);
                     changed = true;
                 }
@@ -376,7 +378,7 @@ public class MediaChannelSyncService {
     ) {
         List<Media> candidates = existing.values().stream()
                 .filter(media -> media.getYoutubeId() != null && !blank(media.getYoutubeId()))
-                .filter(media -> blank(media.getDescription()))
+                .filter(media -> !media.isCuratedExternal() && blank(media.getDescription()))
                 .toList();
         if (candidates.isEmpty()) return 0;
         Map<String, YoutubeDataApiClient.ChannelVideo> live = new java.util.LinkedHashMap<>();
