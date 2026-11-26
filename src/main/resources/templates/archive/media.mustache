@@ -59,6 +59,7 @@
         <section class="ar-panel ar-toolbar media-toolbar">
             <form class="ar-filters" id="mediaFilterForm" method="get" action="/media">
                 <input type="hidden" name="tab" value="{{currentTab}}">
+                {{#fiveMediaColumns}}<input type="hidden" name="cols" value="5">{{/fiveMediaColumns}}
                 {{#legacyShortsFilter}}<input type="hidden" name="kind" value="shorts">{{/legacyShortsFilter}}
                 {{#hasSignalEra}}<input type="hidden" name="era" value="{{signalEra}}">{{/hasSignalEra}}
                 <div id="mediaMemberInputs">
@@ -134,6 +135,8 @@
                             aria-pressed="false"
                             aria-label="재생목록 추가">재생목록 추가</button>
                     <span id="mediaPlaylistCount">00</span>
+                    <button type="button" class="media-playlist__toggle" data-media-playlist-toggle
+                            aria-expanded="true" aria-controls="mediaPlaylistList" aria-label="재생목록 접기">−</button>
                 </div>
                 <div class="media-playlist__list" id="mediaPlaylistList"></div>
             </aside>
@@ -154,7 +157,7 @@
                         aria-label="한 줄에 볼 영상 수" aria-expanded="false" aria-haspopup="listbox"
                         aria-controls="mediaArchiveColsMenu">
                     <span class="media-cols-icon" aria-hidden="true"><span></span><span></span><span></span></span>
-                    <span class="media-sr" data-media-cols-label>3줄</span>
+                    <span class="media-sr" data-media-cols-label>{{mediaArchiveColumns}}줄</span>
                 </button>
                 <div id="mediaArchiveColsMenu" class="media-cols-menu" data-media-cols-menu hidden role="listbox" aria-label="한 줄에 볼 영상 수">
                     <button type="button" class="media-cols-option" data-media-cols-option="3" role="option">3줄</button>
@@ -163,7 +166,7 @@
                 </div>
             </div>
         </div>
-        <div class="media-grid" data-cols="3">
+        <div class="media-grid" data-cols="{{mediaArchiveColumns}}">
             {{#videos}}
             <article class="media-card">
                 <a class="media-card__link"

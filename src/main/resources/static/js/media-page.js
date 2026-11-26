@@ -98,10 +98,12 @@
     }
 
     const COLS_KEY = 'triples-media-archive-cols';
-    function mediaCols() {
-        const raw = Number(localStorage.getItem(COLS_KEY) || 3);
-        return raw === 4 || raw === 5 ? raw : 3;
-    }
+    const archiveGrid = document.querySelector('.media-grid');
+    const serverHasFiveColumns = archiveGrid?.dataset.cols === '5';
+    const requestedCols = new URLSearchParams(location.search).get('cols');
+    const storedCols = localStorage.getItem(COLS_KEY);
+    let selectedCols = ['3', '4', '5'].includes(requestedCols) ? requestedCols
+        : (storedCols === '4' || storedCols === '5' ? storedCols : '3');
     function mediaColsFilter() {
         return document.querySelector('[data-media-cols-filter]');
     }
@@ -118,7 +120,7 @@
         toggle?.setAttribute('aria-expanded', open ? 'true' : 'false');
     }
     function paintMediaCols() {
-        const cols = String(mediaCols());
+        const cols = selectedCols;
         document.querySelectorAll('.media-grid').forEach((grid) => {
             grid.dataset.cols = cols;
         });
@@ -149,9 +151,12 @@
         }
         const cols = event.target.closest('[data-media-cols-option]')?.dataset.mediaColsOption;
         if (cols === '3' || cols === '4' || cols === '5') {
+            const pageSizeChanged = (cols === '5') !== (selectedCols === '5');
+            selectedCols = cols;
             localStorage.setItem(COLS_KEY, cols);
             paintMediaCols();
             setMediaColsOpen(false);
+            if (pageSizeChanged) form?.dispatchEvent(new Event('media-page-size-change'));
         }
     });
     paintMediaCols();
@@ -205,8 +210,14 @@
             else if (className === 'media-shorts') (archive || feature || filters)?.after(imported);
         }
 
-        async function applyResults(nextHref, fromPager) {
-            const url = nextHref || filterUrl();
+        async function applyResults(nextHref, fromPager, replaceHistory) {
+            const nextUrl = new URL(nextHref || filterUrl(), location.href);
+            if (document.querySelector('.media-archive') && selectedCols === '5') {
+                nextUrl.searchParams.set('cols', '5');
+            } else {
+                nextUrl.searchParams.delete('cols');
+            }
+            const url = nextUrl.pathname + nextUrl.search;
             const seq = ++filterSeq;
             const y = window.scrollY;
             try {
@@ -241,15 +252,25 @@
                 const nextReset = nextShell.querySelector('.ar-reset');
                 if (reset && nextReset) reset.hidden = nextReset.hidden;
                 upgradeStills();
-                const nextUrl = new URL(url, location.href);
                 const same = nextUrl.pathname === location.pathname && nextUrl.search === location.search;
-                if (!same) history.pushState({ mediaLive: true }, '', nextUrl.pathname + nextUrl.search);
+                if (!same) {
+                    if (replaceHistory) history.replaceState({ mediaLive: true }, '', url);
+                    else history.pushState({ mediaLive: true }, '', url);
+                }
                 paintMediaCols();
                 if (fromPager) document.querySelector('.media-archive')?.scrollIntoView({ block: 'start' });
                 else window.scrollTo(0, y);
             } catch (error) {
                 if (seq === filterSeq) window.location.assign(url);
             }
+        }
+
+        form.addEventListener('media-page-size-change', () => {
+            window.clearTimeout(filterTimer);
+            applyResults();
+        });
+        if (archiveGrid && (selectedCols === '5') !== serverHasFiveColumns) {
+            applyResults(location.href, false, true);
         }
 
         document.addEventListener('click', (event) => {
@@ -373,6 +394,7 @@
     }
 
     const PLAYLIST_KEY = 'triples-media-playlist';
+    const PLAYLIST_COLLAPSED_KEY = 'triples-media-playlist-collapsed';
     let playlistList = null;
     let playlistTitle = null;
     let playlistCount = null;
@@ -389,7 +411,27 @@
         playlistCount = document.getElementById('mediaPlaylistCount');
         originalTitle = playlistTitle ? playlistTitle.textContent : '추천 재생목록';
         originalCount = playlistCount ? playlistCount.textContent : '00';
+        paintPlaylistCollapse(localStorage.getItem(PLAYLIST_COLLAPSED_KEY) === '1');
     }
+
+    function paintPlaylistCollapse(collapsed) {
+        const playlist = document.getElementById('mediaPlaylist');
+        const toggle = playlist?.querySelector('[data-media-playlist-toggle]');
+        if (!toggle || !playlistList) return;
+        playlist.classList.toggle('is-collapsed', collapsed);
+        playlistList.hidden = collapsed;
+        toggle.setAttribute('aria-expanded', String(!collapsed));
+        toggle.setAttribute('aria-label', collapsed ? '재생목록 펼치기' : '재생목록 접기');
+        toggle.textContent = collapsed ? '+' : '−';
+    }
+
+    document.addEventListener('click', (event) => {
+        const toggle = event.target.closest('[data-media-playlist-toggle]');
+        if (!toggle) return;
+        const collapsed = toggle.getAttribute('aria-expanded') === 'true';
+        localStorage.setItem(PLAYLIST_COLLAPSED_KEY, collapsed ? '1' : '0');
+        paintPlaylistCollapse(collapsed);
+    });
 
     function readPlaylist() {
         try {

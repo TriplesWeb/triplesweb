@@ -58,6 +58,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class MediaArchiveController {
     private static final int PAGE_SIZE = 24;
+    private static final int FIVE_COLUMN_PAGE_SIZE = 30;
     private static final int SHORTS_PREVIEW = 8;
 
     private final MediaService media;
@@ -84,6 +85,7 @@ public class MediaArchiveController {
                             @RequestParam(required = false) Integer go,
                             @RequestParam(required = false) String add,
                             @RequestParam(required = false) String era,
+                            @RequestParam(required = false) String cols,
                             @RequestParam(name = "page", defaultValue = "1") int page,
                             HttpServletRequest request,
                             HttpSession session,
@@ -97,6 +99,8 @@ public class MediaArchiveController {
         String sortKey = normalizeSort(sort);
         boolean legacyShortsFilter = all && "shorts".equalsIgnoreCase(kind);
         boolean shortsOnly = shortsTab || legacyShortsFilter;
+        boolean fiveColumns = !shortsOnly && "5".equals(cols);
+        int pageSize = fiveColumns ? FIVE_COLUMN_PAGE_SIZE : PAGE_SIZE;
         model.addAttribute("legacyShortsFilter", legacyShortsFilter);
 
         model.addAttribute("isAdmin", aboutAdminAuth.isAdmin(request, session));
@@ -162,10 +166,10 @@ public class MediaArchiveController {
         List<MediaDto> archive = shortsOnly ? shortForm : longForm;
         List<MediaDto> suggestions = List.of();
         int total = archive.size();
-        int totalPages = Math.max(1, (int) Math.ceil(total / (double) PAGE_SIZE));
+        int totalPages = Math.max(1, (int) Math.ceil(total / (double) pageSize));
         int current = Math.min(totalPages, Math.max(1, page));
-        int fromIdx = total == 0 ? 0 : (current - 1) * PAGE_SIZE;
-        int toIdx = Math.min(fromIdx + PAGE_SIZE, total);
+        int fromIdx = (current - 1) * pageSize;
+        int toIdx = Math.min(fromIdx + pageSize, total);
         List<MediaDto> pageItems = total == 0 ? List.of() : archive.subList(fromIdx, toIdx);
         List<MediaDto> videos = shortsOnly ? List.of() : pageItems;
         List<MediaDto> shorts = List.of();
@@ -198,7 +202,9 @@ public class MediaArchiveController {
         bindPager(model, total, shortsOnly ? shorts.size() : videos.size(), current, totalPages);
         String eraKey = selectedEra == null ? null : selectedEra.getKey();
         String filterQuery = mediaQuery(tab, sortKey, query, selectedMembers, rangeStart, rangeEnd, legacyShortsFilter, eraKey);
-        model.addAttribute("mediaQuery", filterQuery);
+        model.addAttribute("fiveMediaColumns", fiveColumns);
+        model.addAttribute("mediaArchiveColumns", fiveColumns ? 5 : 3);
+        model.addAttribute("mediaQuery", fiveColumns ? filterQuery + "&cols=5" : filterQuery);
         String requestQuery = request.getQueryString();
         model.addAttribute("mediaEditReturnTo", requestQuery == null ? "/media" : "/media?" + requestQuery);
         model.addAttribute("shortsTabHref", "/media?tab=shorts" + mediaQuery("", sortKey, query, selectedMembers, rangeStart, rangeEnd, false, null));
@@ -536,7 +542,7 @@ public class MediaArchiveController {
     }
 
     private void bindPager(Model model, int total, int pageCount, int current, int totalPages) {
-        model.addAttribute("hasMediaPager", total > PAGE_SIZE);
+        model.addAttribute("hasMediaPager", totalPages > 1);
         model.addAttribute("mediaTotal", total);
         model.addAttribute("mediaPageCount", pageCount);
         model.addAttribute("mediaPageDisplay", current);

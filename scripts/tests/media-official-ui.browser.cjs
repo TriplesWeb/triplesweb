@@ -86,6 +86,8 @@ ${read('css/media-page.css')}
           <h3 id="mediaPlaylistTitle">재생목록</h3>
           <button type="button" class="media-playlist-add media-playlist-add--head" data-playlist-add>재생목록 추가</button>
           <span id="mediaPlaylistCount">00</span>
+          <button type="button" class="media-playlist__toggle" data-media-playlist-toggle aria-expanded="true"
+                  aria-controls="mediaPlaylistList" aria-label="재생목록 접기">−</button>
         </div>
         <div class="media-playlist__list" id="mediaPlaylistList"></div>
       </aside>
@@ -279,11 +281,15 @@ ${read('css/media-page.css')}
         }
       }
       const params = new URL(url).searchParams;
-      const body = params.get('tab') === 'signal' && params.get('era') === 'allHaus'
+      let body = params.get('tab') === 'signal' && params.get('era') === 'allHaus'
         ? html.replace('<input type="hidden" name="tab" value="all">',
             '<input type="hidden" name="tab" value="signal"><input type="hidden" name="era" value="allHaus">')
             .replace(JSON.stringify(videos), JSON.stringify([{ ...videos[0], signalEra: 'allHaus' }]))
         : html;
+      if (params.get('cols') === '5') {
+        const cards = '<article class="media-card"></article>'.repeat(29);
+        body = body.replace('data-cols="3">', 'data-cols="5">' + cards);
+      }
       return route.fulfill({ contentType: 'text/html', body });
     });
     await page.route(/i\.ytimg\.com|img\.youtube\.com|portrait-|\.svg$/, (route) => {
@@ -300,6 +306,7 @@ ${read('css/media-page.css')}
         localStorage.removeItem('triples-media-playlist');
       }
       localStorage.removeItem('triples-media-archive-cols');
+      localStorage.removeItem('triples-media-playlist-collapsed');
     }, [videos[1], { ...videos[2], signalEra: 'gapyeong' }, { ...videos[0], signalEra: 'allHaus' }]);
     await page.goto('https://media.test/media');
 
@@ -367,6 +374,14 @@ ${read('css/media-page.css')}
     assert.equal(await page.locator('.media-grid').getAttribute('data-cols'), '4');
     assert.equal(await page.locator('[data-media-cols-label]').textContent(), '4줄');
     assert.equal(await page.locator('[data-media-cols-menu]').evaluate((node) => node.hidden), true);
+    await page.locator('[data-media-cols-toggle]').click();
+    await page.locator('[data-media-cols-option="5"]').click();
+    await page.waitForURL('**/media?**cols=5');
+    assert.equal(await page.locator('.media-grid article.media-card').count(), 30);
+    await page.locator('[data-media-cols-toggle]').click();
+    await page.locator('[data-media-cols-option="4"]').click();
+    await page.waitForURL((url) => !url.searchParams.has('cols'));
+    assert.equal(await page.locator('.media-grid article.media-card').count(), 1);
     await page.locator('#mediaFilterForm .ar-date-toggle').click();
     await page.locator('[data-date-popover]:not([hidden]) .ar-cal').waitFor();
     const dateGaps = await page.evaluate(() => {
@@ -445,6 +460,14 @@ ${read('css/media-page.css')}
     await page.locator('#mediaPickConfirm').click();
     await page.waitForFunction(() => document.querySelectorAll('#mediaPlaylistList .media-playlist__item').length === 1);
     assert.equal(await hero.evaluate((node) => node.classList.contains('is-empty')), false);
+    const playlistToggle = page.locator('[data-media-playlist-toggle]');
+    await playlistToggle.click();
+    assert.equal(await playlistToggle.textContent(), '+');
+    assert.equal(await page.locator('#mediaPlaylistList').isVisible(), false);
+    assert.equal(await hero.isVisible(), true);
+    await playlistToggle.click();
+    assert.equal(await playlistToggle.textContent(), '−');
+    assert.equal(await page.locator('#mediaPlaylistList').isVisible(), true);
 
     await page.locator('[data-playlist-remove]').click();
     await page.waitForFunction(() => document.querySelectorAll('#mediaPlaylistList .media-playlist__item').length === 0);

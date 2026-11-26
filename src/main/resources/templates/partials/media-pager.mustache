@@ -16,6 +16,7 @@
     </div>
     <form class="ar-page-jump" method="get" action="/media" aria-label="페이지 이동">
         <input type="hidden" name="tab" value="{{currentTab}}">
+        {{#fiveMediaColumns}}<input type="hidden" name="cols" value="5">{{/fiveMediaColumns}}
         <input type="hidden" name="sort" value="{{sort}}">
         {{#query}}<input type="hidden" name="q" value="{{query}}">{{/query}}
         {{#from}}<input type="hidden" name="from" value="{{from}}">{{/from}}

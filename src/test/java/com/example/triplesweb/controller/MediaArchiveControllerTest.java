@@ -110,6 +110,33 @@ class MediaArchiveControllerTest {
     }
 
     @Test
+    void fiveColumnsPageThirtyVideosAndPreserveLayoutInNavigation() throws Exception {
+        List<MediaDto> entries = new ArrayList<>();
+        for (int i = 0; i < 65; i++) {
+            entries.add(video(i, "contents", "공연 " + i, "3:10", "2026-11-23"));
+        }
+        when(media.allByTab("contents")).thenReturn(entries);
+        List<String> seen = new ArrayList<>();
+        for (int pageNumber = 1; pageNumber <= 3; pageNumber++) {
+            String html = mvc.perform(get("/media").queryParam("tab", "contents")
+                            .queryParam("cols", "5").queryParam("q", "공연")
+                            .queryParam("page", String.valueOf(pageNumber)))
+                    .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+            var page = Jsoup.parse(html);
+            assertThat(page.select(".media-grid").attr("data-cols")).isEqualTo("5");
+            var cards = page.select(".media-grid article.media-card a");
+            assertThat(cards).hasSize(pageNumber == 3 ? 5 : 30);
+            seen.addAll(cards.eachAttr("data-ytid"));
+            assertThat(page.select(".ar-pager a[href]").eachAttr("href"))
+                    .allSatisfy(href -> assertThat(href).contains("cols=5", "tab=contents", "&q="));
+            assertThat(page.select(".ar-page-jump input[name=cols]").val()).isEqualTo("5");
+        }
+        assertThat(seen).hasSize(65).doesNotHaveDuplicates();
+        mvc.perform(get("/media").queryParam("tab", "contents").queryParam("cols", "5").queryParam("go", "2"))
+                .andExpect(redirectedUrl("/media?tab=contents&cols=5&page=2"));
+    }
+
+    @Test
     void pagesArchiveAndLimitsVisibleCards() throws Exception {
         String first = mvc.perform(get("/media"))
                 .andExpect(status().isOk())
