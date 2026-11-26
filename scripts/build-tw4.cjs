@@ -23,7 +23,11 @@ function buildTailwindBundle({ name, inputCss, outPath, extras = [], iconFace = 
     }
 
     const header = `/* Generated with scripts/build-${name}-css.cjs; do not edit directly. */\n`;
-    const compiled = fs.readFileSync(output, 'utf8');
+    // Lightning CSS can round computed OKLab coordinates differently across platforms.
+    const compiled = fs.readFileSync(output, 'utf8').replace(
+      /\boklab\(([\d.]+%) (-?[\d.]+) (-?[\d.]+)(?=[ /)])/g,
+      (_, lightness, a, b) => `oklab(${lightness} ${Number(Number(a).toFixed(5))} ${Number(Number(b).toFixed(5))}`
+    );
     fs.writeFileSync(outPath, header + (formatOutput ? formatOutput(compiled) : compiled) + '\n'
       + (iconFace || '') + base + extrasCss);
     console.log('Wrote', outPath);

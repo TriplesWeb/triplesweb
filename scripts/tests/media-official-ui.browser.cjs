@@ -131,7 +131,13 @@ ${read('css/media-page.css')}
   <section class="media-shorts is-preview">
     <article class="media-short">
       <a class="media-short__open" href="/media/shorts/qdQ6RN_aOO4" data-tab="shorts" data-kind="" data-title="'ANDLESS' in Chicago" data-duration="0:57">
-        <span class="media-short__caption"><strong>'ANDLESS' in Chicago</strong></span>
+        <span class="media-short__caption">
+          <strong>'ANDLESS' in Chicago</strong>
+          <span class="media-short__meta">
+            <span aria-label="재생시간 0:57">0:57</span>
+            <time datetime="2026-11-22" aria-label="유튜브 등록일 2026.11.22">2026.11.22</time>
+          </span>
+        </span>
       </a>
     </article>
   </section>
@@ -140,25 +146,38 @@ ${read('css/media-page.css')}
   <div class="site-modal-dialog media-pick-dialog">
     <div class="site-modal-panel">
       <div class="site-modal-body">
-        <div class="media-pick-grid" id="mediaPickGrid"></div>
-        <div class="media-pick-toolbar">
-          <div class="media-pick-mini" id="mediaPickMini">
+        <div class="ar-toolbar media-toolbar media-pick-toolbar">
+          <form class="ar-filter-tools media-filter-tools media-pick-mini" id="mediaPickMini">
+            <div class="objekt-filter ar-sort">
+              <span class="objekt-filter-label">정렬</span>
+              <span class="ar-sort-control">
+                <select id="mediaPickSort" aria-label="정렬">
+                  <option value="latest">최신순</option>
+                  <option value="registered">등록순</option>
+                </select>
+              </span>
+            </div>
+            <div class="objekt-filter ar-date-filter">
+              <span class="objekt-filter-label">날짜</span>
+              <button type="button" class="ar-date-toggle objekt-filter-control">전체</button>
+            </div>
+            <div class="objekt-filter ar-member-filter">
+              <span class="objekt-filter-label">멤버</span>
+              <button type="button" class="ar-member-toggle objekt-filter-control" id="mediaPickMemberToggle" aria-controls="mediaPickMemberModal">멤버 선택</button>
+            </div>
             <label class="ar-search-wrap">
               <input class="ar-search" id="mediaPickSearch" type="search" aria-label="재생목록 영상 검색">
             </label>
-            <div class="ar-sort"><span class="ar-sort-label">분류</span><span class="ar-sort-control">
-              <select id="mediaPickTab" aria-label="분류"><option value="">전체</option><option value="mv">MV</option></select>
-            </span></div>
-          <div class="ar-sort"><span class="ar-sort-label">정렬</span><span class="ar-sort-control">
-              <select id="mediaPickSort" aria-label="정렬">
-                <option value="latest">최신순</option>
-                <option value="registered">등록순</option>
-              </select>
-            </span></div>
-            <button type="button" class="media-pick-member-toggle" id="mediaPickMemberToggle" aria-controls="mediaPickMemberModal">멤버</button>
-          </div>
-          <div id="mediaPickPager"></div>
+            <div class="objekt-filter ar-sort">
+              <span class="objekt-filter-label">분류</span>
+              <span class="ar-sort-control">
+                <select id="mediaPickTab" aria-label="분류"><option value="">전체</option><option value="mv">MV</option></select>
+              </span>
+            </div>
+          </form>
         </div>
+        <div class="media-pick-grid" id="mediaPickGrid"></div>
+        <div id="mediaPickPager"></div>
       </div>
       <div class="site-modal-footer">
         <button type="button" class="site-btn site-btn--primary" id="mediaPickConfirm">선택 완료</button>
@@ -215,6 +234,7 @@ ${read('css/media-page.css')}
 <script>${read('js/site-feedback.js')}</script>
 <script>${read('js/site-admin-controls.js')}</script>
 <script>${read('js/member-selection-summary.js')}</script>
+<script>${read('js/site-video-volume.js')}</script>
 <script>${read('js/media-page.js')}</script>
 </body></html>`;
 
@@ -326,7 +346,7 @@ ${read('css/media-page.css')}
     assert.equal(await page.locator('.media-grid').getAttribute('data-cols'), '4');
     assert.equal(await page.locator('[data-media-cols-label]').textContent(), '4줄');
     assert.equal(await page.locator('[data-media-cols-menu]').evaluate((node) => node.hidden), true);
-    await page.locator('.ar-date-toggle').click();
+    await page.locator('#mediaFilterForm .ar-date-toggle').click();
     await page.locator('[data-date-popover]:not([hidden]) .ar-cal').waitFor();
     const dateGaps = await page.evaluate(() => {
       const wrap = document.querySelector('.ar-cal.is-empty');
@@ -388,7 +408,8 @@ ${read('css/media-page.css')}
     assert.ok(Math.abs(pagerTopOpen - sizes.pagerTop) < 2, 'pager should not move when member modal opens');
     await page.locator('#mediaPickMemberModal .site-modal-dialog').screenshot({ path: '/opt/cursor/artifacts/media-member-select-modal.png' });
     await page.locator('#mediaPickMemberModal [data-site-dismiss="modal"]').click().catch(() => {});
-    assert.equal(await page.locator('.media-short__caption small').count(), 0);
+    assert.equal(await page.locator('.media-short__meta [aria-label="재생시간 0:57"]').textContent(), '0:57');
+    assert.equal(await page.locator('.media-short__meta time').getAttribute('datetime'), '2026-11-22');
     assert.equal(await page.locator('.media-short__caption strong').first().textContent(), "'ANDLESS' in Chicago");
 
     await page.locator('#mediaPickGrid input.media-pick-check').first().check();
