@@ -77,6 +77,7 @@
         const refreshTo = afterUploadLocation;
         if (refreshAfterUpload) afterUploadLocation = null;
         dialog.hidden = true;
+        if (dialog === uploadDialog) resetListlessUploadFiles();
         dialog.querySelectorAll('input[type="file"]').forEach(input => {
             releaseUrl(input._archiveLastFile);
             (input._archiveLastFiles || []).forEach(releaseUrl);
@@ -617,7 +618,9 @@
                 source = await fileFromImageUrl(sourceSlot.url);
                 if ((input._archiveEditToken || 0) !== editToken) return;
             }
-            if (await ensureAnimationFlag(source)) {
+            const animated = await ensureAnimationFlag(source);
+            if ((input._archiveEditToken || 0) !== editToken) return;
+            if (animated) {
                 syncImageEditTools(preview);
                 window.SiteFeedback.alert('애니메이션 이미지는 회전·뒤집기를 할 수 없습니다.');
                 return;
@@ -694,9 +697,49 @@
         return Array.isArray(form?._archiveMediaSlots) ? form._archiveMediaSlots : [];
     }
 
+    function sameFile(a, b) {
+        return a === b || (a && b && a.name === b.name && a.size === b.size && a.lastModified === b.lastModified);
+    }
+
+    function reconcileImageSlots(form, files) {
+        const current = slotsOf(form);
+        const retained = current.filter(slot => slot.kind === 'url' || files.some(file => sameFile(slot.file, file)));
+        const added = files.filter(file => !current.some(slot => slot.kind === 'file' && sameFile(slot.file, file)));
+        return retained.concat(added.map(file => ({ kind: 'file', file })));
+    }
+
     function pickerInputOf(form) {
         const input = form?.querySelector('input[name="file"]');
-        return input && input.closest('[data-file-drop]') && window.FilePicker ? input : null;
+        if (!input || !window.FilePicker) return null;
+        const container = input.closest('[data-file-drop]');
+        // 목록 없는 드롭존(data-file-list="none")은 파일만 받고, 목록은 아래 썸네일 타일이 그린다.
+        return container && container.dataset.fileList !== 'none' ? input : null;
+    }
+
+    /** 목록 없는 드롭존에 붙은 입력인지. 드롭존은 파일을 누적해 넘기고, 순서·대표·삭제는 썸네일 타일이 맡는다. */
+    function listlessPickerInput(input) {
+        const container = input?.closest?.('[data-file-drop]');
+        return !!(container && container.dataset.fileList === 'none' && window.FilePicker);
+    }
+
+    function bindListlessPicker(input) {
+        if (!listlessPickerInput(input) || input._archiveListlessBound) return;
+        input._archiveListlessBound = true;
+        input.addEventListener('file-picker:change', event => {
+            input._archivePickerAdded = (event.detail?.added?.length || 0) > 0;
+        });
+    }
+
+    /**
+     * 목록 없는 드롭존은 새 파일이 들어올 때만 처리한다.
+     * 파일 창의 원래 change(선택분만 담김)와 드롭존 초기화(reset)로 생기는 change는 건너뛴다.
+     */
+    function skipListlessChange(input, event) {
+        if (!listlessPickerInput(input)) return false;
+        if (event.isTrusted) return true;
+        const added = input._archivePickerAdded;
+        input._archivePickerAdded = false;
+        return !added;
     }
 
     /** 사진 칸(slot)을 공통 업로드 목록에 그대로 보여 준다. 순서·대표·새 파일을 함께 맞춘다. */
@@ -717,7 +760,6 @@
     /** 공통 목록에서 순서·삭제·되돌리기·대표·추가가 일어나면 사진 칸을 그 목록에 맞춘다(칸별 출연진은 유지). */
     function syncSlotsFromPicker(form, input, detail) {
         if (!form || !detail) return;
-        const sameFile = (a, b) => a === b || (a && b && a.name === b.name && a.size === b.size && a.lastModified === b.lastModified);
         const previous = slotsOf(form);
         const previewed = previous[form._archiveSlotPreviewIndex];
         const next = (detail.items || []).map(item => (item instanceof File
@@ -765,7 +807,9 @@
         const input = form.querySelector('input[name="file"]');
         if (!input) return;
         const files = form._archiveMediaSlots.filter(slot => slot.kind === 'file').map(slot => slot.file);
-        if (window.FilePicker) {
+        if (listlessPickerInput(input)) {
+            window.FilePicker.setItems(input, files);
+        } else if (window.FilePicker) {
             window.FilePicker.setFiles(input, files, { silent: true });
         } else {
             const transfer = new DataTransfer();
@@ -838,10 +882,11 @@
     function removeSlotAt(form, index) {
         const slots = slotsOf(form);
         if (index < 0 || index >= slots.length) return;
+        const input = form.querySelector('input[name="file"]');
+        bumpImageEditToken(input);
         const [removed] = slots.splice(index, 1);
         if (removed?.kind === 'file') releaseUrl(removed.file);
         setSlots(form, slots);
-        const input = form.querySelector('input[name="file"]');
         const next = Math.min(index, Math.max(0, slots.length - 1));
         if (slots.length) previewSlot(form, input, next);
         else {
@@ -854,11 +899,12 @@
     function moveSlot(form, from, to) {
         const slots = slotsOf(form);
         if (from === to || from < 0 || to < 0 || from >= slots.length || to >= slots.length) return;
+        const input = form.querySelector('input[name="file"]');
+        bumpImageEditToken(input);
         const next = slots.slice();
         const [item] = next.splice(from, 1);
         next.splice(to, 0, item);
         setSlots(form, next);
-        const input = form.querySelector('input[name="file"]');
         previewSlot(form, input, to);
     }
 
@@ -2014,6 +2060,20 @@
         uploadForm.querySelectorAll('.ar-file input[type="file"]').forEach(syncFileName);
     }
 
+    function resetListlessUploadFiles() {
+        if (!listlessPickerInput(uploadFile)) return;
+        bumpImageEditToken(uploadFile);
+        releaseUnusedFiles(uploadFile._archiveLastFiles, []);
+        window.FilePicker.reset(uploadFile);
+        uploadFile._archiveLastFile = null;
+        uploadFile._archiveLastFiles = null;
+        uploadFile._archivePreviewIndex = 0;
+        setSlots(uploadForm, [], { syncInput: false });
+        uploadForm._archiveSlotPreviewIndex = -1;
+        showPreview(uploadPreview, '');
+        syncFileName(uploadFile);
+    }
+
     window.showAddModal = function () {
         if (!uploadForm || !uploadDialog) return;
         afterUploadLocation = null;
@@ -2043,9 +2103,12 @@
     };
 
     bindPickerSlots(uploadForm);
+    bindListlessPicker(uploadFile);
+    uploadForm?.addEventListener('reset', resetListlessUploadFiles);
 
-    uploadFile?.addEventListener("change", () => {
+    uploadFile?.addEventListener("change", event => {
         if (kind === 'image' && pickerInputOf(uploadForm)) return;
+        if (skipListlessChange(uploadFile, event)) return;
         resetUploadIdempotencyKey();
         bumpImageEditToken(uploadFile);
         const files = Array.from(uploadFile.files || []);
@@ -2082,10 +2145,7 @@
         }
         const imageFiles = files.filter(isImageFile);
         if (kind === 'image') {
-            // 공통 업로드 칸은 새로 고른 파일을 누적하므로, 이미 있던 사진 칸(출연진·대표 지정)을 그대로 이어 쓴다.
-            const sameFile = (a, b) => a === b || (a && b && a.name === b.name && a.size === b.size && a.lastModified === b.lastModified);
-            const previousSlots = slotsOf(uploadForm);
-            setSlots(uploadForm, imageFiles.map(file => previousSlots.find(slot => slot.kind === 'file' && sameFile(slot.file, file)) || ({ kind: 'file', file })), { syncInput: false });
+            setSlots(uploadForm, reconcileImageSlots(uploadForm, imageFiles));
             const index = resolvePreviewIndex(uploadFile, imageFiles);
             imageFiles.forEach(rememberUrl);
             previewSlot(uploadForm, uploadFile, index);
@@ -2324,9 +2384,11 @@
     }
 
     bindPickerSlots(editForm);
+    bindListlessPicker(editFile);
 
-    editFile?.addEventListener("change", () => {
+    editFile?.addEventListener("change", event => {
         if (kind === 'image' && pickerInputOf(editForm)) return;
+        if (skipListlessChange(editFile, event)) return;
         bumpImageEditToken(editFile);
         const files = Array.from(editFile.files || []);
         const keptSlots = slotsOf(editForm).filter(slot => slot.kind === 'url');
@@ -2376,15 +2438,13 @@
         }
         const nextFiles = files.filter(isImageFile);
         // 공통 업로드 칸은 선택을 누적하므로, 지금 순서(저장된 사진과 새 사진이 섞인 순서)를 유지하고 새 파일만 뒤에 붙인다.
-        const sameFile = (a, b) => a === b || (a && b && a.name === b.name && a.size === b.size && a.lastModified === b.lastModified);
         const currentSlots = slotsOf(editForm);
-        const stillThere = currentSlots.filter(slot => slot.kind === 'url' || nextFiles.some(file => sameFile(slot.file, file)));
-        const added = nextFiles.filter(file => !currentSlots.some(slot => slot.kind === 'file' && sameFile(slot.file, file)));
-        const nextSlots = stillThere.concat(added.map(file => ({ kind: 'file', file })));
+        const nextSlots = reconcileImageSlots(editForm, nextFiles);
+        const firstAddedIndex = nextSlots.findIndex(slot => !currentSlots.includes(slot));
         // 입력의 파일 순서도 칸 순서에 맞춘다(저장 시 imageOrderJson의 빈 칸이 이 순서로 채워진다).
         setSlots(editForm, nextSlots);
         nextFiles.forEach(rememberUrl);
-        previewSlot(editForm, editFile, added.length ? nextSlots.length - added.length : 0);
+        previewSlot(editForm, editFile, Math.max(0, firstAddedIndex));
     });
 
     async function removeArchive(id, title) {

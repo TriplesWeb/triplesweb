@@ -9,6 +9,7 @@ const css = fs.readFileSync(path.join(staticRoot, 'css', 'archive-page.css'), 'u
 const site = fs.readFileSync(path.join(staticRoot, 'css', 'site.css'), 'utf8');
 const siteUi = fs.readFileSync(path.join(staticRoot, 'css', 'site-ui.css'), 'utf8');
 const pickerJs = fs.readFileSync(path.join(staticRoot, 'js', 'member-portrait-picker.js'), 'utf8');
+const filePickerJs = fs.readFileSync(path.join(staticRoot, 'js', 'file-picker.js'), 'utf8');
 const manageJs = fs.readFileSync(path.join(staticRoot, 'js', 'archive-manage.js'), 'utf8');
 const detailJs = fs.readFileSync(path.join(staticRoot, 'js', 'archive-detail.js'), 'utf8');
 const videoJs = fs.readFileSync(path.join(staticRoot, 'js', 'archive-video-player.js'), 'utf8');
@@ -300,7 +301,16 @@ ${isVideo ? videoDialog + '<script>' + videoJs + '</script>' : ''}
 
 const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><circle cx="40" cy="40" r="40" fill="#7bba8d"/></svg>';
 
-async function withPage(html, run) {
+function listlessPhotoHtml() {
+  const admin = fs.readFileSync(path.join(root, 'src/main/resources/templates/archive/admin.mustache'), 'utf8');
+  return ['archiveUploadFile', 'archiveEditFile'].reduce((html, id) => {
+    const field = admin.match(new RegExp('<div class="ar-file ar-file--drop">\\s*<div[^>]*>\\s*<input[^>]*id="' + id + '"[^>]*>\\s*</div>\\s*<span[^>]*>[^<]*</span>\\s*</div>'));
+    assert.ok(field, '아카이브 사진 입력을 찾을 수 없다: ' + id);
+    return html.replace(new RegExp('<span class="ar-file">\\s*<input[^>]*id="' + id + '"[^>]*>[^]*?</label>[^]*?</span>\\s*</span>'), field[0]);
+  }, pageHtml('image'));
+}
+
+async function withPage(html, run, { filePicker = false } = {}) {
   const browser = await chromium.launch({
     headless: true,
     executablePath: process.env.CHROMIUM_PATH || (fs.existsSync('/usr/bin/chromium') ? '/usr/bin/chromium' : undefined),
@@ -308,6 +318,7 @@ async function withPage(html, run) {
   });
   try {
     const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
+    if (filePicker) await page.addInitScript({ content: filePickerJs });
     await page.route('**/*', (route) => {
       const url = new URL(route.request().url());
       if (url.pathname === '/' || url.pathname.endsWith('.html')) {
@@ -490,6 +501,81 @@ async function withPage(html, run) {
     assert.ok(multi.afterThumbs.every((src) => src.startsWith('blob:')), '제거 후 썸네일이 깨졌다');
     assert.equal(multi.count, 2);
   });
+
+  await withPage(listlessPhotoHtml(), async (page) => {
+    const png = Buffer.from(await page.evaluate(() => document.createElement('canvas').toDataURL().split(',')[1]), 'base64');
+    const photo = name => ({ name, mimeType: 'image/png', buffer: png });
+    const uploadInput = page.locator('#archiveUploadFile');
+    const uploadTiles = page.locator('#archiveUploadForm .ar-file-tile');
+    const selected = input => input.evaluate(field => ({
+      input: Array.from(field.files, file => file.name),
+      picker: window.FilePicker.files(field).map(file => file.name)
+    }));
+    const assertSelected = async (input, names) => {
+      assert.deepEqual(await selected(input), { input: names, picker: names });
+    };
+    await uploadInput.locator('xpath=ancestor::*[@data-file-drop-ready="true"]').waitFor({ state: 'attached' });
+    await page.evaluate(() => window.showAddModal());
+    await uploadInput.setInputFiles(photo('discarded.png'));
+    await assertSelected(uploadInput, ['discarded.png']);
+    await page.keyboard.press('Escape');
+    await page.locator('#uploadModal').waitFor({ state: 'hidden' });
+    await assertSelected(uploadInput, []);
+    await page.evaluate(() => window.showAddModal());
+    await uploadInput.setInputFiles(photo('after-reopen.png'));
+    await assertSelected(uploadInput, ['after-reopen.png']);
+    assert.equal(await uploadTiles.count(), 1);
+
+    await page.locator('#archiveUploadForm').evaluate(form => form.reset());
+    await assertSelected(uploadInput, []);
+    assert.equal(await uploadTiles.count(), 0);
+    await uploadInput.setInputFiles([photo('a.png'), photo('b.png')]);
+    await uploadTiles.nth(1).dragTo(uploadTiles.nth(0));
+    await assertSelected(uploadInput, ['b.png', 'a.png']);
+    await uploadInput.setInputFiles(photo('c.png'));
+    await assertSelected(uploadInput, ['b.png', 'a.png', 'c.png']);
+    assert.deepEqual(await uploadTiles.evaluateAll(tiles => tiles.map(tile => tile.title)),
+      ['b.png', 'a.png', 'c.png']);
+    await page.keyboard.press('Escape');
+
+    await page.evaluate(() => {
+      const toBlob = HTMLCanvasElement.prototype.toBlob;
+      HTMLCanvasElement.prototype.toBlob = function (callback, ...args) {
+        return toBlob.call(this, blob => {
+          window.releaseArchiveEdit = () => callback(blob);
+        }, ...args);
+      };
+    });
+    const editInput = page.locator('#archiveEditFile');
+    const editTiles = page.locator('#archiveEditForm .ar-file-tile');
+    const startEdit = async () => {
+      await page.locator('[data-archive-edit]').click();
+      await page.waitForFunction(() => document.querySelectorAll('#archiveEditForm .ar-file-tile').length === 2);
+      await editInput.setInputFiles([photo('a.png'), photo('b.png')]);
+      await assertSelected(editInput, ['a.png', 'b.png']);
+      assert.equal(await editTiles.count(), 4);
+      await page.locator('#editPreview [data-image-edit="rotate-cw"]').click();
+      await page.waitForFunction(() => typeof window.releaseArchiveEdit === 'function');
+    };
+    const finishEdit = async () => {
+      await page.evaluate(() => {
+        window.releaseArchiveEdit();
+        delete window.releaseArchiveEdit;
+      });
+      await page.waitForFunction(() => !document.querySelector('#editPreview')._archiveEditBusy);
+    };
+    await startEdit();
+    await editTiles.nth(2).locator('.ar-file-remove').click();
+    await finishEdit();
+    await assertSelected(editInput, ['b.png']);
+    assert.equal(await editTiles.count(), 3);
+    await page.keyboard.press('Escape');
+
+    await startEdit();
+    await editTiles.nth(3).dragTo(editTiles.nth(2));
+    await finishEdit();
+    await assertSelected(editInput, ['b.png', 'a.png']);
+  }, { filePicker: true });
 
   await withPage(photoReorderHtml(), async (page) => {
     await page.click('[data-archive-open]');
