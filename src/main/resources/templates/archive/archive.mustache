@@ -114,10 +114,14 @@
 {{#chemistryNamesJson}}
 <script type="application/json" id="archiveChemistryNames">{{{chemistryNamesJson}}}</script>
 {{/chemistryNamesJson}}
+{{#unitRosterJson}}
+<script type="application/json" id="memberUnitRoster">{{{unitRosterJson}}}</script>
+{{/unitRosterJson}}
 {{^archiveFolderHome}}
 {{>triples/partials/chemistry-modals}}
 {{/archiveFolderHome}}
 <script src="{{#asset}}/js/member-portrait-picker.js{{/asset}}"></script>
+<script src="{{#asset}}/js/member-selection-summary.js{{/asset}}"></script>
 <script src="{{#asset}}/js/date-range-filter.js{{/asset}}"></script>
 <script src="{{#asset}}/js/archive-browse.js{{/asset}}"></script>
 {{^archiveFolderHome}}

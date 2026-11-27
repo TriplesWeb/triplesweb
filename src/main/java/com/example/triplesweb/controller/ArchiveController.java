@@ -24,6 +24,7 @@ import com.example.triplesweb.util.ArchiveImages;
 import com.example.triplesweb.util.ArchiveSort;
 import com.example.triplesweb.util.ImageUrls;
 import com.example.triplesweb.util.MemberPortraitOptions;
+import com.example.triplesweb.util.MemberSetCatalogJson;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -741,7 +742,9 @@ public class ArchiveController {
     }
 
     private void addUnitCheckboxOptions(Model model) {
-        model.addAttribute("unitCheckboxOptions", unitService.listUnitCheckboxOptions());
+        List<Map<String, Object>> options = unitService.listUnitCheckboxOptions();
+        model.addAttribute("unitCheckboxOptions", options);
+        model.addAttribute("unitRosterJson", MemberSetCatalogJson.units(options));
     }
 
     private static void addCommonDateFlags(Model model) {
@@ -1193,68 +1196,7 @@ public class ArchiveController {
     }
 
     private String chemistryNamesJson() {
-        StringBuilder json = new StringBuilder("[");
-        boolean first = true;
-        Set<String> seen = new LinkedHashSet<>();
-        for (ChemistryDto item : safeChemistries()) {
-            String rawMembers = (item.getMemberA() == null ? "" : item.getMemberA())
-                    + "," + (item.getMemberB() == null ? "" : item.getMemberB());
-            first = appendChemistryName(json, first, seen, ArchiveFolderClassifier.membersOf(rawMembers), item.getLabel(),
-                    "pair", item.getId());
-        }
-        for (ChemistryGroupDto item : safeChemistryGroups()) {
-            List<String> members = item.getMembers() == null ? List.of() : item.getMembers();
-            first = appendChemistryName(json, first, seen,
-                    ArchiveFolderClassifier.membersOf(String.join(",", members)), item.getLabel(), "group", item.getId());
-        }
-        return json.append(']').toString();
-    }
-
-    private static boolean appendChemistryName(StringBuilder json, boolean first, Set<String> seen,
-                                               List<String> members, String rawLabel, String type, Long id) {
-        if (members == null || members.size() < 2) return first;
-        String label = chemistryDisplayLabel(rawLabel);
-        if (label.isEmpty()) return first;
-        if (!seen.add(String.join("\u0000", members))) return first;
-        if (!first) json.append(',');
-        json.append("{\"members\":[");
-        for (int i = 0; i < members.size(); i++) {
-            if (i > 0) json.append(',');
-            json.append(jsonString(members.get(i)));
-        }
-        json.append("],\"label\":").append(jsonString(label));
-        if (id != null) {
-            json.append(",\"href\":").append(jsonString("/triples/chemistry?" + type + "=" + id));
-        }
-        json.append('}');
-        return false;
-    }
-
-    private static String chemistryDisplayLabel(String label) {
-        if (label == null || label.isBlank()) return "";
-        List<String> parts = new ArrayList<>();
-        for (String line : label.split("\\R+")) {
-            String trimmed = line.trim().replaceAll("\\s+", " ");
-            if (!trimmed.isEmpty()) parts.add(trimmed);
-        }
-        return String.join(" · ", parts);
-    }
-
-    private static String jsonString(String value) {
-        StringBuilder out = new StringBuilder(value.length() + 2);
-        out.append('"');
-        for (int i = 0; i < value.length(); i++) {
-            char ch = value.charAt(i);
-            switch (ch) {
-                case '\\' -> out.append("\\\\");
-                case '"' -> out.append("\\\"");
-                case '\n' -> out.append("\\n");
-                case '\r' -> out.append("\\r");
-                case '<' -> out.append("\\u003c");
-                default -> out.append(ch);
-            }
-        }
-        return out.append('"').toString();
+        return MemberSetCatalogJson.chemistry(safeChemistries(), safeChemistryGroups());
     }
 
     private List<ChemistryDto> safeChemistries() {

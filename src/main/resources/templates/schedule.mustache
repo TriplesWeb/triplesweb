@@ -2,6 +2,8 @@
 
     <title>트리플에스 커뮤니티 스케줄</title>
     <link rel="stylesheet" href="{{#asset}}/css/triples.css{{/asset}}">
+    <link rel="stylesheet" href="{{#asset}}/css/archive-page.css{{/asset}}">
+    <link rel="stylesheet" href="{{#asset}}/css/member-portrait-picker.css{{/asset}}">
     <link rel="stylesheet" href="{{#asset}}/css/schedule-categories.css{{/asset}}">
 </head><body class="site-page dark selection:bg-brand selection:text-black">
     <div class="ambient-glow-container" aria-hidden="true">
@@ -138,25 +140,36 @@
                         </div>
                         <div>
                             <label for="startInput" class="site-label">시작 날짜</label>
-                            <input type="date" class="site-field font-mono" id="startInput" name="start" required>
+                            <input type="date" class="site-field font-mono" id="startInput" name="start" required data-ar-cal lang="ko">
                         </div>
                         <div>
                             <label for="endInput" class="site-label">종료 날짜 (선택)</label>
-                            <input type="date" class="site-field font-mono" id="endInput" name="end">
+                            <input type="date" class="site-field font-mono" id="endInput" name="end" data-ar-cal lang="ko">
                         </div>
                         <div>
                             <div class="flex items-center justify-between gap-2">
-                                <label for="addArtistNames" class="site-label">출연 멤버</label>
-                                <button type="button" class="md-btn md-btn-text" data-picker-all="#addArtistNames">전체 선택</button>
+                                <p class="site-label">출연 멤버</p>
+                                <span class="ar-picker-meta-actions">
+                                    <button type="button" class="ar-text-btn" data-picker-all>전체 선택</button>
+                                    <button type="button" class="ar-text-btn" data-picker-clear>전체 해제</button>
+                                </span>
                             </div>
-                            <select id="addArtistNames" class="site-field" name="artistNames" multiple size="5">
-                                {{#artistOptions}}<option value="{{name}}" data-color="{{color}}">{{name}}</option>{{/artistOptions}}
-                            </select>
+                            <div class="member-portrait-picker is-compact" id="add-schedule-picker" role="group" aria-label="출연 멤버">
+                                {{>partials/member-portrait-picker}}
+                            </div>
+                            <div class="ar-artist-editor">
+                                <div class="ar-picker-meta">
+                                    <span><span data-picker-count>0</span>명 선택 <span data-picker-summary hidden></span></span>
+                                </div>
+                                <div class="ar-artist-chips" data-artist-chips></div>
+                            </div>
+                            <div id="addSchedulePager" data-member-pager></div>
+                            <div id="addArtistInputs" data-artist-inputs></div>
                         </div>
                     </div>
                     <div class="site-modal-footer">
-                        <button type="button" class="md-btn md-btn-text btn-custom-secondary" data-site-dismiss="modal">취소</button>
-                        <button type="submit" class="md-btn md-btn-filled btn-custom-primary">추가하기</button>
+                        <button type="button" class="ar-text-btn" data-site-dismiss="modal">취소</button>
+                        <button type="submit" class="ar-submit">추가하기</button>
                     </div>
                 </div>
             </form>
@@ -190,25 +203,36 @@
                         </div>
                         <div>
                             <label for="editStartInput" class="site-label">시작 날짜</label>
-                            <input type="date" class="site-field font-mono" id="editStartInput" name="start" required>
+                            <input type="date" class="site-field font-mono" id="editStartInput" name="start" required data-ar-cal lang="ko">
                         </div>
                         <div>
                             <label for="editEndInput" class="site-label">종료 날짜 (선택)</label>
-                            <input type="date" class="site-field font-mono" id="editEndInput" name="end">
+                            <input type="date" class="site-field font-mono" id="editEndInput" name="end" data-ar-cal lang="ko">
                         </div>
                         <div>
                             <div class="flex items-center justify-between gap-2">
-                                <label for="editArtistNames" class="site-label">출연 멤버</label>
-                                <button type="button" class="md-btn md-btn-text" data-picker-all="#editArtistNames">전체 선택</button>
+                                <p class="site-label">출연 멤버</p>
+                                <span class="ar-picker-meta-actions">
+                                    <button type="button" class="ar-text-btn" data-picker-all>전체 선택</button>
+                                    <button type="button" class="ar-text-btn" data-picker-clear>전체 해제</button>
+                                </span>
                             </div>
-                            <select id="editArtistNames" class="site-field" name="artistNames" multiple size="5">
-                                {{#artistOptions}}<option value="{{name}}" data-color="{{color}}">{{name}}</option>{{/artistOptions}}
-                            </select>
+                            <div class="member-portrait-picker is-compact" id="edit-schedule-picker" role="group" aria-label="출연 멤버">
+                                {{>partials/member-portrait-picker}}
+                            </div>
+                            <div class="ar-artist-editor">
+                                <div class="ar-picker-meta">
+                                    <span><span data-picker-count>0</span>명 선택 <span data-picker-summary hidden></span></span>
+                                </div>
+                                <div class="ar-artist-chips" data-artist-chips></div>
+                            </div>
+                            <div id="editSchedulePager" data-member-pager></div>
+                            <div id="editArtistInputs" data-artist-inputs></div>
                         </div>
                     </div>
                     <div class="site-modal-footer">
-                        <button type="button" class="md-btn md-btn-text btn-custom-secondary" data-site-dismiss="modal">취소</button>
-                        <button type="submit" class="md-btn md-btn-filled btn-custom-primary">수정 저장</button>
+                        <button type="button" class="ar-text-btn" data-site-dismiss="modal">취소</button>
+                        <button type="submit" class="ar-submit">수정 저장</button>
                     </div>
                 </div>
             </form>
@@ -262,7 +286,16 @@
     </div>
     {{/isAdmin}}
 
+    {{#chemistryNamesJson}}
+    <script type="application/json" id="memberChemistryNames">{{{chemistryNamesJson}}}</script>
+    {{/chemistryNamesJson}}
+    {{#unitRosterJson}}
+    <script type="application/json" id="memberUnitRoster">{{{unitRosterJson}}}</script>
+    {{/unitRosterJson}}
     <script src="{{#asset}}/js/site-ui.js{{/asset}}"></script>
+    <script src="{{#asset}}/js/member-portrait-picker.js{{/asset}}"></script>
+    <script src="{{#asset}}/js/member-selection-summary.js{{/asset}}"></script>
+    <script src="{{#asset}}/js/date-range-filter.js{{/asset}}"></script>
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/locales/ko.global.min.js"></script>
 
@@ -426,21 +459,39 @@
             return window.AboutAdminAuth?.applyAuthHeaders(headers)||headers;
         }
 
-        function bindCategoryPreview(prefix,titleId,artistId) {
+        function bindCategoryPreview(prefix,titleId,pickerId) {
             const category=document.getElementById(prefix+'ScheduleCategory');
-            const title=document.getElementById(titleId), artists=document.getElementById(artistId);
+            const title=document.getElementById(titleId);
+            const picker=document.getElementById(pickerId);
             const preview=document.getElementById(prefix+'SchedulePreview');
             if(!category||!preview)return;
+            function firstArtistColor() {
+                const names = window.MemberPortraitPicker ? MemberPortraitPicker.selectedValues(picker) : [];
+                const first = names[0];
+                if (!first || !picker) return '';
+                const item = picker.querySelector('.mpp-item[data-value="' + CSS.escape(first) + '"]');
+                return item ? (item.style.getPropertyValue('--artist-color') || '').trim() : '';
+            }
             function update() {
                 const option=category.selectedOptions[0];
                 let color=option?.dataset.color||'#00f5d4';
-                if(category.value==='ANNIVERSARY')color=artists.selectedOptions[0]?.dataset.color||color;
+                if(category.value==='ANNIVERSARY') color = firstArtistColor() || color;
                 preview.style.setProperty('--schedule-color',color);
                 const label=title.value.trim()||option?.textContent||'일정 미리보기';
                 preview.textContent=(category.value==='ANNIVERSARY'&&!label.includes('🎂')?'🎂 ':'')+label;
             }
-            category.addEventListener('change',update);title.addEventListener('input',update);artists.addEventListener('change',update);
+            category.addEventListener('change',update);title.addEventListener('input',update);
+            picker?.addEventListener('click', update);
             category.form.addEventListener('reset',()=>requestAnimationFrame(update));update();
+        }
+
+        function bindScheduleMembers(form, pickerId, pagerId) {
+            const picker = document.getElementById(pickerId);
+            if (!form || !picker || !window.MemberPortraitPicker) return;
+            const paint = () => window.MemberSelectionSummary?.paintArtistMeta(form);
+            MemberPortraitPicker.bindMultiSelect(picker, { multi: true, onChange: paint });
+            window.MemberSelectionSummary?.bindPager(picker, document.getElementById(pagerId), 12);
+            paint();
         }
 
         function getCalendarEvents() {
@@ -481,8 +532,10 @@
             let initialEvents = getCalendarEvents();
             let pendingFocus = query.get('focus');
 
-            bindCategoryPreview('add','titleInput','addArtistNames');
-            bindCategoryPreview('edit','editTitleInput','editArtistNames');
+            bindScheduleMembers(document.getElementById('addScheduleForm'), 'add-schedule-picker', 'addSchedulePager');
+            bindScheduleMembers(document.getElementById('editScheduleForm'), 'edit-schedule-picker', 'editSchedulePager');
+            bindCategoryPreview('add','titleInput','add-schedule-picker');
+            bindCategoryPreview('edit','editTitleInput','edit-schedule-picker');
             // 모달 닫기 버튼과 Escape 처리 (배경 클릭은 닫지 않음).
             document.querySelectorAll('.site-modal').forEach(element => {
                 element.addEventListener('click', event => {
@@ -577,8 +630,12 @@
                 document.getElementById('editScheduleCategory').value = event.extendedProps.category || 'AUTO';
                 document.getElementById('editStartInput').value = event.startStr.slice(0, 10);
                 document.getElementById('editEndInput').value = getRawEnd(event).slice(0, 10);
-                const artists = String(event.extendedProps.artistNames || '').split(',').map(name => name.trim());
-                document.querySelectorAll('#editArtistNames option').forEach(option => option.selected = artists.includes(option.value));
+                const artists = String(event.extendedProps.artistNames || '').split(',').map(name => name.trim()).filter(Boolean);
+                const editPicker = document.getElementById('edit-schedule-picker');
+                if (window.MemberPortraitPicker && editPicker) {
+                    MemberPortraitPicker.setValues(editPicker, artists);
+                    window.MemberSelectionSummary?.paintArtistMeta(document.getElementById('editScheduleForm'));
+                }
                 document.getElementById('editScheduleCategory').dispatchEvent(new Event('change'));
             }
 
@@ -782,7 +839,7 @@
                     if (!await window.SiteFeedback.confirm('이 일정을 추가하시겠습니까?')) return;
 
                     const body = new URLSearchParams({ title, start, end, category:document.getElementById('addScheduleCategory').value });
-                    document.querySelectorAll('#addArtistNames option:checked').forEach(option => body.append('artistNames', option.value));
+                    (window.MemberPortraitPicker ? MemberPortraitPicker.selectedValues(document.getElementById('add-schedule-picker')) : []).forEach(name => body.append('artistNames', name));
                     const doneBusy = window.SiteFeedback.beginBusy();
                     try {
                         const response = await fetch('/schedule/add', {
@@ -799,6 +856,10 @@
 
                         hideScheduleModalThen(addModalElement);
                         addForm.reset();
+                        if (window.MemberPortraitPicker) {
+                            MemberPortraitPicker.clear(document.getElementById('add-schedule-picker'));
+                            window.MemberSelectionSummary?.paintArtistMeta(addForm);
+                        }
                         refreshSchedules(new Date(`${start}T00:00:00`));
                     } catch (error) {
                         console.error('스케줄 추가 오류:', error);
@@ -830,7 +891,7 @@
                     if (!await window.SiteFeedback.confirm('이 일정을 수정하시겠습니까?')) return;
 
                     const body = new URLSearchParams({ title, startDate: start, endDate: end, category:document.getElementById('editScheduleCategory').value });
-                    document.querySelectorAll('#editArtistNames option:checked').forEach(option => body.append('artistNames', option.value));
+                    (window.MemberPortraitPicker ? MemberPortraitPicker.selectedValues(document.getElementById('edit-schedule-picker')) : []).forEach(name => body.append('artistNames', name));
                     const doneBusy = window.SiteFeedback.beginBusy();
                     try {
                         const response = await fetch(`/edit/${encodeURIComponent(id)}`, {

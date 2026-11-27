@@ -5,12 +5,15 @@ import com.example.triplesweb.entity.Media;
 import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.infra.YoutubeDataApiClient;
 import com.example.triplesweb.infra.YoutubeOembedClient;
+import com.example.triplesweb.media.LocalMediaCatalog;
 import com.example.triplesweb.media.MediaTab;
+import com.example.triplesweb.media.MediaTabClassifier;
 import com.example.triplesweb.repository.MediaRepository;
 import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.util.ISODuration;
 import com.example.triplesweb.util.YoutubeIdExtractor;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,29 +29,58 @@ public class MediaService {
     private final ArtistRepository artistRepository;
     private final YoutubeOembedClient oembed;
     private final YoutubeDataApiClient yt;
+    private final LocalMediaCatalog localCatalog;
+
+    @Value("${youtube.channel.id:UCJnL-TBcsYrF2SLs7tmiC8Q}")
+    private String officialChannelId;
+
+    @Value("${youtube.mv.playlist-id:PLZlIsCBsz6M2cLA3F93I-snMa0sjAjAeY}")
+    private String mvPlaylistId;
 
     @Transactional(readOnly = true)
     public List<MediaDto> pageByTab(String tab, int page, int size) {
+        if (usesAdjustedTabs(tab)) {
+            return allByTab(tab).stream().skip((long) Math.max(0, page - 1) * size).limit(size).toList();
+        }
         return mediaRepository.findByTabOrderBySortOrderAscIdAsc(tab, PageRequest.of(Math.max(0,page-1),size)).map(this::toDto).getContent();
     }
     @Transactional(readOnly = true)
     public Optional<MediaDto> findOne(MediaTab tab, String youtubeId) {
-        return mediaRepository.findByTabAndYoutubeIdIgnoreCase(tab.getKey(),youtubeId).map(this::toDto);
+        if (localCatalog.isHidden(youtubeId)) return Optional.empty();
+        Optional<MediaDto> found = mediaRepository.findByTabAndYoutubeIdIgnoreCase(tab.getKey(),youtubeId).map(this::toDto);
+        if (found.isPresent()) return found;
+        return mediaRepository.findByYoutubeIdIgnoreCase(youtubeId).map(this::toDto)
+                .or(() -> localCatalog.findOne(youtubeId));
     }
     @Transactional(readOnly = true)
     public List<MediaDto> related(MediaTab tab, String excludeId, int limit) {
+        if (usesAdjustedTabs(tab.getKey())) {
+            return allByTab(tab.getKey()).stream().filter(video -> !video.getYoutubeId().equalsIgnoreCase(excludeId))
+                    .limit(limit).toList();
+        }
         return mediaRepository.findByTabOrderBySortOrderAscIdAsc(tab.getKey()).stream().filter(v->!v.getYoutubeId().equalsIgnoreCase(excludeId)).limit(limit).map(this::toDto).toList();
     }
     @Transactional(readOnly = true)
     public List<MediaDto> allByTab(String tab) {
-        return mediaRepository.findAllWithArtistsByTab(tab).stream().map(this::toDto).toList();
+        if (localCatalog.affectsTab(tab)) return listAll().stream().filter(video -> tab.equals(video.getTab())).toList();
+        List<Media> candidates = MediaTab.BEHIND.getKey().equals(tab)
+                ? mediaRepository.findAllWithArtistsByTabs(List.of(MediaTab.MV.getKey(), tab))
+                : mediaRepository.findAllWithArtistsByTab(tab);
+        return candidates.stream().map(this::toDto)
+                .filter(video -> tab.equals(video.getTab())).toList();
     }
     @Transactional(readOnly = true)
-    public int totalByTab(String tab) { return (int) mediaRepository.countByTab(tab); }
+    public int totalByTab(String tab) {
+        return usesAdjustedTabs(tab) ? allByTab(tab).size() : (int) mediaRepository.countByTab(tab);
+    }
+
+    private boolean usesAdjustedTabs(String tab) {
+        return MediaTab.MV.getKey().equals(tab) || MediaTab.BEHIND.getKey().equals(tab) || localCatalog.affectsTab(tab);
+    }
 
     @Transactional(readOnly = true)
     public List<MediaDto> listAll() {
-        return mediaRepository.findAllWithArtists().stream().map(this::toDto).toList();
+        return localCatalog.appendMissing(mediaRepository.findAllWithArtists().stream().map(this::toDto).toList());
     }
 
     public void addMedia(String tab, MediaDto dto, boolean addFirst) {
@@ -57,9 +89,12 @@ public class MediaService {
     public void addMedia(String tab, MediaDto dto, boolean addFirst, String artistNames) {
         if(dto==null || dto.getYoutubeId()==null || dto.getYoutubeId().isBlank()) return;
         String ytId=dto.getYoutubeId().trim();
-        mediaRepository.findByTabAndYoutubeIdIgnoreCase(tab,ytId).ifPresent(mediaRepository::delete);
-        long sortOrder=addFirst ? mediaRepository.minSortOrder(tab)-1 : mediaRepository.maxSortOrder(tab)+1;
-        Media entity=Media.builder().youtubeId(ytId).tab(tab)
+        String storedTab = mediaTab(tab);
+        if (storedTab == null) storedTab = MediaTabClassifier.tabFor(dto.getTitle());
+        storedTab = MediaTabClassifier.correctMvTab(storedTab, dto.getTitle());
+        mediaRepository.findByYoutubeIdIgnoreCase(ytId).ifPresent(mediaRepository::delete);
+        long sortOrder=addFirst ? mediaRepository.minSortOrder(storedTab)-1 : mediaRepository.maxSortOrder(storedTab)+1;
+        Media entity=Media.builder().youtubeId(ytId).tab(storedTab)
                 .mediaTitle(dto.getTitle()!=null?dto.getTitle():"")
                 .mediaDur(dto.getDuration()!=null?dto.getDuration():"")
                 .viewCount(dto.getViews()!=null?dto.getViews():0L)
@@ -177,7 +212,50 @@ public class MediaService {
 
     private MediaDto toDto(Media m) {
         long views=m.getViewCount()!=null?m.getViewCount():0L;
-        return MediaDto.builder().id(m.getId()).tab(m.getTab()).youtubeId(m.getYoutubeId()).title(m.getMediaTitle()).duration(m.getMediaDur()).views(views).viewCountFmt(NumberFormat.getInstance().format(views)).description(visibleDescription(m.getDescription())).artistNames(m.getArtistNames()).publishedOn(m.getPublishedOn()==null?"":m.getPublishedOn().toString()).build();
+        MediaDto dto = localCatalog.applyTabOverride(MediaDto.builder().id(m.getId()).tab(m.getTab()).youtubeId(m.getYoutubeId())
+                .title(m.getMediaTitle()).duration(m.getMediaDur()).views(views)
+                .viewCountFmt(NumberFormat.getInstance().format(views)).description(visibleDescription(m.getDescription()))
+                .artistNames(m.getArtistNames()).publishedOn(m.getPublishedOn()==null?"":m.getPublishedOn().toString()).build());
+        dto.setTab(MediaTabClassifier.correctMvTab(dto.getTab(), dto.getTitle()));
+        return dto;
+    }
+
+    public int reclassifyStoredTabs() {
+        List<String> fetched = null;
+        if (mvPlaylistId != null && !mvPlaylistId.isBlank() && yt.hasApiKey()) {
+            fetched = yt.listUploadedVideoIds(mvPlaylistId.trim(), 0);
+        }
+        boolean enforceMvPlaylist = fetched != null;
+        Set<String> mvIds = new LinkedHashSet<>();
+        if (enforceMvPlaylist) {
+            for (String id : fetched) {
+                if (id != null && !id.isBlank()) mvIds.add(id);
+            }
+        }
+        int changed = 0;
+        for (Media media : mediaRepository.findAll()) {
+            if (media.isCuratedTab() || MediaTab.SHORTS.getKey().equals(media.getTab())) continue;
+            boolean official = MediaTabClassifier.legacyOfficial(media.getChannelId(), officialChannelId);
+            boolean musicShow = !official && MediaTabClassifier.isMusicShow(media.getMediaTitle())
+                    && !MediaTabClassifier.isFancam(media.getMediaTitle());
+            boolean inMv = enforceMvPlaylist && containsMvId(mvIds, media.getYoutubeId());
+            boolean namuExternal = MediaTab.EXTERNAL.getKey().equals(media.getTab());
+            String next = !enforceMvPlaylist && MediaTab.MV.getKey().equals(media.getTab())
+                    ? MediaTabClassifier.correctMvTab(media.getTab(), media.getMediaTitle())
+                    : MediaTabClassifier.tabFor(
+                    media.getMediaTitle(), media.getMediaDur(), official, musicShow,
+                    inMv, namuExternal, false);
+            if (next.equals(media.getTab())) continue;
+            media.setTab(next);
+            changed++;
+        }
+        return changed;
+    }
+
+    private static boolean containsMvId(Set<String> mvIds, String youtubeId) {
+        if (youtubeId == null || youtubeId.isBlank() || mvIds == null || mvIds.isEmpty()) return false;
+        if (mvIds.contains(youtubeId)) return true;
+        return mvIds.contains(youtubeId.toLowerCase(Locale.ROOT));
     }
 
     public boolean updateDetails(String youtubeId, String description, String publishedOn, String artistNames, String tab) {
@@ -189,7 +267,7 @@ public class MediaService {
         media.setPublishedOn(parseDate(publishedOn));
         media.setArtists(resolveArtists(artistNames));
         String nextTab = mediaTab(tab);
-        if (nextTab != null) media.setTab(nextTab);
+        if (nextTab != null) media.setTab(MediaTabClassifier.correctMvTab(nextTab, media.getMediaTitle()));
         return true;
     }
 

@@ -1,5 +1,9 @@
 /* Shared design tokens + daisyUI theme for all CSS bundles. */
-@import "tailwindcss";
+@import "tailwindcss" source(none);
+
+/* Scan the rendered application sources consistently in local builds and CI. */
+@source "../../src/main/resources/templates/**/*.mustache";
+@source "../../src/main/resources/static/**/*.{html,js}";
 @plugin "daisyui" {
   themes: triplesdark --default;
   /* tab 제외: Bootstrap식 .tab-content 와 daisyUI .tab-content(display:none) 충돌 방지.

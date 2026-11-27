@@ -30,6 +30,22 @@
     }
   });
 
+  document.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-picker-clear]");
+    if (!button) return;
+    event.preventDefault();
+    const spec = button.getAttribute("data-picker-clear") || "";
+    const scope = spec ? document.querySelector(spec) : (button.closest("form") || button.parentElement);
+    const picker = scope?.matches?.(".member-portrait-picker")
+      ? scope
+      : scope?.querySelector?.(".member-portrait-picker");
+    if (!picker || !window.MemberPortraitPicker) return;
+    MemberPortraitPicker.clear(picker);
+    if (typeof picker.__memberOnChange === "function") {
+      picker.__memberOnChange(MemberPortraitPicker.selectedValues(picker));
+    }
+  });
+
   const auth = window.AboutAdminAuth;
   if (!auth) return;
 
@@ -400,7 +416,11 @@
     if (event.defaultPrevented || !(form instanceof HTMLFormElement) || !form.hasAttribute("data-admin-fetch")) return;
     event.preventDefault();
     const confirmMessage = form.getAttribute("data-confirm");
-    if (confirmMessage && !await window.SiteFeedback.confirm(confirmMessage)) return;
+    if (confirmMessage && !await window.SiteFeedback.confirm(confirmMessage, {
+      accept: form.getAttribute("data-confirm-accept") || undefined,
+      title: form.getAttribute("data-confirm-title") || undefined,
+      compact: form.hasAttribute("data-confirm-compact")
+    })) return;
     const submitBtn = event.submitter instanceof HTMLButtonElement ? event.submitter : form.querySelector("button[type='submit']");
     if (submitBtn) submitBtn.disabled = true;
     const doneBusy = window.SiteFeedback.beginBusy();

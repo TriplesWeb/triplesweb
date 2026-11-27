@@ -2552,6 +2552,12 @@ body.site-page > main.archive-page.is-folder-view {
     background: rgba(0, 245, 212, 0.22);
     color: #b7f7eb;
 }
+.member-picker-pager {
+    margin-top: 0.75rem;
+}
+.member-portrait-picker .mpp-item[hidden] {
+    display: none !important;
+}
 .ar-pager .visually-hidden {
     position: absolute;
     width: 1px;
@@ -2972,7 +2978,8 @@ h2.ar-detail-desc {
     grid-column: 1;
     align-self: center;
 }
-.ar-detail-cast > .ar-detail-chem {
+.ar-detail-cast > .ar-detail-chem,
+.ar-detail-cast > .ar-unit-badge {
     grid-column: 2;
     justify-self: end;
     align-self: center;

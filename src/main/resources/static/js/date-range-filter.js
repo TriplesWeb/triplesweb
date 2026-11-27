@@ -9,7 +9,8 @@
     "[data-date-filter]",
     ".ar-sort-control",
     ".ar-member-panel",
-    ".ar-member-toggle"
+    ".ar-member-toggle",
+    "[data-media-cols-filter]"
   ].join(", ");
   const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
@@ -53,6 +54,15 @@
     document.querySelectorAll(".ar-sort-trigger").forEach((trigger) => {
       if (keepRoot && keepRoot.contains(trigger)) return;
       trigger.setAttribute("aria-expanded", "false");
+    });
+    document.querySelectorAll("[data-media-cols-menu]").forEach((menu) => {
+      if (keepRoot && keepRoot.contains(menu)) return;
+      menu.hidden = true;
+    });
+    document.querySelectorAll("[data-media-cols-filter]").forEach((filter) => {
+      if (keepRoot && keepRoot.contains(filter)) return;
+      filter.classList.remove("is-open");
+      filter.querySelector("[data-media-cols-toggle]")?.setAttribute("aria-expanded", "false");
     });
     document.querySelectorAll(".ar-member-panel").forEach((panel) => {
       const memberToggle = panel.id

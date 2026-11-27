@@ -10,6 +10,7 @@ const site = fs.readFileSync(path.join(staticRoot, 'css', 'site.css'), 'utf8');
 const siteUi = fs.readFileSync(path.join(staticRoot, 'css', 'site-ui.css'), 'utf8');
 const chemCss = fs.readFileSync(path.join(staticRoot, 'css', 'chemistry.css'), 'utf8');
 const pickerJs = fs.readFileSync(path.join(staticRoot, 'js', 'member-portrait-picker.js'), 'utf8');
+const summaryJs = fs.readFileSync(path.join(staticRoot, 'js', 'member-selection-summary.js'), 'utf8');
 const browseJs = fs.readFileSync(path.join(staticRoot, 'js', 'archive-browse.js'), 'utf8');
 const dateJs = fs.readFileSync(path.join(staticRoot, 'js', 'date-range-filter.js'), 'utf8');
 const detailJs = fs.readFileSync(path.join(staticRoot, 'js', 'archive-detail.js'), 'utf8');
@@ -101,6 +102,7 @@ ${site}${css}${siteUi}${chemCss}
   </section>
 </main>
 <script type="application/json" id="archiveChemistryNames">[{"members":["마유","주빈"],"label":"심장마빈즈","href":"/triples/chemistry?pair=3"},{"members":["마유","주빈","지연"],"label":"셋","href":"/triples/chemistry?group=9"},{"members":["윤서연","정혜린"],"label":""}]</script>
+<script type="application/json" id="memberUnitRoster">[{"name":"EVOLution","members":["김유연","김나경","공유빈","카에데"]}]</script>
 <div class="ar-dialog" id="archiveDetail" hidden>
   <button type="button" class="ar-dialog-backdrop" data-ar-close aria-label="닫기"></button>
   <div class="ar-dialog-panel ar-detail-panel" role="dialog">
@@ -162,6 +164,7 @@ ${site}${css}${siteUi}${chemCss}
 </div>
 ${chemistryModals}
 <script>${pickerJs}</script>
+<script>${summaryJs}</script>
 <script>${browseJs}</script>
 <script>${dateJs}</script>
 <script>${membersJs}</script>
@@ -285,6 +288,12 @@ ${chemistryModals}
     await pick('윤서연');
     await pick('정혜린');
     assert.equal(await page.locator('[data-member-toggle-label]').innerText(), 'Aura', '유닛 조합은 유닛명이 보여야 한다');
+    const labels = await page.evaluate(() => ({
+      unit: window.MemberSelectionSummary.describe(['김나경', '카에데', '공유빈', '김유연']).label,
+      group: window.MemberSelectionSummary.describe(Array.from({ length: 24 }, (_, i) => 'm' + i)).label
+    }));
+    assert.equal(labels.unit, 'EVOLution');
+    assert.equal(labels.group, '단체 콘텐츠');
     const toggleBox = await page.locator('#archiveMemberToggle').boundingBox();
     await page.screenshot({
       path: path.join(artifactDir, 'archive-member-toggle-chemistry.png'),

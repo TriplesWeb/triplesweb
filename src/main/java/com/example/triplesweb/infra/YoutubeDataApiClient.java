@@ -3,13 +3,22 @@ package com.example.triplesweb.infra;
 import com.example.triplesweb.util.ISODuration;
 import com.example.triplesweb.util.YoutubeIdExtractor;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -17,22 +26,28 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * YouTube Data API v3로 동영상 snippet·재생시간·조회수와 채널 업로드 목록을 조회한다(외부 API, DB 미사용).
  */
+@Slf4j
 @Component
 public class YoutubeDataApiClient {
     private static final String VIDEOS = "https://www.googleapis.com/youtube/v3/videos";
     private static final String CHANNELS = "https://www.googleapis.com/youtube/v3/channels";
     private static final String PLAYLIST_ITEMS = "https://www.googleapis.com/youtube/v3/playlistItems";
+    private static final String SEARCH = "https://www.googleapis.com/youtube/v3/search";
     private static final int PAGE_SIZE = 50;
     private static final int MAX_PLAYLIST_PAGES = 500;
+    private static final int MAX_SEARCH_PAGES = 10;
+    private static final Duration SEARCH_PAUSE = Duration.ofMinutes(30);
 
     private final RestTemplate rest;
     private final RestTemplate syncRest;
-    private volatile String cachedUploadsPlaylistId;
-    private volatile String cachedLookupKey;
+    private final Map<String, String> cachedUploadsPlaylists = new ConcurrentHashMap<>();
+    private final Map<String, String> cachedChannelIds = new ConcurrentHashMap<>();
+    private volatile Instant searchRetryAt = Instant.EPOCH;
 
     @Value("${youtube.api.key:}")
     private String apiKey;
@@ -85,13 +100,12 @@ public class YoutubeDataApiClient {
     public String resolveUploadsPlaylist(String handle, String channelId) {
         if (!hasApiKey()) return null;
         String key = (handle == null ? "" : handle.trim()) + "|" + (channelId == null ? "" : channelId.trim());
-        String cached = cachedUploadsPlaylistId;
-        if (cached != null && !cached.isBlank() && key.equals(cachedLookupKey)) return cached;
+        String cached = cachedUploadsPlaylists.get(key);
+        if (cached != null) return cached;
         String playlist = fetchUploadsByHandle(handle);
         if (playlist == null || playlist.isBlank()) playlist = fetchUploadsByChannelId(channelId);
         if (playlist == null || playlist.isBlank()) return null;
-        cachedUploadsPlaylistId = playlist;
-        cachedLookupKey = key;
+        cachedUploadsPlaylists.put(key, playlist);
         return playlist;
     }
 
@@ -120,6 +134,93 @@ public class YoutubeDataApiClient {
             if (pageToken == null || pageToken.isBlank()) break;
         } while (pages < limit);
         return ids;
+    }
+
+    /**
+     * 핸들(@name) 또는 채널 ID(UC…)를 채널 ID로 바꾼다. 성공한 값은 프로세스 동안 재사용한다.
+     */
+    public String resolveChannelId(String handleOrId) {
+        if (!hasApiKey() || handleOrId == null || handleOrId.isBlank()) return null;
+        String trimmed = handleOrId.trim();
+        if (trimmed.matches("^UC[a-zA-Z0-9_-]{22}$")) return trimmed;
+        String handle = normalizeHandle(trimmed);
+        if (handle.isEmpty()) return null;
+        String cached = cachedChannelIds.get(handle.toLowerCase(Locale.ROOT));
+        if (cached != null && !cached.isBlank()) return cached;
+        URI uri = UriComponentsBuilder.fromUriString(CHANNELS)
+                .queryParam("part", "id")
+                .queryParam("forHandle", handle)
+                .queryParam("key", apiKey())
+                .encode()
+                .build()
+                .toUri();
+        ChannelsResponse response = get(syncRest, uri, ChannelsResponse.class);
+        if (response == null || response.getItems() == null || response.getItems().length == 0) return null;
+        ChannelsResponse.Item item = response.getItems()[0];
+        if (item == null || item.getId() == null || item.getId().isBlank()) return null;
+        String id = item.getId().trim();
+        cachedChannelIds.put(handle.toLowerCase(Locale.ROOT), id);
+        return id;
+    }
+
+    /**
+     * 검색 API로 영상 ID를 모은다. {@code channelId}가 있으면 그 채널 안에서만 찾는다.
+     * {@code maxPages}가 1 이상이면 그 페이지만, 아니면 한 페이지만 읽는다.
+     */
+    public List<String> searchVideoIds(String query, String channelId, int maxPages) {
+        return searchVideoIds(query, channelId, maxPages, "date");
+    }
+
+    public List<String> searchHashtagVideoIds(String query, int maxPages) {
+        return searchVideoIds(query, null, maxPages, maxPages > 1 ? "viewCount" : "date");
+    }
+
+    private List<String> searchVideoIds(String query, String channelId, int maxPages, String order) {
+        if (!hasApiKey() || query == null || query.isBlank()) return List.of();
+        List<String> ids = new ArrayList<>();
+        String pageToken = null;
+        int pages = 0;
+        int limit = maxPages > 0 ? Math.min(maxPages, MAX_SEARCH_PAGES) : 1;
+        do {
+            SearchResponse response = requestSearch(query, channelId, pageToken, order);
+            if (response == null) return pages == 0 ? List.of() : ids;
+            pages++;
+            if (response.getItems() != null) {
+                for (SearchResponse.Item item : response.getItems()) {
+                    if (item == null || item.getId() == null) continue;
+                    String videoId = item.getId().getVideoId();
+                    if (videoId != null && videoId.matches("^[a-zA-Z0-9_-]{11}$")) ids.add(videoId);
+                }
+            }
+            pageToken = response.getNextPageToken();
+            if (pageToken == null || pageToken.isBlank()) break;
+        } while (pages < limit);
+        return ids;
+    }
+
+    public record ChannelAudience(long subscribers, String description) {}
+
+    public Map<String, ChannelAudience> fetchChannelAudiences(Collection<String> channelIds) {
+        if (!hasApiKey() || channelIds == null || channelIds.isEmpty()) return Map.of();
+        List<String> ids = channelIds.stream().filter(id -> id != null && id.matches("UC[a-zA-Z0-9_-]{22}"))
+                .distinct().toList();
+        Map<String, ChannelAudience> results = new LinkedHashMap<>();
+        for (int offset = 0; offset < ids.size(); offset += PAGE_SIZE) {
+            URI uri = UriComponentsBuilder.fromUriString(CHANNELS)
+                    .queryParam("part", "snippet,statistics")
+                    .queryParam("id", String.join(",", ids.subList(offset, Math.min(offset + PAGE_SIZE, ids.size()))))
+                    .queryParam("key", apiKey()).encode().build().toUri();
+            ChannelsResponse response = get(syncRest, uri, ChannelsResponse.class);
+            if (response == null || response.getItems() == null) continue;
+            for (ChannelsResponse.Item item : response.getItems()) {
+                if (item == null || item.getId() == null || item.getStatistics() == null) continue;
+                ChannelStatistics stats = item.getStatistics();
+                long subscribers = stats.isHiddenSubscriberCount() || stats.getSubscriberCount() == null ? 0 : stats.getSubscriberCount();
+                String description = item.getSnippet() == null ? "" : item.getSnippet().getDescription();
+                results.put(item.getId(), new ChannelAudience(subscribers, description));
+            }
+        }
+        return results;
     }
 
     /** 채널 동기화용. snippet·길이·조회수·라이브 여부를 50개씩 읽는다. */
@@ -169,6 +270,78 @@ public class YoutubeDataApiClient {
                 .build()
                 .toUri();
         return uploadsPlaylist(get(syncRest, uri, ChannelsResponse.class));
+    }
+
+    private SearchResponse requestSearch(String query, String channelId, String pageToken, String order) {
+        if (Instant.now().isBefore(searchRetryAt)) return null;
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(SEARCH)
+                .queryParam("part", "snippet")
+                .queryParam("type", "video")
+                .queryParam("maxResults", PAGE_SIZE)
+                .queryParam("order", order)
+                .queryParam("q", query)
+                .queryParam("key", apiKey());
+        if (channelId != null && !channelId.isBlank()) builder.queryParam("channelId", channelId.trim());
+        if (pageToken != null && !pageToken.isBlank()) builder.queryParam("pageToken", pageToken);
+        try {
+            return syncRest.getForObject(builder.encode().build().toUri(), SearchResponse.class);
+        } catch (RestClientResponseException error) {
+            if (error.getStatusCode().value() == 429) {
+                Instant now = Instant.now();
+                Instant retryAt = now.plus(SEARCH_PAUSE);
+                HttpHeaders headers = error.getResponseHeaders();
+                Instant retryAfter = parseRetryAfter(headers == null ? null : headers.getFirst(HttpHeaders.RETRY_AFTER), now);
+                searchRetryAt = retryAfter.isAfter(retryAt) ? retryAfter : retryAt;
+                log.warn("YouTube search.list returned HTTP 429. Search paused until {}.", searchRetryAt);
+            } else {
+                log.warn("YouTube search.list returned HTTP {}.", error.getStatusCode().value());
+            }
+            return null;
+        } catch (RestClientException ignored) {
+            return null;
+        }
+    }
+
+    private static Instant parseRetryAfter(String value, Instant now) {
+        if (value == null || value.isBlank()) return now;
+        try {
+            return now.plusSeconds(Integer.parseInt(value.trim()));
+        } catch (NumberFormatException ignored) {
+            try {
+                return ZonedDateTime.parse(value.trim(), DateTimeFormatter.RFC_1123_DATE_TIME).toInstant();
+            } catch (DateTimeParseException invalidHeader) {
+                return now;
+            }
+        }
+    }
+
+    /** The generated channel format playlists are optional; a missing membership is never format evidence. */
+    private static String uploadFormatPlaylist(String channelId, boolean shorts) {
+        if (channelId == null || !channelId.matches("UC[A-Za-z0-9_-]{22}")) return null;
+        return (shorts ? "UUSH" : "UULF") + channelId.substring(2);
+    }
+
+    public List<String> listUploadFormatVideoIds(String channelId, boolean shorts, int maxPages) {
+        return listUploadedVideoIds(uploadFormatPlaylist(channelId, shorts), maxPages);
+    }
+
+    public boolean hasUploadFormat(String channelId, String videoId, boolean shorts) {
+        String playlist = uploadFormatPlaylist(channelId, shorts);
+        if (!hasApiKey() || playlist == null || videoId == null || !videoId.matches("[A-Za-z0-9_-]{11}")) return false;
+        URI uri = UriComponentsBuilder.fromUriString(PLAYLIST_ITEMS)
+                .queryParam("part", "contentDetails")
+                .queryParam("playlistId", playlist)
+                .queryParam("videoId", videoId)
+                .queryParam("maxResults", 1)
+                .queryParam("key", apiKey())
+                .encode().build().toUri();
+        PlaylistItemsResponse response = get(syncRest, uri, PlaylistItemsResponse.class);
+        if (response == null || response.getItems() == null) return false;
+        for (PlaylistItemsResponse.Item item : response.getItems()) {
+            if (item != null && item.getContentDetails() != null
+                    && videoId.equals(item.getContentDetails().getVideoId())) return true;
+        }
+        return false;
     }
 
     private PlaylistItemsResponse requestPlaylistItems(String playlistId, String pageToken) {
@@ -231,8 +404,23 @@ public class YoutubeDataApiClient {
             String duration,
             String isoDuration,
             Long viewCount,
-            String liveBroadcastContent
+            String liveBroadcastContent,
+            String channelId,
+            String channelTitle,
+            String description
     ) {
+        public ChannelVideo(
+                String id,
+                String title,
+                String publishedOn,
+                String duration,
+                String isoDuration,
+                Long viewCount,
+                String liveBroadcastContent
+        ) {
+            this(id, title, publishedOn, duration, isoDuration, viewCount, liveBroadcastContent, "", "", "");
+        }
+
         static ChannelVideo from(VideosResponse.Item item) {
             if (item == null || item.getId() == null || item.getId().isBlank()) return null;
             VideosResponse.Snippet snippet = item.getSnippet();
@@ -240,7 +428,12 @@ public class YoutubeDataApiClient {
             String live = snippet == null || snippet.getLiveBroadcastContent() == null
                     ? "" : snippet.getLiveBroadcastContent().trim();
             String iso = item.getContentDetails() == null ? "" : item.getContentDetails().getDuration();
-            return new ChannelVideo(item.getId(), title, publishedDay(item), clock(item), iso, parseViewCount(item), live);
+            String channelId = snippet == null || snippet.getChannelId() == null ? "" : snippet.getChannelId().trim();
+            String channelTitle = snippet == null || snippet.getChannelTitle() == null ? "" : snippet.getChannelTitle().trim();
+            String description = snippet == null || snippet.getDescription() == null ? "" : snippet.getDescription();
+            return new ChannelVideo(
+                    item.getId(), title, publishedDay(item), clock(item), iso, parseViewCount(item), live,
+                    channelId, channelTitle, description);
         }
 
         public boolean liveOrUpcoming() {
@@ -321,6 +514,8 @@ public class YoutubeDataApiClient {
             private String description;
             private String publishedAt;
             private String liveBroadcastContent;
+            private String channelId;
+            private String channelTitle;
         }
 
         @Data
@@ -335,6 +530,17 @@ public class YoutubeDataApiClient {
     }
 
     @Data
+    public static class ChannelSnippet {
+        private String description;
+    }
+
+    @Data
+    public static class ChannelStatistics {
+        private Long subscriberCount;
+        private boolean hiddenSubscriberCount;
+    }
+
+    @Data
     public static class ChannelsResponse {
         private Item[] items;
 
@@ -342,6 +548,8 @@ public class YoutubeDataApiClient {
         public static class Item {
             private String id;
             private ChannelContentDetails contentDetails;
+            private ChannelSnippet snippet;
+            private ChannelStatistics statistics;
         }
 
         @Data
@@ -352,6 +560,23 @@ public class YoutubeDataApiClient {
         @Data
         public static class RelatedPlaylists {
             private String uploads;
+        }
+    }
+
+    @Data
+    public static class SearchResponse {
+        private String nextPageToken;
+        private Item[] items;
+
+        @Data
+        public static class Item {
+            private SearchId id;
+            private VideosResponse.Snippet snippet;
+        }
+
+        @Data
+        public static class SearchId {
+            private String videoId;
         }
     }
 

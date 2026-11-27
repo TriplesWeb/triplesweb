@@ -10,7 +10,12 @@ import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.repository.ScheduleRepository;
 import com.example.triplesweb.service.AboutAdminAuth;
 import com.example.triplesweb.service.ArtistSnapshotService;
+import com.example.triplesweb.service.ChemistryGroupService;
+import com.example.triplesweb.service.ChemistryService;
 import com.example.triplesweb.service.ScheduleService;
+import com.example.triplesweb.service.UnitService;
+import com.example.triplesweb.util.MemberPortraitOptions;
+import com.example.triplesweb.util.MemberSetCatalogJson;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -34,19 +39,28 @@ public class ScheduleController {
     private final AboutAdminAuth aboutAdminAuth;
     private final ArtistSnapshotService artistSnapshot;
     private final ObjectMapper objectMapper;
+    private final UnitService unitService;
+    private final ChemistryService chemistryService;
+    private final ChemistryGroupService chemistryGroupService;
 
     public ScheduleController(ScheduleService scheduleService,
                               ScheduleRepository scheduleRepository,
                               ArtistRepository artistRepository,
                               AboutAdminAuth aboutAdminAuth,
                               ArtistSnapshotService artistSnapshot,
-                              ObjectMapper objectMapper) {
+                              ObjectMapper objectMapper,
+                              UnitService unitService,
+                              ChemistryService chemistryService,
+                              ChemistryGroupService chemistryGroupService) {
         this.scheduleService = scheduleService;
         this.scheduleRepository = scheduleRepository;
         this.artistRepository = artistRepository;
         this.aboutAdminAuth = aboutAdminAuth;
         this.artistSnapshot = artistSnapshot;
         this.objectMapper = objectMapper;
+        this.unitService = unitService;
+        this.chemistryService = chemistryService;
+        this.chemistryGroupService = chemistryGroupService;
     }
 
     @GetMapping("/schedule")
@@ -71,7 +85,17 @@ public class ScheduleController {
         model.addAttribute("scheduleInitialEnd", end.toString());
         model.addAttribute("isAdmin", aboutAdminAuth.isAdmin(request, session));
         model.addAttribute("artistOptions", artists);
+        model.addAttribute("memberPickerOptions", MemberPortraitOptions.fromArtists(artists, false));
         model.addAttribute("scheduleCategories", SchedulePresentation.categories());
+        try {
+            var units = unitService.listUnitCheckboxOptions();
+            model.addAttribute("unitRosterJson", MemberSetCatalogJson.units(units == null ? List.of() : units));
+            model.addAttribute("chemistryNamesJson", MemberSetCatalogJson.chemistry(
+                    chemistryService.findAll(), chemistryGroupService.findAll()));
+        } catch (RuntimeException ignored) {
+            model.addAttribute("unitRosterJson", "[]");
+            model.addAttribute("chemistryNamesJson", "[]");
+        }
         // Mustache는 빈 문자열도 section을 렌더하므로, 필터 없을 때는 null로 둔다.
         model.addAttribute("selectedArtist", selectedArtist);
         return "schedule";

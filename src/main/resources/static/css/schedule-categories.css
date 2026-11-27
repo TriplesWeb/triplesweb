@@ -61,3 +61,11 @@
 #calendar .fc-event img { flex:none; }
 #decorationModal .site-modal-dialog { max-width:42rem; }
 .schedule-detail-item img { max-width:100%; }
+
+#addScheduleModal .site-modal-dialog,
+#editScheduleModal .site-modal-dialog { max-width: 42rem; }
+#addScheduleModal .member-portrait-picker,
+#editScheduleModal .member-portrait-picker { margin-top: .5rem; }
+.member-portrait-picker .mpp-item[hidden] { display: none !important; }
+#addSchedulePager,
+#editSchedulePager { margin-top: .75rem; }

@@ -11,6 +11,12 @@
 
 body.site-modal-open { overflow: hidden; }
 
+.media-card,
+.media-short {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 22rem;
+}
+
 .site-modal {
     display: none;
     position: fixed;
@@ -637,6 +643,26 @@ html[data-theme="light"] .site-section-tab[aria-selected="true"] {
     font-weight: 700;
 }
 .site-feedback-actions button:focus-visible { outline: 2px solid var(--site-ui-accent); outline-offset: 3px; }
+.site-feedback-dialog.is-compact {
+    width: min(17.5rem, calc(100% - 2.5rem));
+    padding: 1rem 1.05rem 0.9rem;
+}
+.site-feedback-dialog.is-compact h2[hidden] { display: none; }
+.site-feedback-dialog.is-compact p {
+    margin: 0 0 0.95rem;
+    color: var(--site-ui-text);
+    font-size: 0.95rem;
+    font-weight: 650;
+    text-align: center;
+}
+.site-feedback-dialog.is-compact .site-feedback-actions {
+    justify-content: center;
+}
+.site-feedback-dialog.is-compact .site-feedback-actions button {
+    min-height: 2.15rem;
+    min-width: 4.6rem;
+    padding: 0.35rem 0.85rem;
+}
 
 .site-feedback-progress {
     position: fixed;

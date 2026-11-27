@@ -42,9 +42,14 @@
     if (active || !queue.length) return;
     active = queue.shift();
     if (!dialog.isConnected) document.body.append(dialog);
-    dialog.querySelector("h2").textContent = active.confirm ? labels.confirm : labels.notice;
+    const options = active.options || {};
+    dialog.classList.toggle("is-compact", Boolean(options.compact));
+    dialog.querySelector("h2").textContent = options.title || (active.confirm ? labels.confirm : labels.notice);
+    dialog.querySelector("h2").hidden = Boolean(options.compact);
     dialog.querySelector("p").textContent = active.message;
     cancel.hidden = !active.confirm;
+    cancel.textContent = options.cancel || labels.cancel;
+    accept.textContent = options.accept || labels.accept;
     dialog.returnValue = "";
     dialog.showModal();
     (active.confirm ? cancel : accept).focus();
@@ -61,9 +66,9 @@
     if (dialog.open && event.key === "Escape") event.stopImmediatePropagation();
   }, true);
 
-  function ask(message, confirm) {
+  function ask(message, confirm, options) {
     return new Promise((resolve) => {
-      queue.push({ message, confirm, resolve });
+      queue.push({ message, confirm, options: options || {}, resolve });
       showNext();
     });
   }
@@ -264,7 +269,7 @@
 
   window.SiteFeedback = {
     alert: (message) => ask(message, false),
-    confirm: (message) => ask(message, true),
+    confirm: (message, options) => ask(message, true, options),
     beginProgress: begin,
     beginBusy
   };
