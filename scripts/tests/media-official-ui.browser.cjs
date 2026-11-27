@@ -25,6 +25,11 @@ videos[0].memberBadges = [
   { name: '김나경', artistId: 7, color: '#7bba8d', image: '/portrait-b.png', portrait: '/portrait-b.png' }
 ];
 
+videos[3].memberBadges = [{
+  fullLineup: true,
+  symbols: [{ name: '윤서연', image: '/old-dice.png' }]
+}];
+
 const html = `<!doctype html><html lang="ko"><head><meta charset="utf-8">
 <style>
 ${read('css/site-ui.css')}
@@ -245,7 +250,10 @@ ${read('css/media-page.css')}
   const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined, args: ['--no-sandbox'] });
   try {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
-    await page.route('https://media.test/**', (route) => {
+    let releaseMemberLookup;
+    const memberLookupPending = new Promise((resolve) => { releaseMemberLookup = resolve; });
+    const memberLookups = [];
+    await page.route('https://media.test/**', async (route) => {
       const url = route.request().url();
       if (url.endsWith('/media_new') || url.endsWith('/media_update')) {
         assert.match(route.request().postData(), /\/media\?tab=signal&era=allHaus&sort=oldest/);
@@ -256,6 +264,16 @@ ${read('css/media-page.css')}
       }
       if (url.split('?')[0].endsWith('/media/pick-catalog.json')) {
         return route.fulfill({ contentType: 'application/json', body: JSON.stringify(videos) });
+      }
+      if (url.includes('/media/youtube-members.json')) {
+        const id = new URL(url).searchParams.get('youtubeId');
+        memberLookups.push(id);
+        if (id !== videos[0].youtubeId) return route.fulfill({ json: [] });
+        await memberLookupPending;
+        return route.fulfill({ json: [
+          ...videos[0].memberBadges,
+          { name: '김채연', artistId: 4, portrait: '/portrait-c.png' }
+        ] });
       }
       if (url.includes('/api/media/youtube/search-status')) {
         return route.fulfill({
@@ -458,6 +476,26 @@ ${read('css/media-page.css')}
     assert.equal(await dialog.getByRole('button', { name: '삭제', exact: true }).count(), 1);
     await dialog.getByRole('button', { name: '취소', exact: true }).click();
     await dialog.waitFor({ state: 'hidden' });
+
+    releaseMemberLookup();
+    const fromHashtag = page.locator('#ytModalMembers a[href="/triples/artist/4"]');
+    await fromHashtag.waitFor();
+    assert.equal(await fromHashtag.textContent(), '김채연');
+    assert.equal(await page.locator('#ytModalMembers .unit-member-chip').count(), 3);
+
+    await page.evaluate((id) => {
+      const trigger = document.createElement('a');
+      trigger.setAttribute('data-ytid', id);
+      trigger.setAttribute('data-site-target', '#ytModal');
+      document.body.append(trigger);
+      trigger.click();
+    }, videos[3].youtubeId);
+    const lineup = page.locator('#ytModalMembers .media-full-lineup');
+    await lineup.waitFor();
+    assert.equal(await lineup.textContent(), '24인 전체');
+    assert.equal(await lineup.getAttribute('href'), '/triples');
+    assert.equal(await page.locator('#ytModalMembers img').count(), 0);
+    assert.deepEqual(memberLookups, [videos[0].youtubeId]);
 
     await page.goto('https://media.test/media?tab=signal&era=allHaus');
     const playlist = page.locator('#mediaPlaylistList .media-playlist__item');

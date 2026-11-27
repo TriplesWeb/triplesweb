@@ -6,6 +6,7 @@ import com.example.triplesweb.dto.MediaDto;
 import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.entity.Schedule;
 import com.example.triplesweb.media.MediaRecommendations;
+import com.example.triplesweb.media.MediaShortsCategory;
 import com.example.triplesweb.media.MediaSignalEra;
 import com.example.triplesweb.media.MediaTab;
 import com.example.triplesweb.media.MediaTabClassifier;
@@ -17,6 +18,7 @@ import com.example.triplesweb.service.ChemistryService;
 import com.example.triplesweb.service.MediaChannelSyncService;
 import com.example.triplesweb.service.MediaService;
 import com.example.triplesweb.service.MediaViewCountService;
+import com.example.triplesweb.service.MediaYoutubeCastService;
 import com.example.triplesweb.service.UnitService;
 import com.example.triplesweb.util.ImageUrls;
 import com.example.triplesweb.util.MediaOrdering;
@@ -61,6 +63,7 @@ public class MediaArchiveController {
 
     private final MediaService media;
     private final MediaViewCountService mediaViewCounts;
+    private final MediaYoutubeCastService youtubeCast;
     private final MediaChannelSyncService youtubeSync;
     private final ArtistRepository artistRepository;
     private final ScheduleRepository scheduleRepository;
@@ -82,6 +85,7 @@ public class MediaArchiveController {
                             @RequestParam(required = false) Integer go,
                             @RequestParam(required = false) String add,
                             @RequestParam(required = false) String era,
+                            @RequestParam(required = false) String shortsCategory,
                             @RequestParam(required = false) String cols,
                             @RequestParam(name = "page", defaultValue = "1") int page,
                             HttpServletRequest request,
@@ -150,6 +154,10 @@ public class MediaArchiveController {
         if (selectedEra != null) {
             filtered.removeIf(v -> !MediaSignalEra.matches(v.getPublishedOn(), v.getTitle(), selectedEra.getKey()));
         }
+        MediaShortsCategory selectedShortsCategory = shortsTab ? MediaShortsCategory.fromKey(shortsCategory) : null;
+        if (selectedShortsCategory != null) {
+            filtered.removeIf(video -> MediaShortsCategory.fromVideo(video.getTitle(), video.getChannelId()) != selectedShortsCategory);
+        }
         MediaOrdering.sort(filtered, sortKey);
         attachMemberBadges(filtered, artists);
         List<MediaDto> longForm = new ArrayList<>();
@@ -184,7 +192,7 @@ public class MediaArchiveController {
         model.addAttribute("suggestions", suggestions);
         model.addAttribute("hasSuggestions", !suggestions.isEmpty());
         model.addAttribute("shorts", shorts);
-        model.addAttribute("hasShorts", !shorts.isEmpty());
+        model.addAttribute("hasShorts", shortsOnly || !shorts.isEmpty());
         model.addAttribute("shortsPreview", all && !shortsOnly && !shorts.isEmpty());
         model.addAttribute("mediaCatalogJson", catalogJson(visibleCatalog(featured, recommendations, suggestions, shorts, videos), true));
         model.addAttribute("mediaPickCatalogJson", "[]");
@@ -198,7 +206,9 @@ public class MediaArchiveController {
         model.addAttribute("openMediaAdd", add != null && (add.equals("1") || add.equalsIgnoreCase("true")));
         bindPager(model, total, shortsOnly ? shorts.size() : videos.size(), current, totalPages);
         String eraKey = selectedEra == null ? null : selectedEra.getKey();
+        String shortsKey = selectedShortsCategory == null ? "" : selectedShortsCategory.getKey();
         String filterQuery = mediaQuery(tab, sortKey, query, selectedMembers, rangeStart, rangeEnd, legacyShortsFilter, eraKey);
+        if (selectedShortsCategory != null) filterQuery += "&shortsCategory=" + shortsKey;
         model.addAttribute("fiveMediaColumns", fiveColumns);
         model.addAttribute("mediaArchiveColumns", fiveColumns ? 5 : 3);
         model.addAttribute("mediaQuery", fiveColumns ? filterQuery + "&cols=5" : filterQuery);
@@ -208,6 +218,12 @@ public class MediaArchiveController {
         model.addAttribute("signalEra", selectedEra == null ? "" : selectedEra.getKey());
         model.addAttribute("hasSignalEra", selectedEra != null);
         model.addAttribute("signalEras", signalEraTabs(sortKey, query, selectedMembers, rangeStart, rangeEnd, selectedEra, fiveColumns));
+        model.addAttribute("shortsCategory", shortsKey);
+        model.addAttribute("hasShortsCategory", selectedShortsCategory != null);
+        if (shortsTab) {
+            String suffix = mediaQuery("", sortKey, query, selectedMembers, rangeStart, rangeEnd, false, null);
+            model.addAttribute("shortsCategories", shortsCategoryTabs(selectedShortsCategory, suffix));
+        }
 
         String fromText = rangeStart == null ? "" : rangeStart.toString();
         String toText = rangeEnd == null ? "" : rangeEnd.toString();
@@ -261,6 +277,26 @@ public class MediaArchiveController {
         if (chosen.isEmpty()) return "[]";
         attachMemberBadges(chosen, artistRepository.findAll());
         return catalogJson(chosen, true);
+    }
+
+    @GetMapping(value = "/media/youtube-members.json", produces = "application/json")
+    @ResponseBody
+    public List<Map<String, Object>> youtubeMembers(@RequestParam String youtubeId,
+                                                    @RequestParam(defaultValue = "") String tab) {
+        if (!youtubeId.matches("[A-Za-z0-9_-]{11}")) return List.of();
+        MediaDto video = media.findOne(MediaTab.from(tab), youtubeId).orElse(null);
+        if (video == null) return List.of();
+
+        List<String> cast = new ArrayList<>(splitNames(video.getArtistNames()));
+        if (MemberPortraitOptions.coversFullLineup(cast)) return List.of();
+        int registeredCount = cast.size();
+        Set<String> existing = new LinkedHashSet<>();
+        for (String name : cast) existing.add(MediaOrdering.memberKey(MemberPortraitOptions.memberName(name)));
+        for (String name : youtubeCast.findMembers(video.getYoutubeId())) {
+            if (existing.add(MediaOrdering.memberKey(name))) cast.add(name);
+        }
+        if (cast.size() == registeredCount) return List.of();
+        return memberBadges(String.join(",", cast), artistRepository.findAll());
     }
 
     @GetMapping("/media/{tab}/{youtubeId}")
@@ -514,10 +550,7 @@ public class MediaArchiveController {
     }
 
     private static Map<String, Object> fullLineupBadge() {
-        var symbols = MemberPortraitOptions.koreanOrder().stream()
-                .map(name -> Map.of("name", name, "image", MemberPortraitOptions.archiveSymbolLogo(name)))
-                .toList();
-        return Map.of("name", MemberSetCatalogJson.GROUP_LABEL, "fullLineup", true, "symbols", symbols);
+        return Map.of("name", MemberSetCatalogJson.GROUP_LABEL, "fullLineup", true);
     }
 
     private static String portraitUrl(Artist artist) {
@@ -666,14 +699,24 @@ public class MediaArchiveController {
     ) {
         String suffix = mediaQuery("", sort, query, members, from, to, false, null) + (fiveColumns ? "&cols=5" : "");
         List<Map<String, Object>> tabs = new ArrayList<>();
-        tabs.add(signalEraTab("전체", "/media?tab=signal" + suffix, selected == null));
+        tabs.add(subTab("전체", "/media?tab=signal" + suffix, selected == null));
         for (MediaSignalEra era : MediaSignalEra.values()) {
-            tabs.add(signalEraTab(era.getLabel(), "/media?tab=signal&era=" + era.getKey() + suffix, selected == era));
+            tabs.add(subTab(era.getLabel(), "/media?tab=signal&era=" + era.getKey() + suffix, selected == era));
         }
         return tabs;
     }
 
-    private static Map<String, Object> signalEraTab(String label, String href, boolean active) {
+    private static List<Map<String, Object>> shortsCategoryTabs(MediaShortsCategory selected, String suffix) {
+        List<Map<String, Object>> tabs = new ArrayList<>();
+        String base = "/media?tab=shorts";
+        tabs.add(subTab("전체", base + suffix, selected == null));
+        for (MediaShortsCategory category : MediaShortsCategory.values()) {
+            tabs.add(subTab(category.getLabel(), base + "&shortsCategory=" + category.getKey() + suffix, selected == category));
+        }
+        return tabs;
+    }
+
+    private static Map<String, Object> subTab(String label, String href, boolean active) {
         Map<String, Object> row = new LinkedHashMap<>();
         row.put("label", label);
         row.put("href", href);

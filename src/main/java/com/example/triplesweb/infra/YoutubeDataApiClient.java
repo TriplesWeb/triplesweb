@@ -228,6 +228,14 @@ public class YoutubeDataApiClient {
         return fetchChannelVideos(videoIds, syncRest);
     }
 
+    public String fetchDescription(String videoId) {
+        return fetchChannelVideos(List.of(videoId), rest).stream()
+                .filter(video -> videoId.equals(video.id()))
+                .findFirst()
+                .map(ChannelVideo::description)
+                .orElse("");
+    }
+
     private List<ChannelVideo> fetchChannelVideos(Collection<String> videoIds, RestTemplate template) {
         if (!hasApiKey() || videoIds == null || videoIds.isEmpty()) return List.of();
         List<String> ids = new ArrayList<>();

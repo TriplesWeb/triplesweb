@@ -9,8 +9,8 @@
     const search = form?.querySelector('.ar-search');
     let refreshSavedMedia;
 
-    function revealActiveSignalEra() {
-        const active = document.querySelector('.media-era-tabs [aria-current="page"]');
+    function revealActiveMediaSubtab() {
+        const active = document.querySelector('.media-subtabs [aria-current="page"]');
         const tabs = active?.closest('.media-tabs');
         if (!tabs) return;
         const itemBounds = active.getBoundingClientRect();
@@ -19,7 +19,7 @@
         if (itemBounds.left < tabBounds.left) tabs.scrollLeft -= tabBounds.left - itemBounds.left;
     }
 
-    revealActiveSignalEra();
+    revealActiveMediaSubtab();
 
     function selectedMembers() {
         if (!window.MemberPortraitPicker || !panel) return [];
@@ -251,11 +251,11 @@
                 }
                 swapSection(shell, nextShell, 'media-archive');
                 swapSection(shell, nextShell, 'media-shorts');
-                const eraTabs = shell.querySelector('.media-era-tabs');
-                const nextEraTabs = nextShell.querySelector('.media-era-tabs');
-                if (eraTabs && nextEraTabs) {
-                    eraTabs.replaceWith(document.importNode(nextEraTabs, true));
-                    revealActiveSignalEra();
+                const subtabs = shell.querySelector('.media-subtabs');
+                const nextSubtabs = nextShell.querySelector('.media-subtabs');
+                if (subtabs && nextSubtabs) {
+                    subtabs.replaceWith(document.importNode(nextSubtabs, true));
+                    revealActiveMediaSubtab();
                 }
                 const catalog = document.getElementById('mediaCatalog');
                 const nextCatalog = doc.getElementById('mediaCatalog');
@@ -273,7 +273,7 @@
                     else history.pushState({ mediaLive: true }, '', url);
                 }
                 paintMediaCols();
-                if (fromPager) document.querySelector('.media-archive')?.scrollIntoView({ block: 'start' });
+                if (fromPager) shell.querySelector('.media-archive, .media-shorts')?.scrollIntoView({ block: 'start' });
                 else window.scrollTo(0, y);
             } catch (error) {
                 if (keepPosition) throw error;
@@ -672,6 +672,7 @@
     let youtubePlayer = null;
     let youtubePlayerReady = null;
     let requestedVideoId = null;
+    let modalMembersRequest = null;
 
     function playMediaVideo(id) {
         requestedVideoId = id;
@@ -732,6 +733,33 @@
         if (deleteTab) deleteTab.value = row.tab || '';
         if (deleteId) deleteId.value = id;
         showModal(ytModal);
+        loadModalMembers(row);
+    }
+
+    async function loadModalMembers(video) {
+        modalMembersRequest?.abort();
+        modalMembersRequest = null;
+        const savedBadges = Array.isArray(video.memberBadges) ? video.memberBadges : [];
+        if (!video.youtubeId || savedBadges.some((badge) => badge.fullLineup)) return;
+
+        const request = new AbortController();
+        modalMembersRequest = request;
+        try {
+            const params = new URLSearchParams({ youtubeId: video.youtubeId, tab: video.tab || '' });
+            const response = await fetch('/media/youtube-members.json?' + params, {
+                credentials: 'same-origin',
+                signal: request.signal
+            });
+            if (!response.ok) return;
+            const badges = await response.json();
+            if (modalMembersRequest === request && currentVideo === video && Array.isArray(badges) && badges.length) {
+                paintModalMembers({ memberBadges: badges });
+            }
+        } catch (error) {
+            // The saved cast remains visible if the request fails or the player is closed.
+        } finally {
+            if (modalMembersRequest === request) modalMembersRequest = null;
+        }
     }
 
     function paintModalMembers(video) {
@@ -756,19 +784,9 @@
         }
         if (badges.length === 1 && badges[0].fullLineup) {
             const link = document.createElement('a');
-            link.className = 'ar-detail-lineup media-full-lineup';
+            link.className = 'site-btn site-btn--secondary site-btn--sm media-full-lineup';
             link.href = '/triples';
-            link.setAttribute('aria-label', 'tripleS 완전체 24명');
-            for (const symbol of badges[0].symbols || []) {
-                const image = document.createElement('img');
-                image.src = symbol.image;
-                image.alt = '';
-                image.title = symbol.name;
-                image.width = 20;
-                image.height = 20;
-                image.dataset.noPlaceholder = '1';
-                link.append(image);
-            }
+            link.textContent = '24인 전체';
             members.append(link);
             members.dataset.memberCount = '24';
             cast.hidden = false;
@@ -1294,6 +1312,8 @@
     }
 
     ytModal?.addEventListener('site-modal:hidden', () => {
+        modalMembersRequest?.abort();
+        modalMembersRequest = null;
         requestedVideoId = null;
         if (youtubePlayer) {
             youtubePlayer.stopVideo();

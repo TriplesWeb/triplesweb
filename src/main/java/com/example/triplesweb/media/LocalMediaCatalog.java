@@ -46,7 +46,7 @@ public class LocalMediaCatalog {
     public MediaDto applyTabOverride(MediaDto stored) {
         Video local = videos.get(key(stored.getYoutubeId()));
         if (local != null && local.changesTab()) {
-            stored.setTab(local.tab());
+            if (!MediaTab.SHORTS.getKey().equals(stored.getTab())) stored.setTab(local.tab());
             if (local.isCuratedFancam()) {
                 String names = Stream.of(stored.getArtistNames(), local.artistNames())
                         .filter(value -> value != null && !value.isBlank())
@@ -102,7 +102,7 @@ public class LocalMediaCatalog {
     }
 
     private record Video(String youtubeId, String tab, String title, String duration, long views,
-                         String description, String artistNames, String publishedOn, boolean hidden, boolean overrideTab) {
+                         String description, String artistNames, String publishedOn, String channelId, boolean hidden, boolean overrideTab) {
         private boolean changesTab() {
             return !hidden && (overrideTab || MediaTab.MUSIC.getKey().equals(tab));
         }
@@ -112,7 +112,8 @@ public class LocalMediaCatalog {
         }
 
         private MediaDto toDto() {
-            return MediaDto.builder().youtubeId(youtubeId).tab(MediaTabClassifier.correctMvTab(tab, title)).title(title).duration(duration)
+            return MediaDto.builder().youtubeId(youtubeId).channelId(channelId)
+                    .tab(MediaTabClassifier.correctMvTab(tab, title)).title(title).duration(duration)
                     .views(views).viewCountFmt(NumberFormat.getInstance().format(views))
                     .description(description).artistNames(artistNames)
                     .publishedOn(publishedOn).build();

@@ -1,5 +1,6 @@
 package com.example.triplesweb.infra;
 
+import com.example.triplesweb.service.MediaYoutubeCastService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
@@ -76,6 +77,22 @@ class YoutubeDataApiClientTest {
 
         assertThat(client.resolveUploadsPlaylist("@triplescosmos", "")).isEqualTo("UUJnL123");
         assertThat(client.listUploadedVideoIds("UUJnL123", 0)).containsExactly("abcdefghijk", "lmnopqrstuv");
+        server.verify();
+    }
+
+    @Test
+    void resolvesAndCachesOnlyExactMemberHashtagsFromTheDescription() {
+        server.expect(requestTo(containsString("id=abcdefghijk")))
+                .andRespond(withSuccess("""
+                        {"items":[{"id":"abcdefghijk","snippet":{
+                          "title":"#김유연",
+                          "description":"#tripleS #HaYeon #정하연 #서연 #지우팬"
+                        }}]}
+                        """, MediaType.APPLICATION_JSON));
+
+        MediaYoutubeCastService cast = new MediaYoutubeCastService(client);
+        assertThat(cast.findMembers("abcdefghijk")).containsExactly("정하연", "윤서연");
+        assertThat(cast.findMembers("abcdefghijk")).containsExactly("정하연", "윤서연");
         server.verify();
     }
 

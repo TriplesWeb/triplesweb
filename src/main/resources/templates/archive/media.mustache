@@ -41,7 +41,7 @@
             <a class="site-section-tab{{#isMV}} is-active{{/isMV}}" href="/media?tab=mv" {{#isMV}}aria-current="page"{{/isMV}}>MV</a>
             <a class="site-section-tab{{#isSIGNAL}} is-active{{/isSIGNAL}}" href="/media?tab=signal" {{#isSIGNAL}}aria-current="page"{{/isSIGNAL}}>SIGNAL</a>
             {{#isSIGNAL}}
-            <span class="media-era-tabs" role="group" aria-label="SIGNAL 시기">
+            <span class="media-era-tabs media-subtabs" role="group" aria-label="SIGNAL 시기">
                 {{#signalEras}}
                 <a class="site-section-tab{{#active}} is-active{{/active}}" href="{{href}}" {{#active}}aria-current="page"{{/active}}>{{label}}</a>
                 {{/signalEras}}
@@ -50,6 +50,13 @@
             <a class="site-section-tab{{#isBehind}} is-active{{/isBehind}}" href="/media?tab=behind" {{#isBehind}}aria-current="page"{{/isBehind}}>비하인드</a>
             <a class="site-section-tab{{#isSecret}} is-active{{/isSecret}}" href="/media?tab=secret" {{#isSecret}}aria-current="page"{{/isSecret}}>시크릿베이스</a>
             <a class="site-section-tab{{#isShorts}} is-active{{/isShorts}}" href="/media?tab=shorts" {{#isShorts}}aria-current="page"{{/isShorts}}>Shorts &amp; 릴스</a>
+            {{#isShorts}}
+            <span class="media-shorts-tabs media-subtabs" role="group" aria-label="Shorts 분류">
+                {{#shortsCategories}}
+                <a class="site-section-tab{{#active}} is-active{{/active}}" href="{{href}}" {{#active}}aria-current="page"{{/active}}>{{label}}</a>
+                {{/shortsCategories}}
+            </span>
+            {{/isShorts}}
             <a class="site-section-tab{{#isMusic}} is-active{{/isMusic}}" href="/media?tab=music" {{#isMusic}}aria-current="page"{{/isMusic}}>음방</a>
             <a class="site-section-tab{{#isFancam}} is-active{{/isFancam}}" href="/media?tab=fancam" {{#isFancam}}aria-current="page"{{/isFancam}}>직캠</a>
             <a class="site-section-tab{{#isContents}} is-active{{/isContents}}" href="/media?tab=contents" {{#isContents}}aria-current="page"{{/isContents}}>기타 콘텐츠</a>
@@ -62,6 +69,7 @@
                 {{#fiveMediaColumns}}<input type="hidden" name="cols" value="5">{{/fiveMediaColumns}}
                 {{#legacyShortsFilter}}<input type="hidden" name="kind" value="shorts">{{/legacyShortsFilter}}
                 {{#hasSignalEra}}<input type="hidden" name="era" value="{{signalEra}}">{{/hasSignalEra}}
+                {{#hasShortsCategory}}<input type="hidden" name="shortsCategory" value="{{shortsCategory}}">{{/hasShortsCategory}}
                 <div id="mediaMemberInputs">
                     {{#selectedMembers}}
                     <input type="hidden" name="members" value="{{.}}">
@@ -97,7 +105,7 @@
                         </label>
                     </div>
                     <div class="media-filter-end">
-                        <a class="site-btn site-btn--reset ar-reset" href="/media?tab={{currentTab}}{{#hasSignalEra}}&amp;era={{signalEra}}{{/hasSignalEra}}"{{^hasActiveFilters}} hidden{{/hasActiveFilters}}>초기화</a>
+                        <a class="site-btn site-btn--reset ar-reset" href="/media?tab={{currentTab}}{{#hasSignalEra}}&amp;era={{signalEra}}{{/hasSignalEra}}{{#hasShortsCategory}}&amp;shortsCategory={{shortsCategory}}{{/hasShortsCategory}}"{{^hasActiveFilters}} hidden{{/hasActiveFilters}}>초기화</a>
                     </div>
                 </div>
             </form>
@@ -180,7 +188,7 @@
                         {{#duration}}<span class="media-card__time">{{duration}}</span>{{/duration}}
                     </span>
                     <span class="media-card__body">
-                        <small class="media-card__kind">{{tabLabel}}</small>
+                        <small class="media-card__kind">{{tabLabel}}{{#isSIGNAL}}{{#signalEraLabel}} <span>· {{.}}</span>{{/signalEraLabel}}{{/isSIGNAL}}</small>
                         <span class="media-card__title">{{title}}</span>
                     </span>
                 </a>
@@ -246,6 +254,9 @@
             </article>
             {{/shorts}}
         </div>
+        {{^shorts}}
+        <div class="media-empty"><p>등록된 영상이 없습니다.</p></div>
+        {{/shorts}}
         {{#shortsPreview}}
         <div class="media-shorts__more">
             <a href="{{shortsTabHref}}">더보기</a>

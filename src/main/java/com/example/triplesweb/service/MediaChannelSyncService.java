@@ -222,12 +222,16 @@ public class MediaChannelSyncService {
         for (YoutubeDataApiClient.ChannelVideo video : videos) {
             if (video == null || video.liveOrUpcoming() || shortIds.contains(video.id()) || officialIds.contains(video.id())
                     || MediaTabClassifier.isOfficialChannel(video.channelId(), video.channelTitle(), channelId)) continue;
-            Integer seconds = MediaOrdering.durationSeconds(video.duration());
-            if (seconds == null || seconds > 180) continue;
+            if (!hasShortsDuration(video)) continue;
             if (youtube.hasUploadFormat(video.channelId(), video.id(), true)) shortIds.add(video.id());
             else if (youtube.hasUploadFormat(video.channelId(), video.id(), false)) regularIds.add(video.id());
         }
         return new UploadFormats(shortIds, regularIds);
+    }
+
+    private static boolean hasShortsDuration(YoutubeDataApiClient.ChannelVideo video) {
+        Integer seconds = MediaOrdering.durationSeconds(video.duration());
+        return seconds != null && seconds > 0 && seconds < 600;
     }
 
     private Set<String> formatPlaylistIds(boolean shorts, int maxPages) {
@@ -347,7 +351,7 @@ public class MediaChannelSyncService {
                 skipped++;
                 continue;
             }
-            boolean platformShort = formats.shorts().contains(video.id());
+            boolean platformShort = formats.shorts().contains(video.id()) && hasShortsDuration(video);
             boolean collaborationShort = platformShort && !official && video.channelId() != null
                     && MediaHashtags.officialCollaborationChannels().contains(video.channelId())
                     && MediaHashtags.hasTripleSGroupHashtag(video.title(), video.description());
@@ -372,32 +376,26 @@ public class MediaChannelSyncService {
                     containsId(mvIds, video.id()), fromNamuExternal, platformShort);
             Media current = existing.get(video.id().toLowerCase(Locale.ROOT));
             if (current != null) {
-                if (collaborationShort) {
-                    if (!MediaTab.SHORTS.getKey().equals(current.getTab()) || !current.isCuratedTab()) {
-                        current.setTab(MediaTab.SHORTS.getKey());
-                        current.setCuratedTab(true);
-                        updated++;
-                    } else skipped++;
-                    continue;
-                }
-                if (fromHashtag) {
+                if (fromHashtag && !platformShort) {
                     skipped++;
                     continue;
                 }
                 boolean changed = fillExisting(current, video, artists, official);
                 boolean wasShort = MediaTab.SHORTS.getKey().equals(current.getTab());
-                boolean formatChanged = (!wasShort && platformShort)
-                        || (wasShort && !platformShort && formats.regular().contains(video.id()));
-                if (!current.isCuratedTab() && formatChanged) {
+                boolean confirmedRegular = wasShort && !platformShort && formats.regular().contains(video.id());
+                if ((!wasShort && platformShort) || (!current.isCuratedTab() && confirmedRegular)) {
                     current.setTab(targetTab);
+                    changed = true;
+                }
+                if (collaborationShort && !current.isCuratedTab()) {
+                    current.setCuratedTab(true);
                     changed = true;
                 }
                 if (changed) updated++;
                 else skipped++;
                 continue;
             }
-            if (collaborationShort) targetTab = MediaTab.SHORTS.getKey();
-            else if (fromHashtag) targetTab = MediaTab.EXTERNAL.getKey();
+            if (fromHashtag && !platformShort) targetTab = MediaTab.EXTERNAL.getKey();
             Media created = newMedia(video, artists, official, targetTab);
             if (fromHashtag || collaborationShort) {
                 created.setCuratedTab(true);

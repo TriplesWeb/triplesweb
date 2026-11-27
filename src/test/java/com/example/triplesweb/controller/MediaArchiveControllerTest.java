@@ -12,6 +12,7 @@ import com.example.triplesweb.service.ChemistryService;
 import com.example.triplesweb.service.MediaChannelSyncService;
 import com.example.triplesweb.service.MediaService;
 import com.example.triplesweb.service.MediaViewCountService;
+import com.example.triplesweb.service.MediaYoutubeCastService;
 import com.example.triplesweb.service.UnitService;
 import com.example.triplesweb.util.MemberPortraitOptions;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -34,6 +35,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -50,6 +52,7 @@ class MediaArchiveControllerTest {
     @Autowired ObjectMapper objectMapper;
     @MockitoBean MediaService media;
     @MockitoBean MediaViewCountService mediaViewCounts;
+    @MockitoBean MediaYoutubeCastService youtubeCast;
     @MockitoBean MediaChannelSyncService youtubeSync;
     @MockitoBean ArtistRepository artistRepository;
     @MockitoBean ScheduleRepository scheduleRepository;
@@ -304,6 +307,61 @@ class MediaArchiveControllerTest {
     }
 
     @Test
+    void labelsEachSignalEraOnlyInTheSignalTab() throws Exception {
+        MediaDto old = video(1, "signal", "SIGNAL 230630", "8:00", "");
+        MediaDto recent = video(2, "signal", "SIGNAL 261124", "8:00", "2026-11-24");
+        when(media.listAll()).thenReturn(List.of(old, recent));
+        when(media.allByTab("signal")).thenReturn(List.of(old, recent));
+
+        String signal = mvc.perform(get("/media").param("tab", "signal"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertThat(Jsoup.parse(signal).select(".media-card__kind").eachText())
+                .containsExactlyInAnyOrder("SIGNAL · 성수/여의도/남산", "SIGNAL · 24명 데뷔 이후");
+
+        String all = mvc.perform(get("/media")).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        assertThat(Jsoup.parse(all).select(".media-card__kind").eachText()).containsExactly("SIGNAL", "SIGNAL");
+    }
+
+    @Test
+    void addsHashtagBadgesWithoutDuplicatingAliasesOrChangingSavedCast() throws Exception {
+        MediaDto video = video(1, "external", "Episode", "8:00", "2026-11-24");
+        video.setArtistNames("SeoYeon");
+        Artist seoyeon = new Artist();
+        seoyeon.setArtistId(1L);
+        seoyeon.setName("윤서연");
+        seoyeon.setEngName("SeoYeon");
+        Artist hayeon = new Artist();
+        hayeon.setArtistId(19L);
+        hayeon.setName("정하연");
+        when(artistRepository.findAll()).thenReturn(List.of(seoyeon, hayeon));
+        when(media.findOne(MediaTab.EXTERNAL, video.getYoutubeId())).thenReturn(Optional.of(video));
+        when(youtubeCast.findMembers(video.getYoutubeId())).thenReturn(List.of("윤서연", "정하연"));
+
+        mvc.perform(get("/media/youtube-members.json")
+                        .param("youtubeId", video.getYoutubeId()).param("tab", "external"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].artistId").value(1))
+                .andExpect(jsonPath("$[1].name").value("정하연"))
+                .andExpect(jsonPath("$[1].artistId").value(19));
+        assertThat(video.getArtistNames()).isEqualTo("SeoYeon");
+    }
+
+    @Test
+    void skipsYoutubeForUnknownVideosAndCompleteLineups() throws Exception {
+        MediaDto video = video(1, "contents", "Group video", "8:00", "2026-11-24");
+        video.setArtistNames(String.join(",", MemberPortraitOptions.koreanOrder()));
+        when(media.findOne(MediaTab.CONTENTS, video.getYoutubeId())).thenReturn(Optional.of(video));
+
+        for (String id : List.of(video.getYoutubeId(), "abcdefghijk")) {
+            mvc.perform(get("/media/youtube-members.json").param("youtubeId", id).param("tab", "contents"))
+                    .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
+        }
+        verifyNoInteractions(youtubeCast);
+    }
+
+    @Test
     void signalFiltersKeepTheSelectedTabAndHausPeriod() throws Exception {
         MediaDto earlier = video(1, "signal", "코토네 SIGNAL 221130", "8:00", "2022-11-30");
         MediaDto oldest = video(2, "signal", "코토네 SIGNAL 230720", "8:00", "2023-07-20");
@@ -327,6 +385,44 @@ class MediaArchiveControllerTest {
         assertThat(document.select("#mediaFilterForm input[name=era]").val()).isEqualTo("allHaus");
         assertThat(document.select("#mediaFilterForm input[name=kind], .media-shorts")).isEmpty();
         assertThat(document.getElementById("mediaCatalog").data()).contains("\"signalEra\":\"allHaus\"");
+    }
+
+    @Test
+    void shortsSubtabsKeepTheirCategoryAcrossSearchAndPagination() throws Exception {
+        List<MediaDto> matches = new ArrayList<>();
+        for (int i = 0; i < 26; i++) {
+            MediaDto video = video(i, "shorts", "Episode collaboration " + i, "0:29", "2026-11-24");
+            video.setChannelId("UChhKBlh_wvspTh5n4mL0b5g");
+            matches.add(video);
+        }
+        matches.add(video(40, "shorts", "Episode #SIGNAL_261124", "0:39", "2026-11-24"));
+        matches.add(video(41, "shorts", "Episode regular challenge", "0:30", "2026-11-24"));
+        matches.add(video(42, "contents", "Episode long-form", "2:00", "2026-11-24"));
+        when(media.allByTab("shorts")).thenReturn(matches);
+
+        String html = mvc.perform(get("/media").param("tab", "shorts").param("shortsCategory", "collaboration")
+                        .param("sort", "oldest").param("q", "Episode").param("page", "2"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        var document = Jsoup.parse(html);
+        assertThat(document.select(".media-shorts-tabs .site-section-tab").eachText())
+                .containsExactly("전체", "챌린지 품앗이", "챌린지", "시그널 미리보기");
+        assertThat(document.select(".media-shorts-tabs [aria-current=page]").text())
+                .isEqualTo("챌린지 품앗이");
+        assertThat(document.select(".media-short__caption strong").eachText())
+                .containsExactly("Episode collaboration 24", "Episode collaboration 25");
+        assertThat(document.select("#mediaFilterForm input[name=shortsCategory], .ar-page-jump input[name=shortsCategory]"))
+                .hasSize(2).allMatch(input -> "collaboration".equals(input.val()));
+        assertThat(document.select(".ar-pager-num").eachAttr("href"))
+                .allSatisfy(href -> assertThat(href).contains("shortsCategory=collaboration", "q=Episode"));
+        assertThat(document.select(".ar-reset").attr("href")).isEqualTo("/media?tab=shorts&shortsCategory=collaboration");
+
+        for (String[] scope : List.of(
+                new String[]{"signal-preview", "Episode #SIGNAL_261124"},
+                new String[]{"challenge", "Episode regular challenge"})) {
+            String filtered = mvc.perform(get("/media").param("tab", "shorts").param("shortsCategory", scope[0]))
+                    .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+            assertThat(Jsoup.parse(filtered).select(".media-short__caption strong").eachText()).containsExactly(scope[1]);
+        }
     }
 
     @Test

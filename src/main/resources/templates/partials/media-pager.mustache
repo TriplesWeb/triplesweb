@@ -24,6 +24,7 @@
         {{#selectedMembers}}<input type="hidden" name="members" value="{{.}}">{{/selectedMembers}}
         {{#legacyShortsFilter}}<input type="hidden" name="kind" value="shorts">{{/legacyShortsFilter}}
         {{#hasSignalEra}}<input type="hidden" name="era" value="{{signalEra}}">{{/hasSignalEra}}
+        {{#hasShortsCategory}}<input type="hidden" name="shortsCategory" value="{{shortsCategory}}">{{/hasShortsCategory}}
         <span class="ar-page-jump-meta">{{mediaPageDisplay}}<span aria-hidden="true">/</span>{{mediaTotalPages}}</span>
         <label class="ar-page-jump-field">
             <span class="visually-hidden">이동할 페이지</span>
