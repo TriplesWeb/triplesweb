@@ -880,30 +880,6 @@ body.media-page {
     min-width: 0;
 }
 
-.media-card__members {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 10px 16px 0;
-}
-
-.media-page .media-card__members .archive-member-chip.archive-symbol-chip {
-    --chip-image: 1.45rem;
-    min-width: 1.45rem;
-    max-width: 1.45rem;
-    margin: 0;
-    padding: 0;
-}
-
-.media-page .media-card__members .archive-member-chip.archive-symbol-chip img {
-    width: 1.45rem;
-    height: 1.45rem;
-    max-width: 1.45rem;
-    max-height: 1.45rem;
-}
-
-
 .media-card__title {
     display: -webkit-box;
     min-height: 48px;
@@ -998,10 +974,6 @@ body.media-page {
     padding: 18px 16px 16px;
     background: #10161c;
     line-height: 1.5;
-}
-
-.media-short__caption .media-card__members {
-    padding: 0;
 }
 
 .media-short__meta {

@@ -238,15 +238,9 @@ class MediaArchiveControllerTest {
                     .andReturn().getResponse().getContentAsString();
             var page = Jsoup.parse(html);
             assertThat(page.select(".media-card__title").eachText()).contains("두 명 영상");
-            var lineupBadge = page.select(".media-card__members .media-full-lineup");
-            assertThat(lineupBadge).hasSize(memberCount == 0 || memberCount == 24 ? 1 : 0);
-            if (!lineupBadge.isEmpty()) {
-                var symbols = lineupBadge.select("img");
-                assertThat(symbols).hasSize(24);
-                assertThat(symbols.get(0).attr("src")).endsWith("/member-logos/1.png");
-                assertThat(symbols.get(23).attr("src")).endsWith("/member-logos/24.png");
-                assertThat(lineupBadge.attr("aria-label")).isEqualTo("tripleS 완전체 24명");
-            }
+            assertThat(page.select(".media-card__members")).isEmpty();
+            assertThat(page.select(".media-card__title").eachText().contains("단체 무대"))
+                    .isEqualTo(memberCount == 0 || memberCount == 24);
         }
     }
 
@@ -269,8 +263,7 @@ class MediaArchiveControllerTest {
         assertThat(shortsPage.select(".media-short__thumb .media-card__time").text()).isEqualTo("1:39");
         assertThat(shortsPage.select(".media-short__meta").text()).contains("조회수 10", "2026.10.24").doesNotContain("1:39");
         assertThat(shortsPage.select(".media-short__meta time").attr("datetime")).isEqualTo("2026-10-24");
-        assertThat(shortsPage.select(".media-short__caption .archive-symbol-chip img").attr("src"))
-                .isEqualTo("/images/archive/member-logos/11.png");
+        assertThat(shortsPage.select(".media-short__caption .media-card__members")).isEmpty();
         assertThat(shortsPage.select(".ar-reset[hidden]")).hasSize(1);
         String searched = mvc.perform(get("/media").param("tab", "shorts").param("q", "말아주는"))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
@@ -390,7 +383,7 @@ class MediaArchiveControllerTest {
     }
 
     @Test
-    void kotoneCardUsesArchiveSymbolChipNotPortrait() throws Exception {
+    void mediaCardsHideMemberBadgesButKeepThemForThePlayer() throws Exception {
         Artist kotone = new Artist();
         kotone.setArtistId(11L);
         kotone.setName("코토네");
@@ -404,14 +397,9 @@ class MediaArchiveControllerTest {
 
         String html = mvc.perform(get("/media"))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("archive-symbol-chip")))
-                .andExpect(content().string(containsString("/images/archive/member-logos/11.png")))
                 .andReturn().getResponse().getContentAsString();
         org.jsoup.nodes.Document document = Jsoup.parse(html);
-        org.jsoup.nodes.Element chip = document.select(".media-card__members .archive-member-chip").first();
-        assertThat(chip).isNotNull();
-        assertThat(chip.hasClass("archive-symbol-chip")).isTrue();
-        assertThat(chip.select("img").attr("src")).isEqualTo("/images/archive/member-logos/11.png");
+        assertThat(document.select(".media-card__members")).isEmpty();
         String catalog = document.select("#mediaCatalog").html();
         assertThat(catalog).contains("\"hasSymbol\":true");
         assertThat(catalog).contains("/images/archive/member-logos/11.png");

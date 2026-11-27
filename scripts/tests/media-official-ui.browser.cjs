@@ -5,10 +5,6 @@ const { chromium } = require('playwright');
 
 const staticRoot = path.resolve(__dirname, '../../src/main/resources/static');
 const read = (rel) => fs.readFileSync(path.join(staticRoot, rel), 'utf8');
-const kotoneLogo = '/images/archive/member-logos/11.png';
-const kotoneLogoFile = path.join(staticRoot, 'images/archive/member-logos/11.png');
-assert.ok(fs.existsSync(kotoneLogoFile), '코토네 주사위 로고 파일이 없다');
-
 const videos = Array.from({ length: 13 }, (_, index) => ({
   id: 20 - index,
   youtubeId: 'vid' + String(index).padStart(3, '0'),
@@ -109,7 +105,7 @@ ${read('css/media-page.css')}
       </div>
     </div>
     <div class="media-grid" data-cols="3">
-      <article class="media-card" data-symbol-fixture="1">
+      <article class="media-card">
         <a class="media-card__link" href="/media/mv/vid000">
           <span class="media-card__thumb">
             <img src="https://img.youtube.com/vi/vid000/hqdefault.jpg" alt="">
@@ -120,12 +116,6 @@ ${read('css/media-page.css')}
             <span class="media-card__title">코토네 영상</span>
           </span>
         </a>
-        <div class="media-card__members">
-          <span class="archive-member-chip archive-symbol-chip" style="--member-color:#ffde00;" title="코토네" aria-label="코토네">
-            <img src="${kotoneLogo}" alt="" referrerpolicy="no-referrer">
-            <span class="archive-chip-name">코토네</span>
-          </span>
-        </div>
         <div class="media-card__foot">
           <span class="media-card__meta"><span class="media-card__views">조회수 10</span></span>
         </div>
@@ -140,11 +130,6 @@ ${read('css/media-page.css')}
         </span>
         <span class="media-short__caption">
           <strong>'ANDLESS' in Chicago</strong>
-          <span class="media-card__members">
-            <span class="archive-member-chip archive-symbol-chip" aria-label="코토네">
-              <img src="${kotoneLogo}" alt="">
-            </span>
-          </span>
           <span class="media-short__meta">
             <span>조회수 123</span>
             <time datetime="2026-11-22" aria-label="유튜브 등록일 2026.11.22">2026.11.22</time>
@@ -284,12 +269,6 @@ ${read('css/media-page.css')}
           body: JSON.stringify({ configured: true, admin: true })
         });
       }
-      if (url.includes('/images/archive/member-logos/')) {
-        const file = path.join(staticRoot, 'images/archive/member-logos', path.basename(new URL(url).pathname));
-        if (file.startsWith(path.join(staticRoot, 'images/archive/member-logos')) && fs.existsSync(file)) {
-          return route.fulfill({ path: file, contentType: 'image/png' });
-        }
-      }
       const params = new URL(url).searchParams;
       let body = params.get('tab') === 'signal' && params.get('era') === 'allHaus'
         ? html.replace('<input type="hidden" name="tab" value="all">',
@@ -336,34 +315,8 @@ ${read('css/media-page.css')}
     assert.equal(await page.locator('[data-media-cols-option]').count(), 3);
     assert.deepEqual(await page.locator('[data-media-cols-option]').allTextContents(), ['3줄', '4줄', '5줄']);
     assert.equal(await page.locator('.media-grid').getAttribute('data-cols'), '3');
-    const members = page.locator('.media-card .media-card__members');
-    const chip = members.locator('.archive-member-chip').first();
-    await chip.locator('img').waitFor();
-    await page.waitForFunction(() => {
-      const img = document.querySelector('.media-card .media-card__members .archive-symbol-chip img');
-      return img && img.complete && img.naturalWidth > 1;
-    });
-    assert.equal(await chip.getAttribute('aria-label'), '코토네');
-    assert.equal(await chip.evaluate((node) => node.classList.contains('archive-symbol-chip')), true);
-    assert.equal(await chip.locator('img').getAttribute('src'), kotoneLogo);
-    const chipLook = await chip.evaluate((node) => {
-      const img = node.querySelector('img');
-      const style = getComputedStyle(img);
-      return {
-        radius: style.borderRadius,
-        objectFit: style.objectFit,
-        blend: style.mixBlendMode
-      };
-    });
-    assert.equal(chipLook.objectFit, 'contain');
-    assert.equal(chipLook.blend, 'screen');
-    assert.ok(
-      chipLook.radius !== '50%' && !chipLook.radius.includes('999'),
-      'symbol chip should not be a circular portrait'
-    );
+    assert.equal(await page.locator('.media-card .media-card__members').count(), 0);
     fs.mkdirSync('/opt/cursor/artifacts', { recursive: true });
-    await members.screenshot({ path: '/opt/cursor/artifacts/media-card-members-symbol-chip.png' });
-    await page.locator('.media-card[data-symbol-fixture]').screenshot({ path: '/opt/cursor/artifacts/media-card-kotone-symbol.png' });
     await page.locator('.media-channel').screenshot({ path: '/opt/cursor/artifacts/media-youtube-icon-button.png' });
     await page.locator('.media-archive__head').screenshot({ path: '/opt/cursor/artifacts/media-archive-density-closed.png' });
     await page.locator('[data-media-cols-toggle]').click();
@@ -462,7 +415,7 @@ ${read('css/media-page.css')}
     assert.ok(timeBox.x > thumbBox.x + thumbBox.width / 2, 'duration should be on the right of the thumbnail');
     assert.ok(timeBox.y > thumbBox.y + thumbBox.height / 2, 'duration should be at the bottom of the thumbnail');
     assert.match(await page.locator('.media-short__meta').textContent(), /조회수 123/);
-    assert.equal(await page.locator('.media-short__caption .archive-symbol-chip img').getAttribute('src'), kotoneLogo);
+    assert.equal(await page.locator('.media-short__caption .media-card__members').count(), 0);
     assert.equal(await page.locator('.media-short__meta time').getAttribute('datetime'), '2026-11-22');
     assert.equal(await page.locator('.media-short__caption strong').first().textContent(), "'ANDLESS' in Chicago");
 
