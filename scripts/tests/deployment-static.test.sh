@@ -51,6 +51,16 @@ test ! -e docker-compose.bluegreen.yml
 test ! -e scripts/deploy-pi-bluegreen.sh
 reject_match -Eiq 'bluegreen|app_blue|app_green|active_slot|project_container' scripts/deploy-pi-app.sh
 grep -Fq 'bash ./deploy-pi-app.sh' .github/workflows/deploy-main.yml
+grep -Fq 'OBJEKT_MINT_CHAIN_ENABLED=true' .github/workflows/deploy-main.yml
+grep -Fq 'OBJEKT_MINT_CHAIN_ENABLED: ${OBJEKT_MINT_CHAIN_ENABLED:-false}' docker-compose.yml
+grep -Fxq 'objekt.mints.chain-enabled=${OBJEKT_MINT_CHAIN_ENABLED:false}' src/main/resources/application.properties
+grep -Fq 'FLYWAY_ENABLED=true' .github/workflows/deploy-main.yml
+grep -Fq 'FLYWAY_ENABLED: ${FLYWAY_ENABLED:-false}' docker-compose.yml
+grep -Fxq 'spring.flyway.enabled=${FLYWAY_ENABLED:false}' src/main/resources/application.properties
+grep -Fxq 'spring.jpa.hibernate.ddl-auto=${SPRING_JPA_HIBERNATE_DDL_AUTO:none}' src/main/resources/application.properties
+grep -Fq '/cosmo/objekt/pulse' scripts/deploy-pi-app.sh
+grep -Fq '/cosmo/objekt/pulse' .github/workflows/deploy-main.yml
+grep -Fq 'production_flags_enabled "$restored"' scripts/deploy-pi-app.sh
 grep -Fq -- '${MARIADB_TUNING_CNF:-./docker/mariadb/empty.cnf}:/etc/mysql/conf.d/tuning.cnf:ro' docker-compose.yml
 grep -Fq '${APP_PORT:-8090}:8080' docker-compose.yml
 grep -Fq 'SPRING_JPA_HIBERNATE_DDL_AUTO: none' docker-compose.yml

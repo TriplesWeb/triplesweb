@@ -18,11 +18,20 @@ log() { printf '[deploy] %s\n' "$*" >&2; }
 fail() { log "ERROR: $*"; exit 1; }
 running_image() { docker inspect -f '{{.Config.Image}}' "$1"; }
 
+production_flags_enabled() {
+  local flags
+  flags="$(docker inspect -f '{{range .Config.Env}}{{ $key := index (split . "=") 0 }}{{if or (eq $key "OBJEKT_MINT_CHAIN_ENABLED") (eq $key "FLYWAY_ENABLED")}}{{println .}}{{end}}{{end}}' "$1" 2>/dev/null)" &&
+    grep -Fxq 'OBJEKT_MINT_CHAIN_ENABLED=true' <<<"$flags" &&
+    grep -Fxq 'FLYWAY_ENABLED=true' <<<"$flags"
+}
+
 healthy() {
   local timeout="$1" status
   curl -fsS --connect-timeout 2 --max-time "$timeout" "$BASE_URL/actuator/health/readiness" >/dev/null 2>&1 &&
     status="$(curl -fsS --connect-timeout 2 --max-time "$timeout" -o /dev/null -w '%{http_code}' "$BASE_URL/" 2>/dev/null)" &&
-    [[ "$status" == 200 ]]
+    [[ "$status" == 200 ]] &&
+    curl -fsS --connect-timeout 2 --max-time "$timeout" "$BASE_URL/cosmo/objekt/pulse" |
+      python3 -c 'import json, sys; sys.exit(json.load(sys.stdin).get("chainMints") is not True)' 2>/dev/null
 }
 
 wait_until_healthy() {
@@ -65,13 +74,16 @@ record_success() {
 }
 
 restore_previous() {
-  local previous_image="$1"
+  local previous_image="$1" restored
   [[ -n "$previous_image" ]] || return 1
-  IMAGE="$previous_image" "${COMPOSE[@]}" up -d --no-deps app && wait_until_healthy
+  IMAGE="$previous_image" "${COMPOSE[@]}" up -d --no-deps app &&
+    restored="$("${COMPOSE[@]}" ps -q app)" && [[ -n "$restored" ]] &&
+    production_flags_enabled "$restored" && wait_until_healthy
 }
 
 run_deploy() {
   [[ -f .env && -f docker-compose.yml ]] || fail "Compose and .env files must exist"
+  command -v python3 >/dev/null || fail "Python 3 is required to verify the Objekt pulse"
   [[ "$READY_TIMEOUT_SECONDS" =~ ^[1-9][0-9]*$ && "$STOP_TIMEOUT_SECONDS" =~ ^[1-9][0-9]*$ ]] ||
     fail "Deployment timeouts must be positive integers"
   "${COMPOSE[@]}" config --quiet
@@ -90,7 +102,8 @@ run_deploy() {
     previous_tree="$(cat "$MIGRATION_FILE")"
 
   fi
-  if [[ -n "$current" && "$previous_image" == "$IMAGE" && "$previous_tree" == "$MIGRATIONS_TREE" ]] && healthy 5; then
+  if [[ -n "$current" && "$previous_image" == "$IMAGE" && "$previous_tree" == "$MIGRATIONS_TREE" ]] &&
+    production_flags_enabled "$current" && healthy 5; then
     log "Already healthy on $IMAGE"
     return
   fi
@@ -105,7 +118,8 @@ run_deploy() {
   log "Starting $IMAGE on port $APP_PORT"
   if "${COMPOSE[@]}" up -d --no-deps --force-recreate app &&
     candidate="$("${COMPOSE[@]}" ps -q app)" && [[ -n "$candidate" ]] &&
-    [[ "$(running_image "$candidate")" == "$IMAGE" ]] && wait_until_healthy; then
+    [[ "$(running_image "$candidate")" == "$IMAGE" ]] &&
+    production_flags_enabled "$candidate" && wait_until_healthy; then
     record_success
     log "Deployment healthy after $((SECONDS - start))s"
     cleanup_after_deploy "$previous_image"

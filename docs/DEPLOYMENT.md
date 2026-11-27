@@ -17,6 +17,8 @@ Flyway 마이그레이션이 바뀐 배포도 같은 순서로 실행합니다. 
 
 운영 앱 교체는 `Deploy to Raspberry Pi (prod)`의 자동 또는 수동 실행을 사용합니다. GitHub Actions 변수 `APP_MEMORY_LIMIT`, `APP_STOP_TIMEOUT_SECONDS`, `APP_READY_TIMEOUT_SECONDS`의 기본값은 각각 1800 MB, 600초, 360초입니다.
 
+운영 Actions의 앱 기동 경로는 `OBJEKT_MINT_CHAIN_ENABLED=true`와 `FLYWAY_ENABLED=true`를 전달합니다. 공용 Compose의 기본값은 둘 다 `false`입니다. 같은 이미지의 배포 생략, 신규 기동, 이전 이미지 복구는 컨테이너의 두 플래그와 `/cosmo/objekt/pulse`의 불리언 `chainMints: true`를 모두 확인합니다. pulse 검증에는 Pi의 Python 3을 사용합니다.
+
 운영 앱 로그는 Pi의 `$PI_DEPLOY_PATH/logs/triplesweb.log`에 저장되어 컨테이너를 교체해도 남습니다. 날짜가 바뀌거나 파일이 10MB에 도달하면 gzip으로 회전하며, 30일 이내라도 압축 이력이 1GB를 넘으면 오래된 파일부터 삭제합니다. 배포 디렉터리에서 현재 로그는 `tail -F logs/triplesweb.log`, 압축 이력은 `zcat logs/triplesweb.log.YYYY-MM-DD.0.gz`로 확인합니다.
 
 ## PR 변경 영역별 선택적 CI

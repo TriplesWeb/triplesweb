@@ -51,10 +51,13 @@ public class ObjektService {
     private final ObjektLiveSettings live;
 
     public static final int DROP_ALERT_LIMIT = 3;
+    private static final int PENDING_COLLECTION_LIMIT = 500;
+    private static final long PENDING_COLLECTION_TTL_MS = Duration.ofHours(24).toMillis();
 
     private List<Map<String, Object>> storedCollections = List.of();
-    private Map<String, Map<String, Object>> storedByKey = Map.of();
-    private List<Map<String, Object>> pendingCollections = List.of();
+    private volatile Map<String, Map<String, Object>> storedByKey = Map.of();
+    private volatile Map<String, Map<String, Object>> storedByCollectionName = Map.of();
+    private final Map<String, PendingCollection> pendingCollections = new LinkedHashMap<>();
 
     private volatile List<Map<String, Object>> cachedCollections = List.of();
     private volatile Map<String, Map<String, Object>> byKey = Map.of();
@@ -90,9 +93,12 @@ public class ObjektService {
      */
     @PostConstruct
     void loadStoredCatalog() {
-        catalogStore.retainOnly("triples");
-        if (chainMints) reloadStoredCatalog();
-        else install(loadFromDatabase("triples"));
+        if (chainMints) {
+            catalogStore.retainOnly("triples");
+            reloadStoredCatalog();
+        } else {
+            install(loadFromDatabase("triples"));
+        }
     }
 
     public List<Map<String, Object>> findCollections(String artist) {
@@ -110,7 +116,20 @@ public class ObjektService {
     }
 
     Map<String, Object> findStoredByKey(String key) {
-        return lookup(storedByKey, key);
+        Map<String, Object> exact = lookup(storedByKey, key);
+        return exact != null ? exact : findStoredByCollectionName(key);
+    }
+
+    Map<String, Object> findStoredByCollectionName(String name) {
+        return name == null ? null : storedByCollectionName.get(collectionNameKey(name));
+    }
+
+    static String normalizeCollectionName(String name) {
+        return name.strip().replaceAll("\\p{javaWhitespace}+", " ");
+    }
+
+    static String collectionNameKey(String name) {
+        return normalizeCollectionName(name).toLowerCase(Locale.ROOT);
     }
 
     private static Map<String, Object> lookup(Map<String, Map<String, Object>> index, String key) {
@@ -163,7 +182,7 @@ public class ObjektService {
 
     /**
      * 평소 1분, 드롭 창(10시–자정)에는 더 자주 외부 카탈로그를 본다.
-     * 화면용 스냅샷이 같으면 DB를 다시 쓰지 않는다.
+     * 체인 수집이 꺼진 인스턴스는 외부 응답으로 메모리 캐시만 갱신한다.
      */
     @Scheduled(
             fixedDelayString = "${objekt.live.tick-ms:15000}",
@@ -184,13 +203,10 @@ public class ObjektService {
                     lastSuccessfulRefreshMillis = System.currentTimeMillis();
                     return;
                 }
-                // DB는 다음 시작 시 복구할 스냅샷으로만 저장한다. 갱신 직후 다시
-                // SELECT 하지 않고, 이미 받은 API 응답으로 메모리 캐시를 교체한다.
-                catalogStore.replace("triples", rows);
                 install(views);
                 lastSuccessfulRefreshMillis = System.currentTimeMillis();
             }
-            log.info("Objekt 카탈로그 저장 완료: {}개", cachedCollections.size());
+            log.info("Objekt 카탈로그 캐시 갱신 완료: {}개", cachedCollections.size());
 
         } catch (RuntimeException ex) {
             // 최초 적재 실패를 포함해 페이지 요청으로 예외를 전파하지 않는다.
@@ -226,6 +242,7 @@ public class ObjektService {
     }
 
     void enrichChainBackImages(List<ObjektCatalog> externalCatalog) {
+        if (!chainMints) return;
         List<ObjektCatalog> missing = new ArrayList<>();
         for (ObjektCatalog row : externalCatalog) {
             String image = row.getBackImage();
@@ -246,31 +263,43 @@ public class ObjektService {
 
     synchronized void reloadStoredCatalog() {
         storedCollections = loadFromDatabase("triples");
+        Map<String, Map<String, Object>> nameIndex = new HashMap<>();
+        for (Map<String, Object> view : storedCollections) {
+            putIndex(nameIndex, collectionNameKey(string(view, "collectionId")), view);
+        }
+        storedByCollectionName = Map.copyOf(nameIndex);
         storedByKey = buildIndex(storedCollections);
+        prunePendingCollections(System.currentTimeMillis());
         installChainCatalog();
     }
 
     synchronized void publishPendingCollections(List<ObjektCatalog> collections) {
-        List<Map<String, Object>> views = collections.stream()
-                .filter(row -> findStoredByKey(row.getCollectionId()) == null && findStoredByKey(row.getSlug()) == null)
-                .map(row -> {
-                    Map<String, Object> view = new LinkedHashMap<>(ObjektCatalogDto.toView(row));
-                    view.put("mintPending", true);
-                    return view;
-                }).toList();
-        if (views.equals(pendingCollections)) return;
-        pendingCollections = views;
+        long now = System.currentTimeMillis();
+        prunePendingCollections(now);
+        for (ObjektCatalog row : collections) {
+            if (findStoredByCollectionName(row.getCollectionId()) != null) continue;
+            pendingCollections.computeIfAbsent(collectionNameKey(row.getCollectionId()), key -> {
+                Map<String, Object> view = new LinkedHashMap<>(ObjektCatalogDto.toView(row));
+                view.put("mintPending", true);
+                return new PendingCollection(view, now);
+            });
+        }
+        while (pendingCollections.size() > PENDING_COLLECTION_LIMIT) {
+            pendingCollections.remove(pendingCollections.keySet().iterator().next());
+        }
         installChainCatalog();
     }
 
+    private void prunePendingCollections(long now) {
+        pendingCollections.values().removeIf(pending -> now - pending.discoveredAt() >= PENDING_COLLECTION_TTL_MS
+                || findStoredByCollectionName(string(pending.view(), "collectionId")) != null);
+    }
+
+    private record PendingCollection(Map<String, Object> view, long discoveredAt) {}
+
     private void installChainCatalog() {
         List<Map<String, Object>> views = new ArrayList<>(storedCollections);
-        for (Map<String, Object> pending : pendingCollections) {
-            if (findStoredByKey(string(pending, "slug")) == null
-                    && findStoredByKey(string(pending, "collectionId")) == null) {
-                views.add(pending);
-            }
-        }
+        pendingCollections.values().forEach(pending -> views.add(pending.view()));
         if (views.equals(cachedCollections)) return;
         install(views);
         lastSuccessfulRefreshMillis = System.currentTimeMillis();
