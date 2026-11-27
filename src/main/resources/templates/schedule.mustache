@@ -699,7 +699,10 @@
                     image.src = imageUrl;
                     image.alt = '';
                     image.loading = 'lazy';
-                    image.className = 'h-4 w-4 shrink-0 rounded object-contain';
+                    const isBirthday = arg.event.extendedProps.kind === 'BIRTHDAY';
+                    image.className = isBirthday
+                        ? 'h-6 w-6 shrink-0 rounded object-contain'
+                        : 'h-4 w-4 shrink-0 rounded object-contain';
                     const label = document.createElement('span');
                     label.className = 'fc-event-title min-w-0';
                     label.textContent = arg.event.title || '';
