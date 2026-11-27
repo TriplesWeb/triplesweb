@@ -70,4 +70,39 @@ class CalendarDecorationControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("생일 조회 기간은 400일 이내여야 합니다."));
     }
+
+    @Test
+    void returnsBothMemberBirthdaysWithTheirOwnBiteImagesOnAllThreeSharedDates() throws Exception {
+        Artist dahyun = birthdayArtist(10L, "서다현", "dahyun", "2003-01-08");
+        Artist yeonji = birthdayArtist(12L, "곽연지", "yeonji", "2008-01-08");
+        Artist hyerin = birthdayArtist(2L, "정혜린", "hyerin", "2007-04-12");
+        Artist lynn = birthdayArtist(17L, "린", "lynn", "2006-04-12");
+        Artist nakyoung = birthdayArtist(7L, "김나경", "nakyoung", "2002-10-13");
+        Artist sohyun = birthdayArtist(14L, "박소현", "sohyun", "2002-10-13");
+        when(artists.findAll()).thenReturn(List.of(dahyun, yeonji, hyerin, lynn, nakyoung, sohyun));
+
+        mvc.perform(get("/api/calendar-decorations/birthdays")
+                        .param("start", "2026-01-01")
+                        .param("end", "2026-10-31"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.start == '2026-01-08')].length()").value(2))
+                .andExpect(jsonPath("$[?(@.start == '2026-01-08')][0].imageUrl").value("/images/artist/bite/10.png"))
+                .andExpect(jsonPath("$[?(@.start == '2026-01-08')][1].imageUrl").value("/images/artist/bite/12.png"))
+                .andExpect(jsonPath("$[?(@.start == '2026-04-12')].length()").value(2))
+                .andExpect(jsonPath("$[?(@.start == '2026-04-12')][0].imageUrl").value("/images/artist/bite/2.png"))
+                .andExpect(jsonPath("$[?(@.start == '2026-04-12')][1].imageUrl").value("/images/artist/bite/17.png"))
+                .andExpect(jsonPath("$[?(@.start == '2026-10-13')].length()").value(2))
+                .andExpect(jsonPath("$[?(@.start == '2026-10-13')][0].imageUrl").value("/images/artist/bite/7.png"))
+                .andExpect(jsonPath("$[?(@.start == '2026-10-13')][1].imageUrl").value("/images/artist/bite/14.png"));
+    }
+
+    private Artist birthdayArtist(long id, String name, String engName, String birthDate) {
+        Artist artist = new Artist();
+        artist.setArtistId(id);
+        artist.setName(name);
+        artist.setEngName(engName);
+        artist.setBirthDate(birthDate);
+        artist.setColor("#00f5d4");
+        return artist;
+    }
 }
