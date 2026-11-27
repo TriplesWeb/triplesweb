@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
 
@@ -30,13 +31,20 @@ class ObjektCatalogStoreTest {
         assertThat(store.load("artms")).isEmpty();
     }
 
-    @Test void replaceKeepsIncomingTriplesAndDropsOtherArtists() {
-        repository.save(row("old-triples", "Cream02 HaYeon 001Z", "triples"));
+    @Test void onlyChainModeRemovesOtherArtistsAtStartup() {
+        repository.save(row("triples", "Cream02 HaYeon 001Z", "triples"));
         repository.save(row("artms-keep-id", "Drop HeeJin 101Z", "artms"));
-        ObjektCatalog incoming = row("cream02-hayeon-367z", "Cream02 HaYeon 367Z", "triples");
-        store.replace("triples", java.util.List.of(incoming));
+        var catalog = new ObjektService("http://localhost", 3000, store, null);
+
+        catalog.loadStoredCatalog();
+        assertThat(repository.findAll()).extracting(ObjektCatalog::getArtist)
+                .containsExactlyInAnyOrder("triples", "artms");
+        assertThat(catalog.findByKey("triples")).isNotNull();
+
+        ReflectionTestUtils.setField(catalog, "chainMints", true);
+        catalog.loadStoredCatalog();
         assertThat(repository.findAll()).extracting(ObjektCatalog::getCollectionId)
-                .containsExactly("Cream02 HaYeon 367Z");
+                .containsExactly("Cream02 HaYeon 001Z");
         assertThat(repository.findAll()).extracting(ObjektCatalog::getArtist).containsExactly("triples");
     }
 
@@ -60,7 +68,10 @@ class ObjektCatalogStoreTest {
         var catalog = new ObjektService("http://localhost", 3000, store, null);
         catalog.reloadStoredCatalog();
         catalog.enrichChainBackImages(external);
+        assertThat(catalog.findByKey("chain")).containsEntry("backImage", "");
 
+        ReflectionTestUtils.setField(catalog, "chainMints", true);
+        catalog.enrichChainBackImages(external);
         assertThat(catalog.findByKey("chain")).containsEntry("backImage", "/from-catalog.jpg");
         assertThat(store.fillMissingChainBackImages(external)).isZero();
         assertThat(repository.findAll()).filteredOn(item -> item.getSlug().equals("chain"))
@@ -69,6 +80,29 @@ class ObjektCatalogStoreTest {
                 .extracting(ObjektCatalog::getBackImage).containsExactly("/existing.jpg");
         assertThat(repository.findAll()).filteredOn(item -> item.getSlug().equals("legacy"))
                 .extracting(ObjektCatalog::getBackImage).containsExactly((String) null);
+    }
+
+    @Test void pendingCollectionKeepsFirstTimestampUntilStoredCatalogContainsIt() {
+        var catalog = new ObjektService("http://localhost", 3000, store, null);
+        var first = row("cream02-hayeon-367z", "Cream02 HaYeon 367Z", "triples");
+        first.setCreatedAt("2026-11-26T01:00:00Z");
+        var later = row(first.getSlug(), "cream02  hayeon 367z ", "triples");
+        later.setCreatedAt("2026-11-26T01:01:00Z");
+
+        catalog.publishPendingCollections(List.of(first));
+        catalog.publishPendingCollections(List.of());
+        catalog.publishPendingCollections(List.of(later));
+        assertThat(catalog.findCollections("triples")).hasSize(1);
+        assertThat(catalog.findByKey(first.getSlug()))
+                .containsEntry("mintPending", true).containsEntry("createdAt", first.getCreatedAt());
+
+        later.setSlug("legacy-hayeon");
+        repository.save(later);
+        catalog.reloadStoredCatalog();
+        catalog.publishPendingCollections(List.of(first));
+        assertThat(catalog.findCollections("triples")).hasSize(1);
+        assertThat(catalog.findStoredByKey(first.getCollectionId()))
+                .containsEntry("slug", "legacy-hayeon").doesNotContainKey("mintPending");
     }
 
     private static ObjektCatalog row(String slug, String collectionId, String artist) {

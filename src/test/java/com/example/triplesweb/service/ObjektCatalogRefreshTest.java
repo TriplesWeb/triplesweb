@@ -4,6 +4,7 @@ import com.example.triplesweb.dto.ObjektCatalogDto;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
@@ -11,23 +12,22 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 class ObjektCatalogRefreshTest {
     @Test
-    void changedSeasonIsStoredAndSearchableWithoutChangingCollectionIdentity() throws Exception {
+    void nonChainModeRefreshesSearchableMemoryWithoutWritingToCatalog() throws Exception {
         AtomicReference<String> season = new AtomicReference<>("Cream01");
         HttpServer server = catalogServer(season);
         try {
             ObjektCatalogStore store = mock(ObjektCatalogStore.class);
             ObjektService service = new ObjektService("http://127.0.0.1:" + server.getAddress().getPort(),
                     3000, store, null);
+            service.loadStoredCatalog();
             service.refreshCache();
             String originalSignature = service.catalogSignature();
 
@@ -37,22 +37,20 @@ class ObjektCatalogRefreshTest {
             assertThat(updated.get("season")).isEqualTo("Cream02");
             assertThat(SiteSearchService.objektMatches("Cream02", updated)).isTrue();
             assertThat(service.catalogSignature()).isNotEqualTo(originalSignature);
-            verify(store, times(2)).replace(eq("triples"), anyList());
-
             service.refreshCache();
-            verify(store, times(2)).replace(eq("triples"), anyList());
+            verify(store).load("triples");
+            verifyNoMoreInteractions(store);
         } finally {
             server.stop(0);
         }
     }
 
     @Test
-    void failedStoreDoesNotMarkRefreshSuccessfulAndNextAttemptCanRecover() throws Exception {
-        HttpServer server = catalogServer(new AtomicReference<>("Cream01"));
+    void failedExternalRefreshDoesNotMarkRefreshSuccessfulAndNextAttemptCanRecover() throws Exception {
+        AtomicReference<String> season = new AtomicReference<>();
+        HttpServer server = catalogServer(season);
         try {
             ObjektCatalogStore store = mock(ObjektCatalogStore.class);
-            doThrow(new IllegalStateException("database unavailable")).doNothing()
-                    .when(store).replace(eq("triples"), anyList());
             ObjektService service = new ObjektService("http://127.0.0.1:" + server.getAddress().getPort(),
                     3000, store, null);
 
@@ -60,10 +58,31 @@ class ObjektCatalogRefreshTest {
             assertThat(service.getLastSuccessfulRefreshMillis()).isZero();
             assertThat(service.findCollections("triples")).isEmpty();
 
+            season.set("Cream01");
             service.refreshCache();
             assertThat(service.getLastSuccessfulRefreshMillis()).isPositive();
             assertThat(service.findCollections("triples")).hasSize(1);
-            verify(store, times(2)).replace(eq("triples"), anyList());
+            verifyNoInteractions(store);
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    @Test
+    void chainModeUsesStoredCatalogAndSkipsExternalRefresh() throws Exception {
+        HttpServer server = catalogServer(new AtomicReference<>("Cream01"));
+        try {
+            ObjektCatalogStore store = mock(ObjektCatalogStore.class);
+            ObjektService service = new ObjektService("http://127.0.0.1:" + server.getAddress().getPort(),
+                    3000, store, null);
+            ReflectionTestUtils.setField(service, "chainMints", true);
+            service.loadStoredCatalog();
+            service.refreshCache();
+
+            assertThat(service.findCollections("triples")).isEmpty();
+            verify(store).retainOnly("triples");
+            verify(store).load("triples");
+            verifyNoMoreInteractions(store);
         } finally {
             server.stop(0);
         }
@@ -86,8 +105,8 @@ class ObjektCatalogRefreshTest {
         String pendingSignature = service.catalogSignature();
 
         service.publishPendingCollections(List.of());
-        assertThat(service.findByKey("test-101z")).isNull();
-        service.publishPendingCollections(List.of(row));
+        assertThat(service.findByKey("test-101z")).containsEntry("mintPending", true);
+        assertThat(service.catalogSignature()).isEqualTo(pendingSignature);
 
         service.reloadStoredCatalog();
         assertThat(service.findCollections("triples")).hasSize(1);
@@ -100,6 +119,11 @@ class ObjektCatalogRefreshTest {
     private static HttpServer catalogServer(AtomicReference<String> season) throws Exception {
         HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.createContext("/collections", exchange -> {
+            if (season.get() == null) {
+                exchange.sendResponseHeaders(503, -1);
+                exchange.close();
+                return;
+            }
             byte[] body = ("{\"collections\":[{\"id\":\"1\",\"collectionId\":\"A\","
                     + "\"slug\":\"a\",\"member\":\"SeoYeon\",\"artist\":\"triples\","
                     + "\"collectionNo\":\"101\",\"season\":\"" + season.get() + "\"}]}")

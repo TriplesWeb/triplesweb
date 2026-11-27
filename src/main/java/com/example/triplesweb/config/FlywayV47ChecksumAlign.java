@@ -17,7 +17,7 @@ import java.sql.SQLException;
  */
 @Slf4j
 @Configuration
-@ConditionalOnProperty(name = "spring.flyway.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "spring.flyway.enabled", havingValue = "true")
 public class FlywayV47ChecksumAlign {
     static final int EVENT_SECTION_CHECKSUM = -1130856591;
     static final int SCOPE_SCRIPT_CHECKSUM = -1747156949;

@@ -76,7 +76,7 @@ cp .env.example .env   # 최초 1회 — DB/API 값 채우기 (.gitignore)
 
 #### DB 연결 시간 초과가 발생할 때
 
-`SocketTimeoutException: Connect timed out`이 Flyway 초기화에서 발생하면 먼저 **PC → 운영 DB의 TCP 연결**을 확인합니다. Flyway를 끄거나 Hibernate로 운영 스키마를 강제로 생성해서 해결하지 않습니다.
+공유 운영 DB를 쓰는 로컬 실행은 Flyway가 기본 비활성화되어 있고 Hibernate의 `ddl-auto`는 `none`입니다. 운영 스키마 변경은 배포 Actions에서 실행합니다. `SocketTimeoutException: Connect timed out`이 발생하면 먼저 **PC → 운영 DB의 TCP 연결**을 확인합니다.
 
 Windows PowerShell:
 
@@ -219,5 +219,7 @@ cp .env.example .env
 # IMAGE / DB / API 키 채우기
 docker compose up -d app mariadb  # 로컬 테스트
 ```
+
+새 스키마가 필요한 격리된 로컬 DB에서는 `FLYWAY_ENABLED=true docker compose up -d app mariadb`로 마이그레이션을 명시적으로 실행합니다. Compose 밖에서 기동할 때는 로컬 DB 연결을 확인한 뒤 `FLYWAY_ENABLED=true ./gradlew bootRun`을 사용합니다.
 
 Pi(arm64) 배포 이미지는 main 머지 후 운영 배포 Actions가 빌드하므로, Intel/Apple Silicon Mac에서 `--platform linux/arm64` 없이 로컬 빌드하면 아키텍처가 다를 수 있습니다.

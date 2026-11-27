@@ -105,13 +105,19 @@ jobs:
           APP_PORT="${APP_PORT:-8090}"
           CID="$(docker compose -f docker-compose.yml ps -q app 2>/dev/null || true)"
           RUNNING=""
+          RUNNING_FLAGS=""
           if [[ -n "$CID" ]]; then
             RUNNING="$(docker inspect -f '{{.Config.Image}}' "$CID")"
+            RUNNING_FLAGS="$(docker inspect -f '{{range .Config.Env}}{{ $key := index (split . "=") 0 }}{{if or (eq $key "OBJEKT_MINT_CHAIN_ENABLED") (eq $key "FLYWAY_ENABLED")}}{{println .}}{{end}}{{end}}' "$CID" 2>/dev/null || true)"
           fi
           BASE_URL="http://127.0.0.1:$APP_PORT"
           if [[ "$RUNNING" == "$WANT_IMAGE" && "$(cat .deploy-migration-tree 2>/dev/null || true)" == "$MIGRATIONS_TREE" ]] &&
+            grep -Fxq 'OBJEKT_MINT_CHAIN_ENABLED=true' <<<"$RUNNING_FLAGS" &&
+            grep -Fxq 'FLYWAY_ENABLED=true' <<<"$RUNNING_FLAGS" &&
             curl -fsS --max-time 8 "$BASE_URL/actuator/health/readiness" >/dev/null &&
-            [[ "$(curl -fsS --max-time 8 -o /dev/null -w '%{http_code}' "$BASE_URL/")" == 200 ]]; then
+            [[ "$(curl -fsS --max-time 8 -o /dev/null -w '%{http_code}' "$BASE_URL/")" == 200 ]] &&
+            curl -fsS --max-time 8 "$BASE_URL/cosmo/objekt/pulse" |
+              python3 -c 'import json, sys; sys.exit(json.load(sys.stdin).get("chainMints") is not True)' 2>/dev/null; then
             echo "skip=true"
           else
             echo "skip=false"
@@ -200,6 +206,8 @@ jobs:
           ssh pi env \
             PI_DEPLOY_PATH="$PI_DEPLOY_PATH" \
             IMAGE="$IMAGE" \
+            OBJEKT_MINT_CHAIN_ENABLED=true \
+            FLYWAY_ENABLED=true \
             GHCR_USER="$GHCR_USER" \
             GHCR_TOKEN="$GHCR_TOKEN" \
             MIGRATIONS_TREE="$MIGRATIONS_TREE" \
