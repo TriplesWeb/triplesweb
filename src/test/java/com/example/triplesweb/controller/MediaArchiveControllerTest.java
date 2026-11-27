@@ -12,6 +12,7 @@ import com.example.triplesweb.service.ChemistryService;
 import com.example.triplesweb.service.MediaChannelSyncService;
 import com.example.triplesweb.service.MediaService;
 import com.example.triplesweb.service.MediaViewCountService;
+import com.example.triplesweb.service.MediaYoutubeCastService;
 import com.example.triplesweb.service.UnitService;
 import com.example.triplesweb.util.MemberPortraitOptions;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -34,6 +35,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -50,6 +52,7 @@ class MediaArchiveControllerTest {
     @Autowired ObjectMapper objectMapper;
     @MockitoBean MediaService media;
     @MockitoBean MediaViewCountService mediaViewCounts;
+    @MockitoBean MediaYoutubeCastService youtubeCast;
     @MockitoBean MediaChannelSyncService youtubeSync;
     @MockitoBean ArtistRepository artistRepository;
     @MockitoBean ScheduleRepository scheduleRepository;
@@ -301,6 +304,61 @@ class MediaArchiveControllerTest {
         assertThat(document.select(".media-archive .media-card__title").eachText())
                 .anyMatch(title -> title.contains("221130"))
                 .noneMatch(title -> title.contains("240520"));
+    }
+
+    @Test
+    void labelsEachSignalEraOnlyInTheSignalTab() throws Exception {
+        MediaDto old = video(1, "signal", "SIGNAL 230630", "8:00", "");
+        MediaDto recent = video(2, "signal", "SIGNAL 261124", "8:00", "2026-11-24");
+        when(media.listAll()).thenReturn(List.of(old, recent));
+        when(media.allByTab("signal")).thenReturn(List.of(old, recent));
+
+        String signal = mvc.perform(get("/media").param("tab", "signal"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertThat(Jsoup.parse(signal).select(".media-card__kind").eachText())
+                .containsExactlyInAnyOrder("SIGNAL · 성수/여의도/남산", "SIGNAL · 24명 데뷔 이후");
+
+        String all = mvc.perform(get("/media")).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        assertThat(Jsoup.parse(all).select(".media-card__kind").eachText()).containsExactly("SIGNAL", "SIGNAL");
+    }
+
+    @Test
+    void addsHashtagBadgesWithoutDuplicatingAliasesOrChangingSavedCast() throws Exception {
+        MediaDto video = video(1, "external", "Episode", "8:00", "2026-11-24");
+        video.setArtistNames("SeoYeon");
+        Artist seoyeon = new Artist();
+        seoyeon.setArtistId(1L);
+        seoyeon.setName("윤서연");
+        seoyeon.setEngName("SeoYeon");
+        Artist hayeon = new Artist();
+        hayeon.setArtistId(19L);
+        hayeon.setName("정하연");
+        when(artistRepository.findAll()).thenReturn(List.of(seoyeon, hayeon));
+        when(media.findOne(MediaTab.EXTERNAL, video.getYoutubeId())).thenReturn(Optional.of(video));
+        when(youtubeCast.findMembers(video.getYoutubeId())).thenReturn(List.of("윤서연", "정하연"));
+
+        mvc.perform(get("/media/youtube-members.json")
+                        .param("youtubeId", video.getYoutubeId()).param("tab", "external"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].artistId").value(1))
+                .andExpect(jsonPath("$[1].name").value("정하연"))
+                .andExpect(jsonPath("$[1].artistId").value(19));
+        assertThat(video.getArtistNames()).isEqualTo("SeoYeon");
+    }
+
+    @Test
+    void skipsYoutubeForUnknownVideosAndCompleteLineups() throws Exception {
+        MediaDto video = video(1, "contents", "Group video", "8:00", "2026-11-24");
+        video.setArtistNames(String.join(",", MemberPortraitOptions.koreanOrder()));
+        when(media.findOne(MediaTab.CONTENTS, video.getYoutubeId())).thenReturn(Optional.of(video));
+
+        for (String id : List.of(video.getYoutubeId(), "abcdefghijk")) {
+            mvc.perform(get("/media/youtube-members.json").param("youtubeId", id).param("tab", "contents"))
+                    .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
+        }
+        verifyNoInteractions(youtubeCast);
     }
 
     @Test

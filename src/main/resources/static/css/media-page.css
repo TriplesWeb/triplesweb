@@ -1603,31 +1603,6 @@ body.media-page {
 
 .media-edit-body .ar-cal .site-field { width: 100%; }
 
-.media-page .media-full-lineup {
-    display: flex;
-    flex: 1 1 100%;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.2rem;
-    min-width: 0;
-}
-
-.media-page .media-full-lineup img {
-    flex: 0 0 1.25rem;
-    width: 1.25rem;
-    height: 1.25rem;
-    object-fit: contain;
-}
-
-.media-page .ar-detail-lineup.media-full-lineup {
-    width: fit-content;
-    max-width: 100%;
-    padding: 0;
-    border: 0;
-    border-radius: 0;
-    background: none;
-}
-
 @media (max-width: 960px) {
     .media-page .media-player-dialog { margin-right: 0; }
     .media-player-body { grid-template-columns: 1fr; }

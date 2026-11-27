@@ -672,6 +672,7 @@
     let youtubePlayer = null;
     let youtubePlayerReady = null;
     let requestedVideoId = null;
+    let modalMembersRequest = null;
 
     function playMediaVideo(id) {
         requestedVideoId = id;
@@ -732,6 +733,33 @@
         if (deleteTab) deleteTab.value = row.tab || '';
         if (deleteId) deleteId.value = id;
         showModal(ytModal);
+        loadModalMembers(row);
+    }
+
+    async function loadModalMembers(video) {
+        modalMembersRequest?.abort();
+        modalMembersRequest = null;
+        const savedBadges = Array.isArray(video.memberBadges) ? video.memberBadges : [];
+        if (!video.youtubeId || savedBadges.some((badge) => badge.fullLineup)) return;
+
+        const request = new AbortController();
+        modalMembersRequest = request;
+        try {
+            const params = new URLSearchParams({ youtubeId: video.youtubeId, tab: video.tab || '' });
+            const response = await fetch('/media/youtube-members.json?' + params, {
+                credentials: 'same-origin',
+                signal: request.signal
+            });
+            if (!response.ok) return;
+            const badges = await response.json();
+            if (modalMembersRequest === request && currentVideo === video && Array.isArray(badges) && badges.length) {
+                paintModalMembers({ memberBadges: badges });
+            }
+        } catch (error) {
+            // The saved cast remains visible if the request fails or the player is closed.
+        } finally {
+            if (modalMembersRequest === request) modalMembersRequest = null;
+        }
     }
 
     function paintModalMembers(video) {
@@ -756,19 +784,9 @@
         }
         if (badges.length === 1 && badges[0].fullLineup) {
             const link = document.createElement('a');
-            link.className = 'ar-detail-lineup media-full-lineup';
+            link.className = 'site-btn site-btn--secondary site-btn--sm media-full-lineup';
             link.href = '/triples';
-            link.setAttribute('aria-label', 'tripleS 완전체 24명');
-            for (const symbol of badges[0].symbols || []) {
-                const image = document.createElement('img');
-                image.src = symbol.image;
-                image.alt = '';
-                image.title = symbol.name;
-                image.width = 20;
-                image.height = 20;
-                image.dataset.noPlaceholder = '1';
-                link.append(image);
-            }
+            link.textContent = '24인 전체';
             members.append(link);
             members.dataset.memberCount = '24';
             cast.hidden = false;
@@ -1294,6 +1312,8 @@
     }
 
     ytModal?.addEventListener('site-modal:hidden', () => {
+        modalMembersRequest?.abort();
+        modalMembersRequest = null;
         requestedVideoId = null;
         if (youtubePlayer) {
             youtubePlayer.stopVideo();

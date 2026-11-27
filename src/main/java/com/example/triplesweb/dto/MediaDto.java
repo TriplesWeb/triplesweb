@@ -1,5 +1,6 @@
 package com.example.triplesweb.dto;
 
+import com.example.triplesweb.media.MediaSignalEra;
 import com.example.triplesweb.media.MediaTab;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -34,6 +35,10 @@ public class MediaDto {
     /** 프로필 등 UI 표시용 탭 한글명 */
     public String getTabLabel() {
         return MediaTab.from(tab == null ? "mv" : tab).getKor();
+    }
+
+    public String getSignalEraLabel() {
+        return MediaTab.SIGNAL.getKey().equals(tab) ? MediaSignalEra.from(publishedOn, title).getLabel() : "";
     }
 
     /** 화면 표시용 공개일. yyyy.MM.dd */

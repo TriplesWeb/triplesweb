@@ -180,7 +180,7 @@
                         {{#duration}}<span class="media-card__time">{{duration}}</span>{{/duration}}
                     </span>
                     <span class="media-card__body">
-                        <small class="media-card__kind">{{tabLabel}}</small>
+                        <small class="media-card__kind">{{tabLabel}}{{#isSIGNAL}}{{#signalEraLabel}} <span>· {{.}}</span>{{/signalEraLabel}}{{/isSIGNAL}}</small>
                         <span class="media-card__title">{{title}}</span>
                     </span>
                 </a>

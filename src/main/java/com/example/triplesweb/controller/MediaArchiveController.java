@@ -17,6 +17,7 @@ import com.example.triplesweb.service.ChemistryService;
 import com.example.triplesweb.service.MediaChannelSyncService;
 import com.example.triplesweb.service.MediaService;
 import com.example.triplesweb.service.MediaViewCountService;
+import com.example.triplesweb.service.MediaYoutubeCastService;
 import com.example.triplesweb.service.UnitService;
 import com.example.triplesweb.util.ImageUrls;
 import com.example.triplesweb.util.MediaOrdering;
@@ -61,6 +62,7 @@ public class MediaArchiveController {
 
     private final MediaService media;
     private final MediaViewCountService mediaViewCounts;
+    private final MediaYoutubeCastService youtubeCast;
     private final MediaChannelSyncService youtubeSync;
     private final ArtistRepository artistRepository;
     private final ScheduleRepository scheduleRepository;
@@ -261,6 +263,26 @@ public class MediaArchiveController {
         if (chosen.isEmpty()) return "[]";
         attachMemberBadges(chosen, artistRepository.findAll());
         return catalogJson(chosen, true);
+    }
+
+    @GetMapping(value = "/media/youtube-members.json", produces = "application/json")
+    @ResponseBody
+    public List<Map<String, Object>> youtubeMembers(@RequestParam String youtubeId,
+                                                    @RequestParam(defaultValue = "") String tab) {
+        if (!youtubeId.matches("[A-Za-z0-9_-]{11}")) return List.of();
+        MediaDto video = media.findOne(MediaTab.from(tab), youtubeId).orElse(null);
+        if (video == null) return List.of();
+
+        List<String> cast = new ArrayList<>(splitNames(video.getArtistNames()));
+        if (MemberPortraitOptions.coversFullLineup(cast)) return List.of();
+        int registeredCount = cast.size();
+        Set<String> existing = new LinkedHashSet<>();
+        for (String name : cast) existing.add(MediaOrdering.memberKey(MemberPortraitOptions.memberName(name)));
+        for (String name : youtubeCast.findMembers(video.getYoutubeId())) {
+            if (existing.add(MediaOrdering.memberKey(name))) cast.add(name);
+        }
+        if (cast.size() == registeredCount) return List.of();
+        return memberBadges(String.join(",", cast), artistRepository.findAll());
     }
 
     @GetMapping("/media/{tab}/{youtubeId}")
@@ -514,10 +536,7 @@ public class MediaArchiveController {
     }
 
     private static Map<String, Object> fullLineupBadge() {
-        var symbols = MemberPortraitOptions.koreanOrder().stream()
-                .map(name -> Map.of("name", name, "image", MemberPortraitOptions.archiveSymbolLogo(name)))
-                .toList();
-        return Map.of("name", MemberSetCatalogJson.GROUP_LABEL, "fullLineup", true, "symbols", symbols);
+        return Map.of("name", MemberSetCatalogJson.GROUP_LABEL, "fullLineup", true);
     }
 
     private static String portraitUrl(Artist artist) {
