@@ -63,6 +63,7 @@ public class CalendarDecorationController {
                             "categoryLabel", "생일",
                             "kind", "BIRTHDAY",
                             "artistName", artist.getName(),
+                            "imageUrl", "/images/artist/bite/" + artist.getArtistId() + ".png",
                             "description", artist.getName() + "의 생일입니다."
                     ));
                 } catch (DateTimeException ignored) {
