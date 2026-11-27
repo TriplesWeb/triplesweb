@@ -393,33 +393,32 @@ class ArchiveControllerTest {
                 eq(List.of("윤서연", "정혜린")), any(), any());
     }
 
-    @Test void cardMemberBadgesFollowVisibleCoverImage() throws Exception {
-        Artist seoyeon = new Artist();
-        seoyeon.setName("윤서연");
-        seoyeon.setColor("#111111");
-        Artist hyerin = new Artist();
-        hyerin.setName("정혜린");
-        hyerin.setColor("#222222");
-        when(artistSnapshot.findAll()).thenReturn(List.of(seoyeon, hyerin));
-
+    @Test void legacyPerImageArtistsDoNotChangeThePostCastOrFilterItsPhotos() throws Exception {
+        when(artistSnapshot.findAll()).thenReturn(List.of());
         Archive shot = photo();
-        shot.setFile(SavedMeta.builder().url("/uploads/cover-hyerin.jpg").mediaType(MediaType.IMAGE).build());
-        shot.setImagesJson("[\"/uploads/first-seoyeon.jpg\",\"/uploads/cover-hyerin.jpg\"]");
-        shot.setImageArtistsJson("[\"윤서연\",\"정혜린\"]");
+        shot.setFile(SavedMeta.builder().url("/uploads/cover.jpg").mediaType(MediaType.IMAGE).build());
+        String images = "[\"/uploads/first.jpg\",\"/uploads/cover.jpg\"]";
+        shot.setImagesJson(images);
+        shot.setImageArtistsJson("[\"윤서연\",\"이지우\"]");
         shot.setArtistNames("윤서연,정혜린");
         stubFolder(MediaType.IMAGE, shot);
 
-        String html = mvc.perform(get("/archive").param("folder", "s")).andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString();
-        int meta = html.indexOf("class=\"ar-meta\"");
-        int casts = html.indexOf("ar-card-members");
-        org.assertj.core.api.Assertions.assertThat(meta).isGreaterThanOrEqualTo(0);
-        org.assertj.core.api.Assertions.assertThat(casts).isGreaterThan(meta);
-        String visibleBadges = html.substring(meta, casts);
-        org.assertj.core.api.Assertions.assertThat(visibleBadges).contains("정혜린");
-        org.assertj.core.api.Assertions.assertThat(visibleBadges).doesNotContain("윤서연");
-        org.assertj.core.api.Assertions.assertThat(html).contains("/uploads/cover-hyerin.jpg?w");
-        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("data-image-artists");
+        for (var request : List.of(get("/archive").param("folder", "s"),
+                                   get("/archive").param("folder", "s").param("members", "윤서연"))) {
+            String html = mvc.perform(request).andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString();
+            var card = Jsoup.parse(html).selectFirst(".ar-card[data-id=7]");
+            org.assertj.core.api.Assertions.assertThat(card).isNotNull();
+            org.assertj.core.api.Assertions.assertThat(card.select(".archive-chip-name").eachText())
+                    .containsExactly("윤서연", "정혜린");
+            org.assertj.core.api.Assertions.assertThat(card.select(".ar-card-members .unit-member-chip").eachAttr("title"))
+                    .containsExactly("윤서연", "정혜린");
+            org.assertj.core.api.Assertions.assertThat(card.attr("data-images")).isEqualTo(images);
+            org.assertj.core.api.Assertions.assertThat(card.select(".ar-photo-link img").attr("src"))
+                    .startsWith("/uploads/cover.jpg?");
+            org.assertj.core.api.Assertions.assertThat(card.select(".ar-card-count").text()).isEqualTo("2");
+            org.assertj.core.api.Assertions.assertThat(card.hasAttr("data-image-artists")).isFalse();
+        }
     }
 
     @Test void imageUploadOfTwoMembersOpensTheCountFolder() throws Exception {

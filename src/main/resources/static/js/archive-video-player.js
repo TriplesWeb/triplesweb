@@ -42,12 +42,8 @@
 
     function showCast(card) {
         if (!members || !card) return;
-        // 카드는 사진과 같이 data-image-cast 래퍼를 쓸 수 있다. 래퍼를 그대로 넣으면
-        // 칩이 블록으로 세로 쌓이므로 안쪽 마크업만 옮긴다.
-        const frame = card.querySelector('.ar-card-members [data-image-cast]');
-        const source = frame || card.querySelector('.ar-card-members');
-        members.replaceChildren();
-        if (source) members.innerHTML = source.innerHTML;
+        const source = card.querySelector('.ar-card-members');
+        members.innerHTML = source?.innerHTML || '';
         const countMembers = members.querySelectorAll('.unit-member-chip').length;
         members.dataset.memberCount = String(countMembers);
         members.classList.toggle('is-many', countMembers >= 10);

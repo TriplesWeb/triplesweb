@@ -28,7 +28,7 @@
 
     function parseImages(card) {
         if (!card) return [];
-        const raw = (card.dataset.viewImages || card.dataset.images || '').trim();
+        const raw = (card.dataset.images || '').trim();
         if (raw) {
             try {
                 const parsed = JSON.parse(raw);
@@ -160,13 +160,9 @@
     }
 
     function showCast(card) {
-        const sourceCard = card || activeCard;
-        if (!members || !sourceCard) return;
-        const frames = [...sourceCard.querySelectorAll('[data-image-cast]')];
-        const frame = frames[index] || frames[0];
-        const source = frame || sourceCard.querySelector('.ar-card-members');
-        members.replaceChildren();
-        if (source) members.innerHTML = frame ? frame.innerHTML : source.innerHTML;
+        if (!members || !card) return;
+        const source = card.querySelector('.ar-card-members');
+        members.innerHTML = source?.innerHTML || '';
         if (isFullLineup(castNames())) {
             showFullLineup();
             window.paintArchiveChemistry?.(members);
@@ -234,7 +230,6 @@
             if (variant) originalLink.href = url;
             else originalLink.removeAttribute('href');
         }
-        showCast();
     }
 
     function paintNav() {
@@ -294,6 +289,7 @@
         const coverIndex = cover ? urls.indexOf(cover) : -1;
         index = coverIndex >= 0 ? coverIndex : 0;
         fillMeta(card);
+        showCast(card);
         showImage();
         paintNav();
         detail.hidden = false;
@@ -317,6 +313,7 @@
             const found = urls.indexOf(prevUrl);
             index = found >= 0 ? found : Math.min(index, Math.max(0, urls.length - 1));
             fillMeta(card);
+            showCast(card);
             showImage();
             paintNav();
         } else {

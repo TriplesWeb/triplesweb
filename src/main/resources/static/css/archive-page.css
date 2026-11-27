@@ -3061,10 +3061,6 @@ a.ar-detail-chem:focus-visible {
     align-content: flex-start;
     align-items: stretch;
 }
-/* 카드에서 복사된 data-image-cast 래퍼가 남아도 칩이 가로로 이어지게 */
-.ar-detail-members [data-image-cast] {
-    display: contents;
-}
 .ar-detail-members .unit-member-chip {
     --member-color: #00f5d4;
     display: flex;
