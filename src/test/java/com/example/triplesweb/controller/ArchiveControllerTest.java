@@ -419,6 +419,7 @@ class ArchiveControllerTest {
         org.assertj.core.api.Assertions.assertThat(visibleBadges).contains("정혜린");
         org.assertj.core.api.Assertions.assertThat(visibleBadges).doesNotContain("윤서연");
         org.assertj.core.api.Assertions.assertThat(html).contains("/uploads/cover-hyerin.jpg?w");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("data-image-artists");
     }
 
     @Test void imageUploadOfTwoMembersOpensTheCountFolder() throws Exception {
@@ -1070,6 +1071,30 @@ class ArchiveControllerTest {
         verify(archiveService, times(1)).uploadImages(any(), eq(""), eq("서연"),
                 eq(java.time.LocalDate.of(2026, 10, 3)), eq("COSMO_ROOM"), eq("묶음"), eq(1));
         verify(aboutAdminAuth).requireAdmin(any(), any());
+    }
+
+    @Test void imageUploadKeepsPickerArtistsWhenLegacyPerImageJsonIsSent() throws Exception {
+        MockMultipartFile first = new MockMultipartFile("file", "a.jpg", "image/jpeg", new byte[]{1, 2});
+        MockMultipartFile second = new MockMultipartFile("file", "b.jpg", "image/jpeg", new byte[]{3, 4});
+        mvc.perform(multipart("/archive/upload/image").file(first).file(second)
+                        .param("artistNames", "윤서연")
+                        .param("imageArtistsJson", "[\"윤서연,정혜린\",\"윤서연,정혜린\"]")
+                        .param("registeredOn", "2026-10-03").param("source", "COSMO_ROOM"))
+                .andExpect(redirectedUrl("/archive?folder=s&members=%EC%9C%A4%EC%84%9C%EC%97%B0"));
+        verify(archiveService).uploadImages(any(), eq(""), eq("윤서연"),
+                eq(java.time.LocalDate.of(2026, 10, 3)), eq("COSMO_ROOM"), isNull(), eq(0));
+    }
+
+    @Test void updateKeepsPickerArtistsWhenLegacyPerImageJsonIsSent() throws Exception {
+        mvc.perform(multipart("/archive/7")
+                        .param("description", "새 설명")
+                        .param("artistNames", "윤서연")
+                        .param("imageArtistsJson", "[\"윤서연\",\"윤서연,정혜린\"]")
+                        .param("registeredOn", "2026-10-01")
+                        .param("source", "COSMO_ROOM"))
+                .andExpect(status().isOk());
+        verify(archiveService).update(eq(7L), eq(""), nullable(List.class), eq("윤서연"), isNull(), eq(false),
+                eq(java.time.LocalDate.of(2026, 10, 1)), eq("COSMO_ROOM"), eq("새 설명"), isNull(), isNull(), isNull());
     }
 
     @Test void imageUploadRejectsDuplicatePost() throws Exception {

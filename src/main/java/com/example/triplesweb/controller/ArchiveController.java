@@ -609,7 +609,6 @@ public class ArchiveController {
             card.put("imageUrls", imageUrls);
             card.put("imageUrlsJson", imagesJson == null ? "[]" : imagesJson);
             card.put("viewUrlsJson", viewJson == null ? "[]" : viewJson);
-            card.put("imageArtistsJson", archive.getImageArtistsJson() == null ? "[]" : archive.getImageArtistsJson());
             card.put("imageCasts", imageCasts);
             card.put("previewUrl", ArchiveCardImages.previewUrl(previewSource));
             card.put("eagerPreview", cards.size() < 4);
@@ -939,24 +938,6 @@ public class ArchiveController {
             badges.add(badge);
         }
         return badges;
-    }
-
-    private String unionArtistNames(String fallback, String imageArtistsJson) {
-        if (imageArtistsJson == null || imageArtistsJson.isBlank()) return fallback == null ? "" : fallback;
-        List<String> rows;
-        try {
-            rows = objectMapper.readValue(imageArtistsJson, new TypeReference<List<String>>() {});
-        } catch (Exception error) {
-            return fallback == null ? "" : fallback;
-        }
-        if (rows == null || rows.isEmpty()) return fallback == null ? "" : fallback;
-        LinkedHashSet<String> names = new LinkedHashSet<>();
-        for (String row : rows) {
-            if (row == null || row.isBlank()) continue;
-            for (String name : normalizeMembers(List.of(row.split(",")))) names.add(name);
-        }
-        if (names.isEmpty()) return fallback == null ? "" : fallback;
-        return String.join(",", names);
     }
 
     private static String sourceQuery(String sourceSlug) {
@@ -1524,7 +1505,6 @@ public class ArchiveController {
                               @RequestParam(value = "title", required = false) String title,
                               @RequestParam(value = "description", required = false) String description,
                               @RequestParam(value="artistNames", required=false) List<String> artistNames,
-                              @RequestParam(value = "imageArtistsJson", required = false) String imageArtistsJson,
                               @RequestParam("registeredOn") LocalDate registeredOn,
                               @RequestParam("source") String source,
                               @RequestParam(value = "unitIds", required = false) List<String> unitIds,
@@ -1548,13 +1528,7 @@ public class ArchiveController {
             if (uploads.isEmpty()) {
                 throw new IllegalArgumentException("사진 파일을 선택해 주세요.");
             }
-            String castNames = unionArtistNames(names, imageArtistsJson);
-            Archive saved;
-            if (imageArtistsJson == null || imageArtistsJson.isBlank()) {
-                saved = archiveService.uploadImages(uploads, safeTitle, castNames, date, archiveSource, description, coverIndex);
-            } else {
-                saved = archiveService.uploadImages(uploads, safeTitle, castNames, date, archiveSource, description, coverIndex, imageArtistsJson);
-            }
+            Archive saved = archiveService.uploadImages(uploads, safeTitle, names, date, archiveSource, description, coverIndex);
             Set<Long> assignedUnitIds = parseUnitIds(unitIds, unitId);
             applyUploadedUnitIds(saved, assignedUnitIds);
             String location = folderRedirect(MediaType.IMAGE, names, assignedUnitIds.stream().findFirst().orElse(null));
@@ -1604,7 +1578,6 @@ public class ArchiveController {
                                            @RequestParam(value = "thumbnail", required = false) MultipartFile thumbnail,
                                            @RequestParam(defaultValue = "false") boolean clearThumbnail,
                                            @RequestParam(value = "artistNames", required = false) String artistNames,
-                                           @RequestParam(value = "imageArtistsJson", required = false) String imageArtistsJson,
                                            @RequestParam("registeredOn") LocalDate registeredOn,
                                            @RequestParam(value = "source", required = false) String source,
                                            @RequestParam(value = "keepImageUrlsJson", required = false) String keepImageUrlsJson,
@@ -1616,28 +1589,16 @@ public class ArchiveController {
                                            HttpSession session) throws IOException {
         aboutAdminAuth.requireAdmin(request, session);
         try {
-            String castNames = unionArtistNames(artistNames, imageArtistsJson);
             String sourceCode = source == null || source.isBlank()
                     ? null
                     : archiveSourceService.requireExisting(source).getCode();
-            if (imageArtistsJson == null || imageArtistsJson.isBlank()) {
-                archiveService.update(id, title == null ? "" : title, files, castNames, thumbnail, clearThumbnail,
-                        requireDate(registeredOn),
-                        sourceCode,
-                        description,
-                        keepImageUrlsJson,
-                        imageOrderJson,
-                        coverIndex);
-            } else {
-                archiveService.update(id, title == null ? "" : title, files, castNames, thumbnail, clearThumbnail,
-                        requireDate(registeredOn),
-                        sourceCode,
-                        description,
-                        keepImageUrlsJson,
-                        imageOrderJson,
-                        coverIndex,
-                        imageArtistsJson);
-            }
+            archiveService.update(id, title == null ? "" : title, files, artistNames == null ? "" : artistNames, thumbnail, clearThumbnail,
+                    requireDate(registeredOn),
+                    sourceCode,
+                    description,
+                    keepImageUrlsJson,
+                    imageOrderJson,
+                    coverIndex);
             archiveService.assignUnitIds(id, parseUnitIds(unitIds, unitId));
             return ResponseEntity.ok().build();
         } catch (IllegalArgumentException e) {

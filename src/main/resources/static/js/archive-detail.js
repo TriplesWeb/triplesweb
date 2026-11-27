@@ -91,7 +91,6 @@
             button.dataset.title = card.dataset.title || '';
             button.dataset.description = card.dataset.description || '';
             button.dataset.artists = card.dataset.artists || '';
-            button.dataset.imageArtists = card.dataset.imageArtists || '';
             button.dataset.url = cover;
             button.dataset.images = card.dataset.images || '';
             button.dataset.registered = card.dataset.registered || '';
