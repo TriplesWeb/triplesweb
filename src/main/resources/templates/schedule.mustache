@@ -689,24 +689,39 @@
                 },
                 eventDidMount: function(info) {
                     info.el.style.setProperty('--schedule-color',info.event.extendedProps.color||'#00f5d4');
+                    if (info.event.extendedProps.kind === 'BIRTHDAY') {
+                        // 같은 날짜의 생일 캐릭터가 한 줄에 나란히 보이도록 한다.
+                        const harness = info.el.closest('.fc-daygrid-event-harness');
+                        if (harness) {
+                            harness.style.display = 'inline-block';
+                            harness.style.width = 'auto';
+                            harness.style.maxWidth = '100%';
+                        }
+                    }
                 },
                 eventContent: function(arg) {
                     const imageUrl = arg.event.extendedProps.imageUrl;
                     if (!imageUrl) return true;
                     const wrap = document.createElement('span');
+                    const isBirthday = arg.event.extendedProps.kind === 'BIRTHDAY';
                     wrap.className = 'inline-flex min-w-0 items-center gap-1';
+                    if (isBirthday) wrap.title = arg.event.title || '멤버 생일';
                     const image = document.createElement('img');
                     image.src = imageUrl;
-                    image.alt = '';
+                    image.alt = isBirthday ? (arg.event.title || '생일 캐릭터') : '';
                     image.loading = 'lazy';
-                    const isBirthday = arg.event.extendedProps.kind === 'BIRTHDAY';
                     image.className = isBirthday
                         ? 'h-6 w-6 shrink-0 rounded object-contain'
                         : 'h-4 w-4 shrink-0 rounded object-contain';
-                    const label = document.createElement('span');
-                    label.className = 'fc-event-title min-w-0';
-                    label.textContent = arg.event.title || '';
-                    wrap.append(image, label);
+                    if (!isBirthday) {
+                        const label = document.createElement('span');
+                        label.className = 'fc-event-title min-w-0';
+                        label.textContent = arg.event.title || '';
+                        wrap.append(image, label);
+                    } else {
+                        // 달력 칸에는 캐릭터를 나란히 표시하고, 이름은 상세 일정에서 확인한다.
+                        wrap.append(image);
+                    }
                     return { domNodes: [wrap] };
                 },
                 dateClick: function (info) {
