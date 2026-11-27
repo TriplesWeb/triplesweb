@@ -42,7 +42,8 @@ class CalendarDecorationControllerTest {
                 .andExpect(jsonPath("$[0].title").value("윤서연 생일"))
                 .andExpect(jsonPath("$[0].start").value("2026-08-06"))
                 .andExpect(jsonPath("$[0].kind").value("BIRTHDAY"))
-                .andExpect(jsonPath("$[0].color").value("#22aeff"));
+                .andExpect(jsonPath("$[0].color").value("#22aeff"))
+                .andExpect(jsonPath("$[0].imageUrl").value("/images/artist/bite/7.png"));
     }
 
     @Test
