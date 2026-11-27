@@ -40,6 +40,13 @@
             <a class="site-section-tab{{#isAll}} is-active{{/isAll}}" href="/media?tab=all" {{#isAll}}aria-current="page"{{/isAll}}>전체</a>
             <a class="site-section-tab{{#isMV}} is-active{{/isMV}}" href="/media?tab=mv" {{#isMV}}aria-current="page"{{/isMV}}>MV</a>
             <a class="site-section-tab{{#isSIGNAL}} is-active{{/isSIGNAL}}" href="/media?tab=signal" {{#isSIGNAL}}aria-current="page"{{/isSIGNAL}}>SIGNAL</a>
+            {{#isSIGNAL}}
+            <span class="media-era-tabs" role="group" aria-label="SIGNAL 시기">
+                {{#signalEras}}
+                <a class="site-section-tab{{#active}} is-active{{/active}}" href="{{href}}" {{#active}}aria-current="page"{{/active}}>{{label}}</a>
+                {{/signalEras}}
+            </span>
+            {{/isSIGNAL}}
             <a class="site-section-tab{{#isBehind}} is-active{{/isBehind}}" href="/media?tab=behind" {{#isBehind}}aria-current="page"{{/isBehind}}>비하인드</a>
             <a class="site-section-tab{{#isSecret}} is-active{{/isSecret}}" href="/media?tab=secret" {{#isSecret}}aria-current="page"{{/isSecret}}>시크릿베이스</a>
             <a class="site-section-tab{{#isShorts}} is-active{{/isShorts}}" href="/media?tab=shorts" {{#isShorts}}aria-current="page"{{/isShorts}}>Shorts &amp; 릴스</a>
@@ -48,13 +55,6 @@
             <a class="site-section-tab{{#isContents}} is-active{{/isContents}}" href="/media?tab=contents" {{#isContents}}aria-current="page"{{/isContents}}>기타 콘텐츠</a>
             <a class="site-section-tab{{#isExternal}} is-active{{/isExternal}}" href="/media?tab=external" {{#isExternal}}aria-current="page"{{/isExternal}}>외부 콘텐츠</a>
         </nav>
-        {{#isSIGNAL}}
-        <nav class="site-section-tabs media-era-tabs" aria-label="SIGNAL 시기">
-            {{#signalEras}}
-            <a class="site-section-tab{{#active}} is-active{{/active}}" href="{{href}}" {{#active}}aria-current="page"{{/active}}>{{label}}</a>
-            {{/signalEras}}
-        </nav>
-        {{/isSIGNAL}}
 
         <section class="ar-panel ar-toolbar media-toolbar">
             <form class="ar-filters" id="mediaFilterForm" method="get" action="/media">

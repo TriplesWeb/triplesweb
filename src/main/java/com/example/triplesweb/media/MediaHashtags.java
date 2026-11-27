@@ -13,7 +13,7 @@ import java.util.regex.Pattern;
 
 /**
  * 제목·설명에서 트리플에스 언급·해시태그·핸들을 찾는다.
- * 비공식 수집은 지정 방송국·official 채널만 남기고, 다른 가수 콘텐츠는 제외한다.
+ * 외부 영상은 검토한 발행 채널과 공식 아티스트 협업 출처를 구분한다.
  */
 public final class MediaHashtags {
     private static final Pattern TRIPLES_WORD = Pattern.compile("(?i)(^|[^A-Z0-9])TRIPLE\\s*S([^A-Z0-9]|$)");
@@ -96,6 +96,88 @@ public final class MediaHashtags {
             "UCkrDEGNM3mqZXHk2MfnOjMw", // YENA(최예나)
             "UCSAp0Yl9S0Zq5uDqE6im_XQ" // ZEROBASEONE
     );
+
+    private static final Set<String> OFFICIAL_COLLABORATION_CHANNELS = Set.of(
+            "UCHD1jo5RhijLfx5-0Ehe_cg", // &TEAM
+            "UCZFglJIUsaCPRE_3yzr8zzg", // 볼빨간사춘기 BOL4
+            "UCwoSFXX8kraikB-WClx2pVQ", // AHOF
+            "UCyc9sUCxELTDK9vELO5Fzeg", // Billlie
+            "UChhKBlh_wvspTh5n4mL0b5g", // BOYNEXTDOOR
+            "UCJEER74X9kBenMT_x9iK9Mw", // FIFTY FIFTY Official
+            "UCXbRURMKT3H_w8dT-DWLIxA", // fromis_9
+            "UCwOSPKpkwK4ZN0NJZ7rWpIQ", // Geenius
+            "UC0novDS2VRX59Trmbf83I3g", // H1-KEY
+            "UCgiJf4Qcigccr9lAXAA9hFQ", // HITGS (힛지스)
+            "UCritGVo7pLJLUS8wEu32vow", // i-dle (아이들)
+            "UCEpFoWeCMCo5z3EvWaz6hQQ", // ILLIT
+            "UCMmcz1ybSoAD-GUlDx_7H2A", // IRISÉ
+            "UC8whlOg70m2Yr3qSMjUhh0g", // Kep1er
+            "UCmq9jjpHA69PwAwlA0DwOsg", // KickFlip
+            "UCvEEeBssb4XxIfWWIB8IjMw", // KISS OF LIFE
+            "UC8PPjyqCQJtNfEwHBcq_uxw", // LNGSHOT
+            "UChXC6ok0LaZIpf-50SIFf0Q", // Official ARTMS
+            "UCdVD0MsYecQaIE5Ru-pOIQQ", // RIIZE
+            "UCcTq_itv43G05dGVydRTJew", // ROTHY - 로시
+            "UC-we351yXoKcODFHiKrC84Q", // SAY MY NAME
+            "UCfkXDY7vwkcJ8ddFGz8KusA", // SEVENTEEN
+            "UCkJ1rbOrsyPfBuHNfnLPm-Q", // THE BOYZ
+            "UC8C6QOPDVYwmuaSBZksefdg", // TWS
+            "UCHWhn9xw7x8NPPnV6eWQDQA", // XLOV
+            "UCkrDEGNM3mqZXHk2MfnOjMw", // YENA(최예나)
+            "UCSAp0Yl9S0Zq5uDqE6im_XQ", // ZEROBASEONE
+            "UCQn1FqrR2OCjSe6Nl4GlVHw", // Raon
+            "UC9s_jNCjHuRoY-1euceHLFQ", // 키코(Kik5o)
+            "UCIn1p2ZbhOo8fyZp1S60uGg", // 백지영 Baek Z Young
+            "UCFrAB5I66LgzOi15TF4PO6A", // 문별이다 moonbyul2da
+            "UC1RjCqJ8nlQq-kx7mXYhPWg", // 김재환 KIM JAE HWAN
+            "UCQ6Br7m6vP61FZvjv4lwR5w", // 私立恵比寿中学
+            "UCik5vfvdgiicyXJ9O1PYnmQ", // 소란 / SORAN
+            "UC8whmo5_lTEbugyP6JHG_wA", // 이젤 EJel
+            "UCKx8jjUaHduLcyPAQVsHMpg", // 조현아의 평범한 목요일 밤
+            "UCMKXs7_6MhbceHRPbPjuMzg", // 프림로즈 PRIMROSE
+            "UCC4wzWbk_zdQNZstCwcfFLA", // ALPHA DRIVE ONE
+            "UCoe0BXYv01VCt0JRhX1zSug", // AND2BLE
+            "UCvhVqA_5HnM7M5X6OcZlMbg", // CHUU Official
+            "UCPo532dDHpbKVhJyJseLVbw", // CLOSE YOUR EYES
+            "UCEz-AFAg3EUKsxraad1puQA", // CUTIE STREET
+            "UCdKe_awfdHMV3O13pmA2heQ", // DKZ
+            "UCijULR2sXLutCRBtW3_WEfA", // Dreamcatcher official
+            "UCKHl-9B-aa4AK5ZR9XLOg8A", // EPEX
+            "UCfP7KJRAHghtG_Sn0aLi_DQ", // HEART OF WOMAN
+            "UC4Jxwum4U7lwpgdyPX0NvvA", // IDID
+            "UCnQRdSArF-aqtycrmMKFQAg", // ifeye 이프아이
+            "UCDhM2k2Cua-JdobAh5moMFg", // ITZY
+            "UCfbYNlxgLuKJXQZEhkMmaCQ", // izna (이즈나)
+            "UCaHwGJXFb28TekZMf7iFg5Q", // KiiiKiii
+            "UCeQlMQ-4cedE7SNmF5JsdsA", // LIGHTSUM 라잇썸 (Official YouTube Channel)
+            "UCOOO_pMsNM_Q7dd0LG26-Tw", // MODYSSEY
+            "UC-qYkzKFdekoEniRu_FS3zg", // OH MY GIRL
+            "UCWTYf4xModfNsyq2NUYjF5g", // ONEUS
+            "UCe-XzQhLaq4zS_mPXzuc_2Q", // P1Harmony
+            "UCor8nQnEdMs4eBcU-uVBQ8g", // PURPLE KISS
+            "UCdgVLvuLUIpokhrbpd5GdUQ", // Queenz Eye
+            "UCgD0APk2x9uBlLM0UsmhQjw", // QWER
+            "UCk9GmdlDTBfgGRb7vXeRMoQ", // Red Velvet
+            "UCDbLcCDRjmKrNtuq6O62lng", // Rocket Punch - 로켓펀치
+            "UCg-IjXpsbCaEUcGbFM-XcKw", // Samuel Official
+            "UCod5V2dpnpJLklGvVOv5FcQ", // STAYC
+            "UCvc55IOOCI165H3raqcjjrg", // TRENDZ(트렌드지)
+            "UC-ZHt5Zgadfx-B1CM63Lqew", // WayV
+            "UC5rp2rDRSpyKNj-QLytC-tw", // Weeekly 위클리
+            "UCNeLbWtlJzTsavMC70zY0dQ", // WOOAH 우아
+            "UCTmx5ntaaBTrzThDw_exaMg", // X:IN
+            "UCPtC0MXSW40Qq7RkhsCXjUQ", // xikers
+            "UC38ULbpGgiA7t6i-lbLu9VQ" // きゅるりんってしてみて
+    );
+
+    public static Set<String> officialCollaborationChannels() {
+        return OFFICIAL_COLLABORATION_CHANNELS;
+    }
+
+    public static boolean hasTripleSGroupHashtag(String title, String description) {
+        Set<String> hashtags = exactHashtags(title, description);
+        return hashtags.contains("triples") || hashtags.contains("트리플에스");
+    }
 
     private static final Set<String> REVIEWED_FAN_CHANNELS = Set.of(
             "UCkECc47iN5okSKWtJkPeHmA", // 30초 인물소개

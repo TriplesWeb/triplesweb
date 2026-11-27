@@ -7,7 +7,6 @@ import com.example.triplesweb.media.MediaTab;
 import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.repository.ScheduleRepository;
 import com.example.triplesweb.service.AboutAdminAuth;
-import com.example.triplesweb.service.ArtistAdminService;
 import com.example.triplesweb.service.ChemistryGroupService;
 import com.example.triplesweb.service.ChemistryService;
 import com.example.triplesweb.service.MediaChannelSyncService;
@@ -55,7 +54,6 @@ class MediaArchiveControllerTest {
     @MockitoBean ArtistRepository artistRepository;
     @MockitoBean ScheduleRepository scheduleRepository;
     @MockitoBean AboutAdminAuth aboutAdminAuth;
-    @MockitoBean ArtistAdminService artistAdmin;
     @MockitoBean UnitService unitService;
     @MockitoBean ChemistryService chemistryService;
     @MockitoBean ChemistryGroupService chemistryGroupService;
@@ -240,8 +238,15 @@ class MediaArchiveControllerTest {
                     .andReturn().getResponse().getContentAsString();
             var page = Jsoup.parse(html);
             assertThat(page.select(".media-card__title").eachText()).contains("두 명 영상");
-            assertThat(page.select(".media-card__members .media-full-lineup"))
-                    .hasSize(memberCount == 0 || memberCount == 24 ? 1 : 0);
+            var lineupBadge = page.select(".media-card__members .media-full-lineup");
+            assertThat(lineupBadge).hasSize(memberCount == 0 || memberCount == 24 ? 1 : 0);
+            if (!lineupBadge.isEmpty()) {
+                var symbols = lineupBadge.select("img");
+                assertThat(symbols).hasSize(24);
+                assertThat(symbols.get(0).attr("src")).endsWith("/member-logos/1.png");
+                assertThat(symbols.get(23).attr("src")).endsWith("/member-logos/24.png");
+                assertThat(lineupBadge.attr("aria-label")).isEqualTo("tripleS 완전체 24명");
+            }
         }
     }
 
@@ -297,7 +302,8 @@ class MediaArchiveControllerTest {
         org.jsoup.nodes.Document document = Jsoup.parse(html);
         assertThat(document.select(".media-era-tabs .site-section-tab").eachText())
                 .contains("가평 HAUS", "성수/여의도/남산", "모두 HAUS", "24명 데뷔 이후");
-        assertThat(document.select(".media-era-tabs a[href*=era=gapyeong]")).isNotEmpty();
+        assertThat(document.select(".media-tabs > a[href*=tab=signal] + .media-era-tabs")).hasSize(1);
+        assertThat(document.select(".media-era-tabs a[aria-current=page]").text()).isEqualTo("가평 HAUS");
         assertThat(document.select("input[name=era]").attr("value")).isEqualTo("gapyeong");
         assertThat(document.select(".media-archive .media-card__title").eachText())
                 .anyMatch(title -> title.contains("221130"))

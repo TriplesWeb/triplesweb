@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
@@ -81,6 +82,59 @@ class MediaChannelSyncServiceTest {
         assertThat(inserted.getValue()).extracting(Media::getYoutubeId, Media::getTab, Media::isCuratedTab)
                 .containsExactly(tuple(freshId, "external", true));
         verify(mediaRepository).deleteAll(java.util.List.of(fan));
+    }
+
+    @Test
+    void artistCollaborationsUseVerifiedShortsFormatAndMoveExistingVideos() {
+        String channel = "UChhKBlh_wvspTh5n4mL0b5g";
+        String movedId = "lpSwGjGg1v8";
+        String newId = "q6OFcMlAUuY";
+        String regularId = "regularAA01";
+        String noGroupTag = "otherShort1";
+        String impersonator = "otherShort2";
+        Media existing = Media.builder().youtubeId(movedId).tab("external").curatedTab(true)
+                .mediaTitle("직접 수정한 제목").description("보존할 상세 설명").build();
+        when(transactionManager.getTransaction(any())).thenReturn(new SimpleTransactionStatus(), new SimpleTransactionStatus());
+        when(youtube.hasApiKey()).thenReturn(true);
+        when(youtube.resolveUploadsPlaylist(any(), any())).thenReturn("UU1");
+        when(youtube.listUploadFormatVideoIds(any(), anyBoolean(), anyInt())).thenAnswer(call ->
+                channel.equals(call.getArgument(0)) && Boolean.TRUE.equals(call.getArgument(1))
+                        ? List.of(movedId, newId, noGroupTag) : List.of());
+        when(youtube.searchHashtagVideoIds(any(), anyInt())).thenAnswer(call ->
+                "#트리플에스|#tripleS".equals(call.getArgument(0)) ? List.of(regularId, impersonator) : List.of());
+        when(youtube.hasUploadFormat(any(), any(), anyBoolean())).thenAnswer(call ->
+                impersonator.equals(call.getArgument(1)) && Boolean.TRUE.equals(call.getArgument(2)));
+        when(youtube.fetchChannelVideos(any())).thenReturn(List.of(
+                collaborationVideo(movedId, channel, "with #tripleS #나경"),
+                collaborationVideo(newId, channel, "with #트리플에스 #연지"),
+                collaborationVideo(regularId, channel, "#shorts 일반 영상 #tripleS"),
+                collaborationVideo(noGroupTag, channel, "다른 가수 #shorts"),
+                collaborationVideo(impersonator, "UC1234567890123456789012", "#tripleS #shorts 팬 채널")));
+        when(mediaRepository.findAllWithArtists()).thenReturn(List.of(existing));
+        when(artistRepository.findAll()).thenReturn(List.of(artist("곽연지", "YeonJi")));
+
+        var first = service.syncFull();
+        assertThat(first.inserted()).isEqualTo(1);
+        assertThat(first.updated()).isEqualTo(1);
+        assertThat(existing.getTab()).isEqualTo("shorts");
+        assertThat(existing.getMediaTitle()).isEqualTo("직접 수정한 제목");
+        assertThat(existing.getDescription()).isEqualTo("보존할 상세 설명");
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<Media>> inserted = ArgumentCaptor.forClass(List.class);
+        verify(mediaRepository).saveAll(inserted.capture());
+        assertThat(inserted.getValue()).extracting(Media::getYoutubeId, Media::getTab, Media::isCuratedTab)
+                .containsExactly(tuple(newId, "shorts", true));
+
+        when(mediaRepository.findAllWithArtists()).thenReturn(List.of(existing, inserted.getValue().get(0)));
+        var second = service.syncFull();
+        assertThat(second.inserted()).isZero();
+        assertThat(second.updated()).isZero();
+        verify(mediaRepository, never()).deleteAll(any());
+    }
+
+    private static YoutubeDataApiClient.ChannelVideo collaborationVideo(String id, String channel, String title) {
+        return new YoutubeDataApiClient.ChannelVideo(id, title, "2026-11-26",
+                "0:30", "PT30S", 781L, "none", channel, "BOYNEXTDOOR", "");
     }
 
     private static YoutubeDataApiClient.ChannelVideo taggedVideo(String id, String channel, String name, long views) {

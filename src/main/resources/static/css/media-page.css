@@ -106,9 +106,16 @@ body.media-page {
 }
 
 .media-page .media-era-tabs {
-    width: 100%;
-    margin-top: -8px;
-    border-bottom-color: rgba(255, 255, 255, 0.08);
+    display: inline-flex;
+    flex-shrink: 0;
+    gap: 0.125rem;
+    padding-inline: 0.3rem;
+    border-inline: 1px solid var(--site-border, rgba(129, 150, 145, 0.3));
+}
+
+.media-page .media-era-tabs .site-section-tab {
+    padding-inline: 0.55rem;
+    font-size: 0.78rem;
 }
 
 .media-page .media-toolbar {
@@ -1625,25 +1632,28 @@ body.media-page {
 .media-edit-body .ar-cal .site-field { width: 100%; }
 
 .media-page .media-full-lineup {
-    flex-direction: row;
+    display: flex;
+    flex: 1 1 100%;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 0.5rem;
-    max-width: none;
+    gap: 0.2rem;
     min-width: 0;
-    padding: 0.28rem 0.7rem 0.28rem 0.28rem;
 }
 
 .media-page .media-full-lineup img {
-    width: 2.6rem;
-    height: 2.6rem;
-    border-radius: 0.65rem;
-    object-fit: cover;
+    flex: 0 0 1.25rem;
+    width: 1.25rem;
+    height: 1.25rem;
+    object-fit: contain;
 }
 
-.media-page .media-full-lineup .archive-chip-name {
-    max-width: none;
-    margin: 0;
-    font-size: 0.78rem;
+.media-page .ar-detail-lineup.media-full-lineup {
+    width: fit-content;
+    max-width: 100%;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
 }
 
 @media (max-width: 960px) {

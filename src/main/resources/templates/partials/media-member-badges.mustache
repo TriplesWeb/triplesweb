@@ -1,10 +1,17 @@
 {{#hasMembers}}
 <span class="media-card__members">
     {{#memberBadges}}
-    <span class="archive-member-chip{{#fullLineup}} media-full-lineup{{/fullLineup}}{{#hasSymbol}} archive-symbol-chip{{/hasSymbol}}" style="--member-color: {{color}};" title="{{#fullLineup}}{{title}}{{/fullLineup}}{{^fullLineup}}{{name}}{{/fullLineup}}" aria-label="{{name}}">
+    {{#fullLineup}}
+    <span class="media-full-lineup" role="img" aria-label="tripleS 완전체 24명">
+        {{#symbols}}<img src="{{image}}" alt="" title="{{name}}" width="20" height="20" loading="lazy" decoding="async">{{/symbols}}
+    </span>
+    {{/fullLineup}}
+    {{^fullLineup}}
+    <span class="archive-member-chip{{#hasSymbol}} archive-symbol-chip{{/hasSymbol}}" style="--member-color: {{color}};" title="{{name}}" aria-label="{{name}}">
         {{#hasImage}}<img src="{{image}}" alt="" referrerpolicy="no-referrer" loading="lazy" decoding="async">{{/hasImage}}
         <span class="archive-chip-name">{{name}}</span>
     </span>
+    {{/fullLineup}}
     {{/memberBadges}}
 </span>
 {{/hasMembers}}

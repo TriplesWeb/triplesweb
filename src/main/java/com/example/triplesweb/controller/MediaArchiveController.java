@@ -2,7 +2,6 @@ package com.example.triplesweb.controller;
 
 import com.example.triplesweb.dto.ChemistryDto;
 import com.example.triplesweb.dto.ChemistryGroupDto;
-import com.example.triplesweb.dto.GroupIntroDto;
 import com.example.triplesweb.dto.MediaDto;
 import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.entity.Schedule;
@@ -13,7 +12,6 @@ import com.example.triplesweb.media.MediaTabClassifier;
 import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.repository.ScheduleRepository;
 import com.example.triplesweb.service.AboutAdminAuth;
-import com.example.triplesweb.service.ArtistAdminService;
 import com.example.triplesweb.service.ChemistryGroupService;
 import com.example.triplesweb.service.ChemistryService;
 import com.example.triplesweb.service.MediaChannelSyncService;
@@ -65,7 +63,6 @@ public class MediaArchiveController {
     private final MediaViewCountService mediaViewCounts;
     private final MediaChannelSyncService youtubeSync;
     private final ArtistRepository artistRepository;
-    private final ArtistAdminService artistAdmin;
     private final ScheduleRepository scheduleRepository;
     private final AboutAdminAuth aboutAdminAuth;
     private final ObjectMapper objectMapper;
@@ -210,7 +207,7 @@ public class MediaArchiveController {
         model.addAttribute("shortsTabHref", "/media?tab=shorts" + mediaQuery("", sortKey, query, selectedMembers, rangeStart, rangeEnd, false, null));
         model.addAttribute("signalEra", selectedEra == null ? "" : selectedEra.getKey());
         model.addAttribute("hasSignalEra", selectedEra != null);
-        model.addAttribute("signalEras", signalEraTabs(sortKey, query, selectedMembers, rangeStart, rangeEnd, selectedEra));
+        model.addAttribute("signalEras", signalEraTabs(sortKey, query, selectedMembers, rangeStart, rangeEnd, selectedEra, fiveColumns));
 
         String fromText = rangeStart == null ? "" : rangeStart.toString();
         String toText = rangeEnd == null ? "" : rangeEnd.toString();
@@ -516,22 +513,11 @@ public class MediaArchiveController {
         return badges;
     }
 
-    private Map<String, Object> fullLineupBadge() {
-        GroupIntroDto group = artistAdmin.getGroupIntro();
-        String image = usableImage(group == null ? null : group.getImageUrl());
-        String title = group == null || group.getTitle() == null || group.getTitle().isBlank()
-                ? "tripleS" : group.getTitle();
-        Map<String, Object> badge = new LinkedHashMap<>();
-        badge.put("name", MemberSetCatalogJson.GROUP_LABEL);
-        badge.put("title", title);
-        badge.put("color", "#00f5d4");
-        badge.put("image", image);
-        badge.put("hasImage", !image.isBlank());
-        badge.put("portrait", image);
-        badge.put("hasPortrait", !image.isBlank());
-        badge.put("hasSymbol", false);
-        badge.put("fullLineup", true);
-        return badge;
+    private static Map<String, Object> fullLineupBadge() {
+        var symbols = MemberPortraitOptions.koreanOrder().stream()
+                .map(name -> Map.of("name", name, "image", MemberPortraitOptions.archiveSymbolLogo(name)))
+                .toList();
+        return Map.of("name", MemberSetCatalogJson.GROUP_LABEL, "fullLineup", true, "symbols", symbols);
     }
 
     private static String portraitUrl(Artist artist) {
@@ -675,9 +661,10 @@ public class MediaArchiveController {
             List<String> members,
             LocalDate from,
             LocalDate to,
-            MediaSignalEra selected
+            MediaSignalEra selected,
+            boolean fiveColumns
     ) {
-        String suffix = mediaQuery("", sort, query, members, from, to, false, null);
+        String suffix = mediaQuery("", sort, query, members, from, to, false, null) + (fiveColumns ? "&cols=5" : "");
         List<Map<String, Object>> tabs = new ArrayList<>();
         tabs.add(signalEraTab("전체", "/media?tab=signal" + suffix, selected == null));
         for (MediaSignalEra era : MediaSignalEra.values()) {

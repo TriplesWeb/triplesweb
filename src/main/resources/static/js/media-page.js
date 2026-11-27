@@ -9,6 +9,18 @@
     const search = form?.querySelector('.ar-search');
     let refreshSavedMedia;
 
+    function revealActiveSignalEra() {
+        const active = document.querySelector('.media-era-tabs [aria-current="page"]');
+        const tabs = active?.closest('.media-tabs');
+        if (!tabs) return;
+        const itemBounds = active.getBoundingClientRect();
+        const tabBounds = tabs.getBoundingClientRect();
+        if (itemBounds.right > tabBounds.right) tabs.scrollLeft += itemBounds.right - tabBounds.right;
+        if (itemBounds.left < tabBounds.left) tabs.scrollLeft -= tabBounds.left - itemBounds.left;
+    }
+
+    revealActiveSignalEra();
+
     function selectedMembers() {
         if (!window.MemberPortraitPicker || !panel) return [];
         return MemberPortraitPicker.selectedValues(panel);
@@ -241,7 +253,10 @@
                 swapSection(shell, nextShell, 'media-shorts');
                 const eraTabs = shell.querySelector('.media-era-tabs');
                 const nextEraTabs = nextShell.querySelector('.media-era-tabs');
-                if (eraTabs && nextEraTabs) eraTabs.replaceWith(document.importNode(nextEraTabs, true));
+                if (eraTabs && nextEraTabs) {
+                    eraTabs.replaceWith(document.importNode(nextEraTabs, true));
+                    revealActiveSignalEra();
+                }
                 const catalog = document.getElementById('mediaCatalog');
                 const nextCatalog = doc.getElementById('mediaCatalog');
                 if (catalog && nextCatalog) {
@@ -741,21 +756,19 @@
         }
         if (badges.length === 1 && badges[0].fullLineup) {
             const link = document.createElement('a');
-            link.className = 'ar-detail-lineup';
+            link.className = 'ar-detail-lineup media-full-lineup';
             link.href = '/triples';
-            link.setAttribute('aria-label', (window.MemberSelectionSummary?.GROUP_LABEL || '단체 콘텐츠') + ' 24명');
-            const photo = document.createElement('span');
-            photo.className = 'ar-detail-lineup-photo';
-            const img = document.createElement('img');
-            img.alt = '';
-            img.referrerPolicy = 'no-referrer';
-            img.dataset.noPlaceholder = '1';
-            if (badges[0].image) img.src = badges[0].image;
-            photo.append(img);
-            const label = document.createElement('span');
-            label.className = 'ar-detail-lineup-label';
-            label.textContent = window.MemberSelectionSummary?.GROUP_LABEL || '단체 콘텐츠';
-            link.append(photo, label);
+            link.setAttribute('aria-label', 'tripleS 완전체 24명');
+            for (const symbol of badges[0].symbols || []) {
+                const image = document.createElement('img');
+                image.src = symbol.image;
+                image.alt = '';
+                image.title = symbol.name;
+                image.width = 20;
+                image.height = 20;
+                image.dataset.noPlaceholder = '1';
+                link.append(image);
+            }
             members.append(link);
             members.dataset.memberCount = '24';
             cast.hidden = false;

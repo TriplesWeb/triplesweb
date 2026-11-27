@@ -172,13 +172,19 @@ public class MediaChannelSyncService {
             if (externalPages > 0) allIds.addAll(officialHashtagSearchIds());
             Set<String> hashtagIds = externalPages > 0 ? hashtagSearchIds(Math.min(externalPages, 2)) : Set.of();
             allIds.addAll(hashtagIds);
-            List<YoutubeDataApiClient.ChannelVideo> videos = youtube.fetchChannelVideos(allIds);
+            Set<String> artistShorts = externalPages > 0 ? recentArtistShortIds() : Set.of();
+            Set<String> candidateIds = new LinkedHashSet<>(allIds);
+            candidateIds.addAll(artistShorts);
+            List<YoutubeDataApiClient.ChannelVideo> videos = youtube.fetchChannelVideos(candidateIds).stream()
+                    .filter(video -> video == null || allIds.contains(video.id())
+                            || MediaHashtags.hasTripleSGroupHashtag(video.title(), video.description()))
+                    .toList();
             Set<String> hashtagUploads = eligibleHashtagUploads(videos, hashtagIds, allowedIds);
             Set<String> officialSet = new LinkedHashSet<>(officialIds);
             List<String> handles = splitCsv(externalHandles);
-            UploadFormats formats = uploadFormats(videos, officialSet, officialPages);
+            UploadFormats formats = uploadFormats(videos, officialSet, artistShorts, officialPages);
             return new TransactionTemplate(transactionManager).execute(status ->
-                    upsert(allIds.size(), videos, officialSet, namuIds, namuExternalIds, mvIds,
+                    upsert(candidateIds.size(), videos, officialSet, namuIds, namuExternalIds, mvIds,
                             fallbackIds, allowedIds, handles, externalPages > 0, formats, hashtagUploads));
         } finally {
             lock.unlock();
@@ -199,12 +205,22 @@ public class MediaChannelSyncService {
 
     private record UploadFormats(Set<String> shorts, Set<String> regular) {}
 
+    private Set<String> recentArtistShortIds() {
+        Set<String> ids = new LinkedHashSet<>();
+        for (String artistChannel : MediaHashtags.officialCollaborationChannels()) {
+            List<String> latest = youtube.listUploadFormatVideoIds(artistChannel, true, 1);
+            if (latest != null) ids.addAll(latest);
+        }
+        return ids;
+    }
+
     private UploadFormats uploadFormats(List<YoutubeDataApiClient.ChannelVideo> videos,
-                                        Set<String> officialIds, int maxPages) {
+                                        Set<String> officialIds, Set<String> artistShorts, int maxPages) {
         Set<String> shortIds = formatPlaylistIds(true, maxPages);
+        shortIds.addAll(artistShorts);
         Set<String> regularIds = formatPlaylistIds(false, maxPages);
         for (YoutubeDataApiClient.ChannelVideo video : videos) {
-            if (video == null || video.liveOrUpcoming() || officialIds.contains(video.id())
+            if (video == null || video.liveOrUpcoming() || shortIds.contains(video.id()) || officialIds.contains(video.id())
                     || MediaTabClassifier.isOfficialChannel(video.channelId(), video.channelTitle(), channelId)) continue;
             Integer seconds = MediaOrdering.durationSeconds(video.duration());
             if (seconds == null || seconds > 180) continue;
@@ -331,6 +347,10 @@ public class MediaChannelSyncService {
                 skipped++;
                 continue;
             }
+            boolean platformShort = formats.shorts().contains(video.id());
+            boolean collaborationShort = platformShort && !official && video.channelId() != null
+                    && MediaHashtags.officialCollaborationChannels().contains(video.channelId())
+                    && MediaHashtags.hasTripleSGroupHashtag(video.title(), video.description());
             boolean fromNamu = containsId(namuIds, video.id());
             boolean fromNamuExternal = containsId(namuExternalIds, video.id());
             boolean isBroadcast = MediaTabClassifier.isMusicShow(video.title()) || MediaTabClassifier.isFancam(video.title());
@@ -341,17 +361,25 @@ public class MediaChannelSyncService {
                     video.title(), video.description(), video.channelTitle(), memberNames);
             boolean unofficial = !official && !otherOfficialShorts && !fromNamuExternal
                     && dropUnofficial(video, allowedIds, handles, memberNames);
-            if (!official && !fromHashtag && !otherOfficialShorts && !fromNamuExternal && ((!fromNamu && !fromFallback) || unofficial)) {
+            if (!official && !collaborationShort && !fromHashtag && !otherOfficialShorts && !fromNamuExternal
+                    && ((!fromNamu && !fromFallback) || unofficial)) {
                 skipped++;
                 continue;
             }
             boolean musicShow = !official && MediaTabClassifier.isMusicShow(video.title())
                     && !MediaTabClassifier.isFancam(video.title());
-            boolean platformShort = formats.shorts().contains(video.id());
             String targetTab = MediaTabClassifier.tabFor(video.title(), video.duration(), official, musicShow,
                     containsId(mvIds, video.id()), fromNamuExternal, platformShort);
             Media current = existing.get(video.id().toLowerCase(Locale.ROOT));
             if (current != null) {
+                if (collaborationShort) {
+                    if (!MediaTab.SHORTS.getKey().equals(current.getTab()) || !current.isCuratedTab()) {
+                        current.setTab(MediaTab.SHORTS.getKey());
+                        current.setCuratedTab(true);
+                        updated++;
+                    } else skipped++;
+                    continue;
+                }
                 if (fromHashtag) {
                     skipped++;
                     continue;
@@ -368,8 +396,10 @@ public class MediaChannelSyncService {
                 else skipped++;
                 continue;
             }
-            Media created = newMedia(video, artists, official, fromHashtag ? MediaTab.EXTERNAL.getKey() : targetTab);
-            if (fromHashtag) {
+            if (collaborationShort) targetTab = MediaTab.SHORTS.getKey();
+            else if (fromHashtag) targetTab = MediaTab.EXTERNAL.getKey();
+            Media created = newMedia(video, artists, official, targetTab);
+            if (fromHashtag || collaborationShort) {
                 created.setCuratedTab(true);
                 Set<Artist> tagged = resolveTaggedMembers(video, artists);
                 if (!tagged.isEmpty()) created.setArtists(tagged);
