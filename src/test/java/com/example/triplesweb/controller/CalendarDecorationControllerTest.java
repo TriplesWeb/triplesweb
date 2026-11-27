@@ -29,21 +29,21 @@ class CalendarDecorationControllerTest {
     @Test
     void repeatsMemberBirthdayInsideTheRequestedRange() throws Exception {
         Artist artist = new Artist();
-        artist.setArtistId(7L);
-        artist.setName("윤서연");
-        artist.setBirthDate("2002.08.06");
-        artist.setColor("#22aeff");
+        artist.setArtistId(2L);
+        artist.setName("정혜린");
+        artist.setBirthDate("2007.04.12");
+        artist.setColor("#9200ff");
         when(artists.findAll()).thenReturn(List.of(artist));
 
         mvc.perform(get("/api/calendar-decorations/birthdays")
-                        .param("start", "2026-08-01")
-                        .param("end", "2026-08-31"))
+                        .param("start", "2026-04-01")
+                        .param("end", "2026-04-30"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].title").value("윤서연 생일"))
-                .andExpect(jsonPath("$[0].start").value("2026-08-06"))
+                .andExpect(jsonPath("$[0].title").value("정혜린 생일"))
+                .andExpect(jsonPath("$[0].start").value("2026-04-12"))
                 .andExpect(jsonPath("$[0].kind").value("BIRTHDAY"))
-                .andExpect(jsonPath("$[0].color").value("#22aeff"))
-                .andExpect(jsonPath("$[0].imageUrl").value("/images/artist/bite/7.png"));
+                .andExpect(jsonPath("$[0].color").value("#9200ff"))
+                .andExpect(jsonPath("$[0].imageUrl").value("/images/artist/bite/2.png"));
     }
 
     @Test
