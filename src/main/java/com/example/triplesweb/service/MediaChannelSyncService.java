@@ -47,6 +47,7 @@ public class MediaChannelSyncService {
 
     private static final int SAVE_BATCH = 50;
     private static final int TITLE_MAX = 255;
+    private static final long MIN_EXTERNAL_AUDIENCE = 10_000;
     private static final Set<String> EXCLUDED_VIDEO_IDS = Set.of("PR6mJ59QMNc", "OYx2SGkx6f0");
 
     private final YoutubeDataApiClient youtube;
@@ -169,13 +170,16 @@ public class MediaChannelSyncService {
             allIds.addAll(mvIds);
             allIds.addAll(fallbackIds);
             if (externalPages > 0) allIds.addAll(officialHashtagSearchIds());
+            Set<String> hashtagIds = externalPages > 0 ? hashtagSearchIds(Math.min(externalPages, 2)) : Set.of();
+            allIds.addAll(hashtagIds);
             List<YoutubeDataApiClient.ChannelVideo> videos = youtube.fetchChannelVideos(allIds);
+            Set<String> hashtagUploads = eligibleHashtagUploads(videos, hashtagIds, allowedIds);
             Set<String> officialSet = new LinkedHashSet<>(officialIds);
             List<String> handles = splitCsv(externalHandles);
             UploadFormats formats = uploadFormats(videos, officialSet, officialPages);
             return new TransactionTemplate(transactionManager).execute(status ->
                     upsert(allIds.size(), videos, officialSet, namuIds, namuExternalIds, mvIds,
-                            fallbackIds, allowedIds, handles, externalPages > 0, formats));
+                            fallbackIds, allowedIds, handles, externalPages > 0, formats, hashtagUploads));
         } finally {
             lock.unlock();
         }
@@ -228,6 +232,41 @@ public class MediaChannelSyncService {
         return new ArrayList<>(ids);
     }
 
+    private Set<String> hashtagSearchIds(int pages) {
+        Set<String> ids = new LinkedHashSet<>();
+        for (String query : MediaHashtags.tripleSHashtagQueries()) {
+            ids.addAll(youtube.searchHashtagVideoIds(query, pages));
+        }
+        return ids;
+    }
+
+    private Set<String> eligibleHashtagUploads(List<YoutubeDataApiClient.ChannelVideo> videos, Set<String> searched,
+                                               Set<String> allowedIds) {
+        if (searched.isEmpty()) return Set.of();
+        List<YoutubeDataApiClient.ChannelVideo> candidates = videos.stream()
+                .filter(video -> video != null && searched.contains(video.id()) && !video.liveOrUpcoming())
+                .filter(video -> video.viewCount() != null && video.viewCount() >= MIN_EXTERNAL_AUDIENCE)
+                .filter(video -> !MediaTabClassifier.isOfficialChannel(video.channelId(), video.channelTitle(), channelId))
+                .filter(video -> !MediaHashtags.reviewedFanChannel(video.channelId()))
+                .filter(video -> MediaHashtags.hasDiscoveryHashtag(video.title(), video.description()))
+                .filter(video -> !MediaHashtags.looksFanUpload(video.title(), video.description(), video.channelTitle(), null))
+                .toList();
+        Map<String, YoutubeDataApiClient.ChannelAudience> audiences = youtube.fetchChannelAudiences(
+                candidates.stream().map(YoutubeDataApiClient.ChannelVideo::channelId).toList());
+        Set<String> accepted = new LinkedHashSet<>();
+        for (YoutubeDataApiClient.ChannelVideo video : candidates) {
+            YoutubeDataApiClient.ChannelAudience audience = audiences.get(video.channelId());
+            if (audience != null && audience.subscribers() >= MIN_EXTERNAL_AUDIENCE
+                    && MediaHashtags.hasTripleSDiscoveryTag(video.title(), video.description(), video.channelTitle(), audience.description())
+                    && (allowedIds.contains(video.channelId()) || MediaHashtags.channelNameEndsWithOfficial(video.channelTitle())
+                        || MediaHashtags.hasPublisherEvidence(video.channelId(), audience.description(), video.description()))
+                    && !MediaHashtags.looksFanUpload(video.title(), video.description(), video.channelTitle(), audience.description())) {
+                accepted.add(video.id());
+            }
+        }
+        return accepted;
+    }
+
     private Set<String> allowedChannelIds() {
         LinkedHashSet<String> ids = new LinkedHashSet<>();
         for (String source : splitCsv(externalHandles)) {
@@ -259,7 +298,8 @@ public class MediaChannelSyncService {
             Set<String> allowedIds,
             List<String> handles,
             boolean dropUnrelated,
-            UploadFormats formats
+            UploadFormats formats,
+            Set<String> hashtagUploads
     ) {
         Map<String, Media> existing = mediaRepository.findAllWithArtists().stream()
                 .filter(media -> media.getYoutubeId() != null)
@@ -285,6 +325,12 @@ public class MediaChannelSyncService {
             boolean fromOfficialPlaylist = officialIds.contains(video.id());
             boolean official = fromOfficialPlaylist
                     || MediaTabClassifier.isOfficialChannel(video.channelId(), video.channelTitle(), channelId);
+            boolean fromHashtag = !official && hashtagUploads.contains(video.id());
+            if (!official && (MediaHashtags.reviewedFanChannel(video.channelId())
+                    || MediaHashtags.looksFanUpload(video.title(), video.description(), video.channelTitle(), null))) {
+                skipped++;
+                continue;
+            }
             boolean fromNamu = containsId(namuIds, video.id());
             boolean fromNamuExternal = containsId(namuExternalIds, video.id());
             boolean isBroadcast = MediaTabClassifier.isMusicShow(video.title()) || MediaTabClassifier.isFancam(video.title());
@@ -295,7 +341,7 @@ public class MediaChannelSyncService {
                     video.title(), video.description(), video.channelTitle(), memberNames);
             boolean unofficial = !official && !otherOfficialShorts && !fromNamuExternal
                     && dropUnofficial(video, allowedIds, handles, memberNames);
-            if (!official && !otherOfficialShorts && !fromNamuExternal && ((!fromNamu && !fromFallback) || unofficial)) {
+            if (!official && !fromHashtag && !otherOfficialShorts && !fromNamuExternal && ((!fromNamu && !fromFallback) || unofficial)) {
                 skipped++;
                 continue;
             }
@@ -306,6 +352,10 @@ public class MediaChannelSyncService {
                     containsId(mvIds, video.id()), fromNamuExternal, platformShort);
             Media current = existing.get(video.id().toLowerCase(Locale.ROOT));
             if (current != null) {
+                if (fromHashtag) {
+                    skipped++;
+                    continue;
+                }
                 boolean changed = fillExisting(current, video, artists, official);
                 boolean wasShort = MediaTab.SHORTS.getKey().equals(current.getTab());
                 boolean formatChanged = (!wasShort && platformShort)
@@ -318,7 +368,12 @@ public class MediaChannelSyncService {
                 else skipped++;
                 continue;
             }
-            Media created = newMedia(video, artists, official, targetTab);
+            Media created = newMedia(video, artists, official, fromHashtag ? MediaTab.EXTERNAL.getKey() : targetTab);
+            if (fromHashtag) {
+                created.setCuratedTab(true);
+                Set<Artist> tagged = resolveTaggedMembers(video, artists);
+                if (!tagged.isEmpty()) created.setArtists(tagged);
+            }
             batch.add(created);
             existing.put(video.id().toLowerCase(Locale.ROOT), created);
             inserted++;
@@ -329,9 +384,15 @@ public class MediaChannelSyncService {
         }
         if (!batch.isEmpty()) mediaRepository.saveAll(batch);
         if (dropUnrelated) {
-            removeUnknownSources(existing, videos, namuIds, namuExternalIds, allowedIds, handles, memberNames);
+            removeUnknownSources(existing, videos, namuIds, namuExternalIds, allowedIds, handles, memberNames, hashtagUploads);
         }
         return new Result(scanned, inserted, updated, skipped);
+    }
+
+    private static Set<Artist> resolveTaggedMembers(YoutubeDataApiClient.ChannelVideo video, List<Artist> artists) {
+        List<String> names = MediaHashtags.taggedTripleSMembers(video.title(), video.description());
+        return artists.stream().filter(artist -> names.contains(artist.getName()))
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     private static boolean isVerifiedPublisherVideo(YoutubeDataApiClient.ChannelVideo video, Set<String> allowedIds) {
@@ -375,11 +436,14 @@ public class MediaChannelSyncService {
             Set<String> namuExternalIds,
             Set<String> allowedIds,
             List<String> handles,
-            List<String> memberNames
+            List<String> memberNames,
+            Set<String> hashtagUploads
     ) {
         List<Media> candidates = existing.values().stream()
                 .filter(media -> media.getYoutubeId() != null && !blank(media.getYoutubeId()))
-                .filter(media -> !media.isCuratedTab() && blank(media.getDescription()))
+                .filter(media -> MediaTab.EXTERNAL.getKey().equals(media.getTab())
+                        || MediaTab.SHORTS.getKey().equals(media.getTab())
+                        || (!media.isCuratedTab() && blank(media.getDescription())))
                 .toList();
         if (candidates.isEmpty()) return 0;
         Map<String, YoutubeDataApiClient.ChannelVideo> live = new java.util.LinkedHashMap<>();
@@ -406,6 +470,16 @@ public class MediaChannelSyncService {
             boolean liveOfficial = MediaTabClassifier.isOfficialChannel(
                     video.channelId(), video.channelTitle(), channelId);
             if (storedOfficial || liveOfficial) continue;
+            if (MediaHashtags.reviewedFanChannel(video.channelId())
+                    || MediaHashtags.looksFanUpload(video.title(), video.description(), video.channelTitle(), null)) {
+                drop.add(media);
+                continue;
+            }
+            if (media.isCuratedTab() || !blank(media.getDescription()) || hashtagUploads.contains(video.id())) continue;
+            if (MediaHashtags.hasPublisherEvidence(video.channelId(), null, video.description())
+                    && MediaHashtags.hasTripleSDiscoveryTag(video.title(), video.description(), video.channelTitle(), null)) {
+                continue;
+            }
             if (MediaHashtags.otherArtistOfficialShorts(
                     video.title(), video.description(), video.channelTitle(), memberNames)) {
                 continue;

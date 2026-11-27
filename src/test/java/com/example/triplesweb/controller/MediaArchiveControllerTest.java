@@ -192,6 +192,23 @@ class MediaArchiveControllerTest {
     }
 
     @Test
+    void ajaxSavesReturnNoNavigationAndTraditionalAddReturnsToTheOriginalPage() throws Exception {
+        String youtubeId = "HwTZTz9j2e0";
+        String returnTo = "/media?tab=signal&page=2&sort=oldest&cols=5";
+        when(media.updateDetails(youtubeId, null, null, "", "external")).thenReturn(true);
+        mvc.perform(post("/media_update").param("youtubeId", youtubeId).param("tab", "external")
+                        .param("returnTo", returnTo).header("X-Requested-With", "XMLHttpRequest"))
+                .andExpect(status().isNoContent());
+        mvc.perform(post("/media_new").param("youtubeId", youtubeId).param("tab", "external")
+                        .param("title", "테스트 영상").param("returnTo", returnTo)
+                        .header("X-Requested-With", "XMLHttpRequest"))
+                .andExpect(status().isNoContent());
+        mvc.perform(post("/media_new").param("youtubeId", youtubeId).param("tab", "external")
+                        .param("title", "테스트 영상").param("returnTo", returnTo))
+                .andExpect(redirectedUrl(returnTo));
+    }
+
+    @Test
     void updatingMediaKeepsTheOriginalTabAndFilters() throws Exception {
         String returnTo = "/media?tab=all&page=2&sort=oldest&members=%EC%9C%A4%EC%84%9C%EC%97%B0";
         mvc.perform(post("/media_update").param("youtubeId", "HwTZTz9j2e0")

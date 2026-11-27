@@ -1,5 +1,7 @@
 package com.example.triplesweb.media;
 
+import com.example.triplesweb.util.MemberPortraitOptions;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -16,6 +18,10 @@ import java.util.regex.Pattern;
 public final class MediaHashtags {
     private static final Pattern TRIPLES_WORD = Pattern.compile("(?i)(^|[^A-Z0-9])TRIPLE\\s*S([^A-Z0-9]|$)");
     private static final Pattern TAG = Pattern.compile("[#@]([\\p{L}\\p{N}_]+)");
+    private static final Pattern HASHTAG = Pattern.compile("#([\\p{L}\\p{N}_]+)");
+    private static final Pattern FAN_UPLOAD = Pattern.compile(
+            "(?i)팬\\s*(?:계정|채널|튜브|편집)|\\bfan[\\s_-]*(?:account|channel|page)\\b|"
+                    + "color[\\s-]*coded\\s+lyrics|\\bfmv\\b|댄스\\s*커버|dance\\s+cover|가사\\s*영상");
     private static final Pattern OTHER_KPOP = Pattern.compile(
             "(?i)(?<![A-Z0-9])("
                     + "NCT\\s*WISH|NCT\\s*127|NCT\\s*DREAM|NCT|WAYV|"
@@ -38,7 +44,162 @@ public final class MediaHashtags {
                     + "엔믹스|에이티즈|더보이즈|알파드라이브원|하츠투하츠|이즈나|"
                     + "킥플립|미야오|유니스|케플러|스테이씨|프로미스나인");
 
+    private static final Set<String> REVIEWED_ORIGINAL_CHANNELS = Set.of(
+            "UCHD1jo5RhijLfx5-0Ehe_cg", // &TEAM
+            "UC6vdeY4HiiAIBsb4JpYex3Q", // 13년 차 신인 김채연 KimChaeYeon
+            "UCqq-ovGE01ErlXakPihhKDA", // 1theK Originals - 원더케이 오리지널
+            "UCOB_HGqE2t0XcACau0JxGdg", // 710house
+            "UCHYMuI_gpM-iA3RfgGZ28yw", // 갤럭시키즈(galaxykids)
+            "UCSSkHIU1-nL_FeCjeZ_Xtvg", // 노빠꾸탁재훈
+            "UCpBlDSUyOpP1WqWVJxZpGLg", // 멜론 Melon
+            "UCZFglJIUsaCPRE_3yzr8zzg", // 볼빨간사춘기 BOL4
+            "UCuz_Y5rkcRd6kTGqLO0VgxA", // 스튜디오 잼플릭스 - STUDIO JAMFLIX
+            "UCah-d4pYWd5UT6xFbUZgFtg", // 스튜디오 훜 : STUDIO HOOK
+            "UCiwQRG2sCcfjKkgxMEdJGPg", // 엠뚜루마뚜루 : MBC 공식 종합 채널
+            "UC1Rz7a_DWtsE9cQwSyElE0Q", // 인생84
+            "UCG1yCJ0i5iAH1lixElahYUw", // 코빨간배춘기 [배성재의 텐]
+            "UC1rQlcqyynQ-_XLRZSAaREQ", // 플레이다 Playda
+            "UCwoSFXX8kraikB-WClx2pVQ", // AHOF
+            "UCyc9sUCxELTDK9vELO5Fzeg", // Billlie
+            "UChhKBlh_wvspTh5n4mL0b5g", // BOYNEXTDOOR
+            "UCJEER74X9kBenMT_x9iK9Mw", // FIFTY FIFTY Official
+            "UCXbRURMKT3H_w8dT-DWLIxA", // fromis_9
+            "UCwOSPKpkwK4ZN0NJZ7rWpIQ", // Geenius
+            "UC0novDS2VRX59Trmbf83I3g", // H1-KEY
+            "UCgiJf4Qcigccr9lAXAA9hFQ", // HITGS (힛지스)
+            "UCritGVo7pLJLUS8wEu32vow", // i-dle (아이들)
+            "UCEpFoWeCMCo5z3EvWaz6hQQ", // ILLIT
+            "UCMmcz1ybSoAD-GUlDx_7H2A", // IRISÉ
+            "UCF3UEVPt5zZTlBVJwDG317g", // JTBC Voyage
+            "UCHzW_7Mf8G0JxP4b0LoAd7A", // K-Culture NOW by 연합뉴스
+            "UC8whlOg70m2Yr3qSMjUhh0g", // Kep1er
+            "UCmq9jjpHA69PwAwlA0DwOsg", // KickFlip
+            "UCvEEeBssb4XxIfWWIB8IjMw", // KISS OF LIFE
+            "UC8PPjyqCQJtNfEwHBcq_uxw", // LNGSHOT
+            "UCe52oeb7Xv_KaJsEzcKXJJg", // MBCkpop
+            "UCKNZsAeQXpvI-Mpoc0ZKhsA", // Mhz 므흐즈: MBC RADIO
+            "UCtfyAiqf095_0_ux8ruwGfA", // MUSINSA TV
+            "UCX9VHpN62jkqCCntHxymPOA", // NewShowBiz完全娛樂
+            "UCRZVxIpIbf6iLTU0e5MLyHA", // Nick Kosir
+            "UChXC6ok0LaZIpf-50SIFf0Q", // Official ARTMS
+            "UCRmm8763aqO0CoeLCA2jNSA", // ootb STUDIO
+            "UCdVD0MsYecQaIE5Ru-pOIQQ", // RIIZE
+            "UCcTq_itv43G05dGVydRTJew", // ROTHY - 로시
+            "UC-we351yXoKcODFHiKrC84Q", // SAY MY NAME
+            "UCfkXDY7vwkcJ8ddFGz8KusA", // SEVENTEEN
+            "UCEIi7zFR_wE23jFncVtd6-A", // STUDIO CHOOM [스튜디오 춤]
+            "UC7eHynJ83ypIf_586YR5lqQ", // SWING ENTERTAINMENT
+            "UCkJ1rbOrsyPfBuHNfnLPm-Q", // THE BOYZ
+            "UC7i6r7XiJO5i9H_rgIeZTSA", // THE FACT MUSIC AWARDS (TMA)
+            "UC8C6QOPDVYwmuaSBZksefdg", // TWS
+            "UCHWhn9xw7x8NPPnV6eWQDQA", // XLOV
+            "UCkrDEGNM3mqZXHk2MfnOjMw", // YENA(최예나)
+            "UCSAp0Yl9S0Zq5uDqE6im_XQ" // ZEROBASEONE
+    );
+
+    private static final Set<String> REVIEWED_FAN_CHANNELS = Set.of(
+            "UCkECc47iN5okSKWtJkPeHmA", // 30초 인물소개
+            "UCNudC2C7RuymoUJ37fE-pag", // 걸그룹갤러리
+            "UC6WktRdWK3ui4ZZEsmRtajw", // 고음충전k
+            "UCoFhwPtrmxmhUhFaqLJZ90w", // 그냥취미활동
+            "UC84G3UgA0hr84VJ_T_f1vrA", // 나 잘한다해짜나
+            "UCohUYoSIu_96MyZfuAPaL9w", // 네가
+            "UCX5EYpJt-cJWTpU2yXbDdAA", // 도리
+            "UCGDVtJReiiTaff_V3tZyRNw", // 매혹의 향수
+            "UCf5WKpIBAdxHYIlwzIKWvUw", // 무슨 말이 필요해
+            "UCW-yKB8JwCUyWnQZt8Lvdyg", // 비어굿맨
+            "UCA78q21_ylajHgElLPg44MA", // 쇼츠공장
+            "UC4At8cQcBX2rnej3nex4n2A", // 숏나웃김
+            "UCuqFFZafd0f3PdOmL7_zFXw", // 슬랴+
+            "UCPCcfrlZBvtas5rQLlHEx0Q", // 아이소
+            "UCV3lN32Z96I3tE4CaSf_BqA", // 아쮸
+            "UCMR0G7zXSO7fcYLlvDexTOw", // 연예뉴스찾아요
+            "UCKai3URoZ3kKGXSLGKHWIfA", // 예능 뭐볼래
+            "UCZhz9XV3FoGP3zocrWM8fqw", // 예능판다
+            "UCpBSZ4PMmfdN4foAjW9g0xQ", // 잠깐만아이돌
+            "UCfs9UQJvLXRfUCGKOAuWozg", // 찾았다 내 엔돌핀
+            "UCmcQQ5a28v9MdNGVZFebsHQ", // 케이팝 읽어주는 남녀
+            "UC5EvMz_XliMULpqQHkjnzgQ", // 해달특파원
+            "UCHztIyDNlLlZ6JA85a6BdCw", // Chaereve
+            "UCPhSAx1cU7-8ifr3b8o8M5A", // Chef Moka 👩‍🍳
+            "UCrTCkJ8377E7JhsMeyLXtKA", // DaftTaengk
+            "UCb8iIFUB-QH7WQBVkQQYQBw", // Dew Asia
+            "UCn21qwlzBQp2EcuHscxouWQ", // Greeming *
+            "UCuiurKTtUHfu_VWbMBq4k9g", // Heavenlys Dolls
+            "UC70Hwe3nc_0I09_hgrYJsSg", // K-POP 날것이 좋아
+            "UCNalkIvfx6Rls4IKd3qy_Sg", // K-POP ZONE
+            "UCHTPX4k1blzI8FPN7j6jjSQ", // kpop up on
+            "UCpqM6amdEngQaQbc8954Jbg" // MangoNim
+    );
+
+    private static final Pattern PRODUCER_CREDIT = Pattern.compile(
+            "(?iu)공식\\s*(?:유튜브|채널|계정)|official\\s+(?:youtube\\s+)?channel|기획\\s*[·・/&]\\s*제작\\s*©");
+
     private MediaHashtags() {}
+
+    public static List<String> tripleSHashtagQueries() {
+        List<String> queries = new ArrayList<>();
+        queries.add("#트리플에스|#tripleS");
+        for (String name : MemberPortraitOptions.koreanOrder()) {
+            String query = MemberPortraitOptions.memberAliases(name).stream()
+                    .filter(alias -> alias.matches("[가-힣]+"))
+                    .map(alias -> "#" + alias)
+                    .collect(java.util.stream.Collectors.joining("|"));
+            queries.add(query);
+        }
+        return queries;
+    }
+
+    public static List<String> taggedTripleSMembers(String title, String description) {
+        Set<String> names = new LinkedHashSet<>();
+        for (String tag : exactHashtags(title, description)) {
+            int index = MemberPortraitOptions.memberIndex(tag);
+            if (index < 24 && !tag.matches("s[0-9]+")) names.add(MemberPortraitOptions.koreanOrder().get(index));
+        }
+        return List.copyOf(names);
+    }
+
+    public static boolean hasTripleSDiscoveryTag(String title, String description, String channelTitle, String channelDescription) {
+        Set<String> hashtags = exactHashtags(title, description);
+        if (hashtags.contains("triples") || hashtags.contains("트리플에스")) return true;
+        List<String> members = taggedTripleSMembers(title, description);
+        if (members.isEmpty()) return false;
+        return mentionsTripleS(safe(title), safe(description)) || mentionsTripleS(safe(channelTitle), safe(channelDescription))
+                || members.stream().anyMatch(name -> name.length() >= 3 && safe(channelTitle).contains(name));
+    }
+
+    public static boolean hasDiscoveryHashtag(String title, String description) {
+        Set<String> hashtags = exactHashtags(title, description);
+        return hashtags.contains("triples") || hashtags.contains("트리플에스") || !taggedTripleSMembers(title, description).isEmpty();
+    }
+
+    public static boolean reviewedFanChannel(String channelId) {
+        return channelId != null && REVIEWED_FAN_CHANNELS.contains(channelId);
+    }
+
+    public static boolean hasPublisherEvidence(String channelId, String channelDescription, String videoDescription) {
+        return channelId != null && (REVIEWED_ORIGINAL_CHANNELS.contains(channelId)
+                || PRODUCER_CREDIT.matcher(safe(channelDescription) + " " + safe(videoDescription)).find());
+    }
+
+    public static boolean looksFanUpload(String title, String description, String channelTitle, String channelDescription) {
+        return looksFanMade(title, null) || looksFanMade(channelTitle, channelDescription)
+                || FAN_UPLOAD.matcher(safe(title) + " " + safe(channelTitle)).find()
+                || FAN_UPLOAD.matcher(safe(channelDescription)).find()
+                || exactHashtags(description, null).stream()
+                    .anyMatch(tag -> tag.matches("fan_?(?:made|edit)|팬메이드|팬에디트|unofficial"));
+    }
+
+    private static Set<String> exactHashtags(String title, String description) {
+        Set<String> result = new LinkedHashSet<>();
+        Matcher matcher = HASHTAG.matcher(safe(title) + " " + safe(description));
+        while (matcher.find()) result.add(matcher.group(1).toLowerCase(Locale.ROOT));
+        return result;
+    }
+
+    private static String safe(String value) {
+        return value == null ? "" : java.text.Normalizer.normalize(value, java.text.Normalizer.Form.NFC);
+    }
 
     public static boolean mentionsTripleS(String title, String description) {
         return mentions(title) || mentions(description);

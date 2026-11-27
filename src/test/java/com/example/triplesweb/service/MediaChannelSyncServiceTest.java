@@ -41,6 +41,53 @@ class MediaChannelSyncServiceTest {
     @Mock private PlatformTransactionManager transactionManager;
     private MediaChannelSyncService service;
 
+    @Test
+    void importsOnlyNewQualifiedHashtagVideosAndRemovesConfirmedFanUploads() {
+        String publisher = "UCqq-ovGE01ErlXakPihhKDA";
+        String smallPublisher = "UCEIi7zFR_wE23jFncVtd6-A";
+        String fanPublisher = "UCHztIyDNlLlZ6JA85a6BdCw";
+        String freshId = "Xrb5m74vT4o";
+        String existingId = "HuD6ph0-ju0";
+        String lowViewsId = "gOQ315I5yPs";
+        String lowSubscribersId = "Yb0GtMc9Axc";
+        String fanId = "PR6mJ59QMNc";
+        Media existing = Media.builder().youtubeId(existingId).tab("shorts").build();
+        Media fan = Media.builder().youtubeId(fanId).tab("external").curatedTab(true).build();
+        when(transactionManager.getTransaction(any())).thenReturn(new SimpleTransactionStatus());
+        when(youtube.hasApiKey()).thenReturn(true);
+        when(youtube.resolveUploadsPlaylist(any(), any())).thenReturn("UU1");
+        when(youtube.listUploadedVideoIds(any(), anyInt())).thenReturn(List.of());
+        when(youtube.searchHashtagVideoIds(eq("#트리플에스|#tripleS"), eq(2)))
+                .thenReturn(List.of(freshId, existingId, lowViewsId, lowSubscribersId, fanId));
+        when(youtube.fetchChannelAudiences(any())).thenReturn(java.util.Map.of(
+                publisher, new YoutubeDataApiClient.ChannelAudience(10_000L, ""),
+                smallPublisher, new YoutubeDataApiClient.ChannelAudience(9_999L, "")));
+        when(youtube.fetchChannelVideos(any())).thenReturn(List.of(
+                taggedVideo(freshId, publisher, "방송사", 10_000L),
+                taggedVideo(existingId, publisher, "방송사", 10_000L),
+                taggedVideo(lowViewsId, publisher, "방송사", 9_999L),
+                taggedVideo(lowSubscribersId, smallPublisher, "방송사", 10_000L),
+                taggedVideo(fanId, fanPublisher, "팬편집 채널", 50_000L)));
+        when(mediaRepository.findAllWithArtists()).thenReturn(List.of(existing, fan));
+        when(artistRepository.findAll()).thenReturn(List.of(artist("윤서연", "seoyeon")));
+
+        MediaChannelSyncService.Result result = service.syncFull();
+
+        assertThat(result.inserted()).isEqualTo(1);
+        assertThat(existing.getTab()).isEqualTo("shorts");
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<Media>> inserted = ArgumentCaptor.forClass(List.class);
+        verify(mediaRepository).saveAll(inserted.capture());
+        assertThat(inserted.getValue()).extracting(Media::getYoutubeId, Media::getTab, Media::isCuratedTab)
+                .containsExactly(tuple(freshId, "external", true));
+        verify(mediaRepository).deleteAll(java.util.List.of(fan));
+    }
+
+    private static YoutubeDataApiClient.ChannelVideo taggedVideo(String id, String channel, String name, long views) {
+        return new YoutubeDataApiClient.ChannelVideo(id, "외부 영상 #TripleS #서연", "2026-11-26",
+                "3:15", "PT3M15S", views, "none", channel, name, "");
+    }
+
     @BeforeEach
     void setUp() {
         service = new MediaChannelSyncService(youtube, namu, mediaRepository, artistRepository, transactionManager);

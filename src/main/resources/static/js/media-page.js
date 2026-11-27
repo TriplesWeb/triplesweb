@@ -7,6 +7,7 @@
     const memberBox = document.getElementById('mediaMemberInputs');
     const memberCount = document.getElementById('mediaMemberCount');
     const search = form?.querySelector('.ar-search');
+    let refreshSavedMedia;
 
     function selectedMembers() {
         if (!window.MemberPortraitPicker || !panel) return [];
@@ -210,12 +211,11 @@
             else if (className === 'media-shorts') (archive || feature || filters)?.after(imported);
         }
 
-        async function applyResults(nextHref, fromPager, replaceHistory) {
+        async function applyResults(nextHref, fromPager, replaceHistory, keepPosition = false) {
             const nextUrl = new URL(nextHref || filterUrl(), location.href);
-            if (document.querySelector('.media-archive') && selectedCols === '5') {
-                nextUrl.searchParams.set('cols', '5');
-            } else {
-                nextUrl.searchParams.delete('cols');
+            if (!keepPosition) {
+                if (document.querySelector('.media-archive') && selectedCols === '5') nextUrl.searchParams.set('cols', '5');
+                else nextUrl.searchParams.delete('cols');
             }
             const url = nextUrl.pathname + nextUrl.search;
             const seq = ++filterSeq;
@@ -261,10 +261,12 @@
                 if (fromPager) document.querySelector('.media-archive')?.scrollIntoView({ block: 'start' });
                 else window.scrollTo(0, y);
             } catch (error) {
+                if (keepPosition) throw error;
                 if (seq === filterSeq) window.location.assign(url);
             }
         }
 
+        refreshSavedMedia = () => applyResults(location.href, false, true, true);
         form.addEventListener('media-page-size-change', () => {
             window.clearTimeout(filterTimer);
             applyResults();
@@ -804,7 +806,7 @@
         if (dialog.parentElement !== document.body) document.body.appendChild(dialog);
         dialog.hidden = false;
         document.body.style.overflow = 'hidden';
-        dialog.querySelector('input, select, textarea, button')?.focus();
+        dialog.querySelector('input, select, textarea, button')?.focus({ preventScroll: true });
         window.bindArchiveDateFields?.(dialog);
     }
 
@@ -851,11 +853,9 @@
 
     const mediaEditForm = document.getElementById('mediaEditForm');
     bindMemberForm(mediaEditForm);
-    mediaEditForm?.addEventListener('submit', () => {
-        const returnTo = mediaEditForm.elements.namedItem('returnTo');
-        if (returnTo && location.pathname === '/media') {
-            returnTo.value = location.pathname + location.search;
-        }
+    mediaEditForm?.addEventListener('submit', (event) => {
+        event.preventDefault();
+        saveMediaForm(mediaEditForm);
     });
     bindMemberForm(document.getElementById('mediaAddForm'));
 
@@ -1425,7 +1425,14 @@
         if (window.SiteFeedback?.confirm && !await window.SiteFeedback.confirm('이 영상을 등록하시겠습니까?')) return;
         const viewsHidden = document.getElementById('mediaAddViewsHidden');
         if (viewsHidden) viewsHidden.disabled = !viewsHidden.value;
+        await saveMediaForm(form);
+    });
+
+    async function saveMediaForm(form) {
+        const returnTo = form.elements.namedItem('returnTo');
+        if (returnTo) returnTo.value = location.pathname + location.search;
         const submit = form.querySelector('button[type="submit"]');
+        if (submit?.disabled) return;
         if (submit) submit.disabled = true;
         const doneBusy = window.SiteFeedback?.beginBusy?.();
         try {
@@ -1436,18 +1443,23 @@
                 headers: authHeaders({ 'X-Requested-With': 'XMLHttpRequest' })
             });
             if (response.ok) {
-                window.location.href = response.redirected ? response.url : '/media';
+                closeArDialog(form.closest('.ar-dialog'));
+                try {
+                    await refreshSavedMedia?.();
+                } catch (_) {
+                    window.SiteFeedback?.alert('저장했습니다. 목록을 새로 고치지 못했습니다.');
+                }
                 return;
             }
             const detail = (await response.text()).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-            window.SiteFeedback?.alert(detail || '영상을 등록하지 못했습니다.');
+            window.SiteFeedback?.alert(detail || '영상을 저장하지 못했습니다.');
         } catch (error) {
             window.SiteFeedback?.alert('요청에 실패했습니다. 네트워크 연결을 확인해 주세요.');
         } finally {
             if (typeof doneBusy === 'function') doneBusy();
             if (submit) submit.disabled = false;
         }
-    });
+    }
 
     if (window.__openMediaAdd) openAddModal();
 })();

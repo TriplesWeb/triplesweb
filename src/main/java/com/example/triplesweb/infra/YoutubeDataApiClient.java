@@ -168,13 +168,21 @@ public class YoutubeDataApiClient {
      * {@code maxPages}가 1 이상이면 그 페이지만, 아니면 한 페이지만 읽는다.
      */
     public List<String> searchVideoIds(String query, String channelId, int maxPages) {
+        return searchVideoIds(query, channelId, maxPages, "date");
+    }
+
+    public List<String> searchHashtagVideoIds(String query, int maxPages) {
+        return searchVideoIds(query, null, maxPages, maxPages > 1 ? "viewCount" : "date");
+    }
+
+    private List<String> searchVideoIds(String query, String channelId, int maxPages, String order) {
         if (!hasApiKey() || query == null || query.isBlank()) return List.of();
         List<String> ids = new ArrayList<>();
         String pageToken = null;
         int pages = 0;
         int limit = maxPages > 0 ? Math.min(maxPages, MAX_SEARCH_PAGES) : 1;
         do {
-            SearchResponse response = requestSearch(query, channelId, pageToken);
+            SearchResponse response = requestSearch(query, channelId, pageToken, order);
             if (response == null) return pages == 0 ? List.of() : ids;
             pages++;
             if (response.getItems() != null) {
@@ -188,6 +196,31 @@ public class YoutubeDataApiClient {
             if (pageToken == null || pageToken.isBlank()) break;
         } while (pages < limit);
         return ids;
+    }
+
+    public record ChannelAudience(long subscribers, String description) {}
+
+    public Map<String, ChannelAudience> fetchChannelAudiences(Collection<String> channelIds) {
+        if (!hasApiKey() || channelIds == null || channelIds.isEmpty()) return Map.of();
+        List<String> ids = channelIds.stream().filter(id -> id != null && id.matches("UC[a-zA-Z0-9_-]{22}"))
+                .distinct().toList();
+        Map<String, ChannelAudience> results = new LinkedHashMap<>();
+        for (int offset = 0; offset < ids.size(); offset += PAGE_SIZE) {
+            URI uri = UriComponentsBuilder.fromUriString(CHANNELS)
+                    .queryParam("part", "snippet,statistics")
+                    .queryParam("id", String.join(",", ids.subList(offset, Math.min(offset + PAGE_SIZE, ids.size()))))
+                    .queryParam("key", apiKey()).encode().build().toUri();
+            ChannelsResponse response = get(syncRest, uri, ChannelsResponse.class);
+            if (response == null || response.getItems() == null) continue;
+            for (ChannelsResponse.Item item : response.getItems()) {
+                if (item == null || item.getId() == null || item.getStatistics() == null) continue;
+                ChannelStatistics stats = item.getStatistics();
+                long subscribers = stats.isHiddenSubscriberCount() || stats.getSubscriberCount() == null ? 0 : stats.getSubscriberCount();
+                String description = item.getSnippet() == null ? "" : item.getSnippet().getDescription();
+                results.put(item.getId(), new ChannelAudience(subscribers, description));
+            }
+        }
+        return results;
     }
 
     /** 채널 동기화용. snippet·길이·조회수·라이브 여부를 50개씩 읽는다. */
@@ -239,13 +272,13 @@ public class YoutubeDataApiClient {
         return uploadsPlaylist(get(syncRest, uri, ChannelsResponse.class));
     }
 
-    private SearchResponse requestSearch(String query, String channelId, String pageToken) {
+    private SearchResponse requestSearch(String query, String channelId, String pageToken, String order) {
         if (Instant.now().isBefore(searchRetryAt)) return null;
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(SEARCH)
                 .queryParam("part", "snippet")
                 .queryParam("type", "video")
                 .queryParam("maxResults", PAGE_SIZE)
-                .queryParam("order", "date")
+                .queryParam("order", order)
                 .queryParam("q", query)
                 .queryParam("key", apiKey());
         if (channelId != null && !channelId.isBlank()) builder.queryParam("channelId", channelId.trim());
@@ -497,6 +530,17 @@ public class YoutubeDataApiClient {
     }
 
     @Data
+    public static class ChannelSnippet {
+        private String description;
+    }
+
+    @Data
+    public static class ChannelStatistics {
+        private Long subscriberCount;
+        private boolean hiddenSubscriberCount;
+    }
+
+    @Data
     public static class ChannelsResponse {
         private Item[] items;
 
@@ -504,6 +548,8 @@ public class YoutubeDataApiClient {
         public static class Item {
             private String id;
             private ChannelContentDetails contentDetails;
+            private ChannelSnippet snippet;
+            private ChannelStatistics statistics;
         }
 
         @Data

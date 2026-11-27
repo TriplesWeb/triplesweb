@@ -56,7 +56,7 @@ public class Media {
     @Column(name = "channel_id", length = 64)
     private String channelId;
 
-    @Column(name = "curated_tab", nullable = false)
+    @Column(name = "curated_external", nullable = false)
     private boolean curatedTab;
 
     @ManyToMany(fetch = FetchType.LAZY)

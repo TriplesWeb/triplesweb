@@ -305,6 +305,7 @@ public class MediaArchiveController {
     public Object createNewMedia(@ModelAttribute("form") MediaDto form,
                                  BindingResult binding,
                                  @RequestParam(value = "artistNames", required = false) List<String> artistNames,
+                                 @RequestParam(required = false) String returnTo,
                                  HttpServletRequest request,
                                  HttpSession session) {
         aboutAdminAuth.requireAdmin(request, session);
@@ -357,7 +358,8 @@ public class MediaArchiveController {
         }
 
         media.registerMedia(tab, form, String.join(",", selectedArtists));
-        return "redirect:/media?tab=" + tab;
+        if (wantsAjax(request)) return org.springframework.http.ResponseEntity.noContent().build();
+        return "redirect:" + (isMediaListLocation(returnTo) ? returnTo : "/media?tab=" + tab);
     }
 
     @PostMapping("/media_delete")
@@ -372,7 +374,7 @@ public class MediaArchiveController {
     }
 
     @PostMapping("/media_update")
-    public String updateMedia(@RequestParam String youtubeId,
+    public Object updateMedia(@RequestParam String youtubeId,
                               @RequestParam(required = false) String description,
                               @RequestParam(required = false) String publishedOn,
                               @RequestParam(value = "artistNames", required = false) List<String> artistNames,
@@ -382,7 +384,11 @@ public class MediaArchiveController {
                               HttpSession session) {
         aboutAdminAuth.requireAdmin(request, session);
         String names = artistNames == null ? "" : String.join(",", artistNames);
-        media.updateDetails(youtubeId, description, publishedOn, names, tab);
+        boolean updated = media.updateDetails(youtubeId, description, publishedOn, names, tab);
+        if (wantsAjax(request)) {
+            return updated ? org.springframework.http.ResponseEntity.noContent().build()
+                    : org.springframework.http.ResponseEntity.status(404).body("수정할 영상을 찾을 수 없습니다.");
+        }
         if (isMediaListLocation(returnTo)) return "redirect:" + returnTo;
         return "redirect:/media?tab=" + normalizeTab(tab);
     }

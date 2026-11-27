@@ -396,6 +396,7 @@
     <div class="ar-dialog-backdrop" aria-hidden="true"></div>
     <div class="ar-dialog-panel" role="dialog" aria-modal="true" aria-labelledby="mediaAddLabel">
         <form id="mediaAddForm" method="post" action="/media_new" novalidate>
+            <input type="hidden" name="returnTo" value="{{mediaEditReturnTo}}">
             {{#_csrf}}<input type="hidden" name="{{parameterName}}" value="{{token}}">{{/_csrf}}
             <div class="ar-dialog-head">
                 <h2 id="mediaAddLabel">미디어 추가</h2>
@@ -475,7 +476,7 @@
 <div class="ar-dialog" id="mediaEditModal" hidden>
     <div class="ar-dialog-backdrop" aria-hidden="true"></div>
     <div class="ar-dialog-panel" role="dialog" aria-modal="true" aria-labelledby="mediaEditLabel">
-        <form id="mediaEditForm" method="post" action="/media_update" data-admin-fetch>
+        <form id="mediaEditForm" method="post" action="/media_update">
             {{#_csrf}}<input type="hidden" name="{{parameterName}}" value="{{token}}">{{/_csrf}}
             <div class="ar-dialog-head">
                 <h2 id="mediaEditLabel">영상 정보 수정</h2>

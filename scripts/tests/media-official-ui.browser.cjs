@@ -236,6 +236,12 @@ ${read('css/media-page.css')}
   </div>
 </div>
 <p id="ytModalTitle" hidden></p>
+<div class="ar-dialog" id="mediaAddModal" hidden><form id="mediaAddForm" method="post" action="/media_new">
+  <input id="mediaAddTitle" name="title" value="외부 영상"><input type="hidden" name="returnTo"><button type="submit">저장</button>
+</form></div>
+<div class="ar-dialog" id="mediaEditModal" hidden><form id="mediaEditForm" method="post" action="/media_update">
+  <input type="hidden" name="youtubeId" value="HwTZTz9j2e0"><input type="hidden" name="returnTo"><button type="submit">저장</button>
+</form></div>
 <script type="application/json" id="mediaCatalog">${JSON.stringify(videos)}</script>
 <script type="application/json" id="mediaPickCatalog">${JSON.stringify(videos)}</script>
 <script type="application/json" id="memberUnitRoster">${JSON.stringify([{ name: 'LOVElution', unitId: 7, members: ['김유연', '김나경'] }])}</script>
@@ -256,6 +262,10 @@ ${read('css/media-page.css')}
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
     await page.route('https://media.test/**', (route) => {
       const url = route.request().url();
+      if (url.endsWith('/media_new') || url.endsWith('/media_update')) {
+        assert.match(route.request().postData(), /\/media\?tab=signal&era=allHaus&sort=oldest/);
+        return route.fulfill({ status: 204 });
+      }
       if (url.endsWith('/media_delete')) {
         return route.fulfill({ status: 200, body: 'ok' });
       }
@@ -507,6 +517,25 @@ ${read('css/media-page.css')}
     assert.equal(scope.get('era'), 'allHaus');
     assert.deepEqual(await playlist.evaluateAll((rows) => rows.map((row) => row.dataset.ytid)), ['vid000']);
     assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('triples-media-playlist')).length), 3);
+    const previousUrl = page.url();
+    const y = await page.evaluate(() => {
+      window.SiteFeedback.confirm = async () => true;
+      document.body.style.minHeight = '2200px';
+      window.scrollTo(0, 500);
+      return window.scrollY;
+    });
+    for (const id of ['mediaAddForm', 'mediaEditForm']) {
+      const refreshed = page.waitForResponse((response) => response.request().method() === 'GET' && response.url() === previousUrl);
+      await page.evaluate((formId) => {
+        const form = document.getElementById(formId);
+        form.closest('.ar-dialog').hidden = false;
+        form.requestSubmit();
+      }, id);
+      await refreshed;
+      await page.waitForFunction((formId) => !document.querySelector('#' + formId + ' button').disabled, id);
+      assert.equal(page.url(), previousUrl);
+      assert.equal(await page.evaluate(() => window.scrollY), y, id);
+    }
   } finally {
     await browser.close();
   }
