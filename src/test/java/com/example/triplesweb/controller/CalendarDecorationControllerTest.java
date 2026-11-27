@@ -29,8 +29,9 @@ class CalendarDecorationControllerTest {
     @Test
     void repeatsMemberBirthdayInsideTheRequestedRange() throws Exception {
         Artist artist = new Artist();
-        artist.setArtistId(2L);
+        artist.setArtistId(999L);
         artist.setName("정혜린");
+        artist.setEngName("hyerin");
         artist.setBirthDate("2007.04.12");
         artist.setColor("#9200ff");
         when(artists.findAll()).thenReturn(List.of(artist));
