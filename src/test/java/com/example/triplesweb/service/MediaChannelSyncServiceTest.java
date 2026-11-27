@@ -574,26 +574,35 @@ class MediaChannelSyncServiceTest {
     }
 
     @Test
-    void curatedTabVideosAreNeitherRemovedNorMovedToShorts() {
+    void verifiedShortsMoveEvenFromCuratedTabsAndRegularVideosStayInPlace() {
         when(transactionManager.getTransaction(any())).thenReturn(new SimpleTransactionStatus());
         when(youtube.hasApiKey()).thenReturn(true);
         when(youtube.resolveUploadsPlaylist(any(), any())).thenReturn("UU1");
         when(youtube.listUploadedVideoIds(any(), anyInt())).thenReturn(List.of());
-        when(namu.externalVideoIds()).thenReturn(List.of("0hNuXQ0-FZM"));
+        when(namu.externalVideoIds()).thenReturn(List.of("0hNuXQ0-FZM", "DRB_vCLbu7A", "tenminutes1"));
         when(youtube.hasUploadFormat("UC1thekxxxxxxxxxxxxxxx", "0hNuXQ0-FZM", true)).thenReturn(true);
+        when(youtube.hasUploadFormat("UCchaeyeonxxxxxxxxxxx", "DRB_vCLbu7A", true)).thenReturn(false);
+        when(youtube.hasUploadFormat("UCchaeyeonxxxxxxxxxxx", "DRB_vCLbu7A", false)).thenReturn(true);
         when(youtube.fetchChannelVideos(any())).thenReturn(List.of(
-                new YoutubeDataApiClient.ChannelVideo("0hNuXQ0-FZM", "배지전쟁", "2025-06-04", "1:00", "PT1M",
+                new YoutubeDataApiClient.ChannelVideo("0hNuXQ0-FZM", "배지전쟁", "2025-06-04", "5:59", "PT5M59S",
                         10L, "none", "UC1thekxxxxxxxxxxxxxxx", "1theK Originals", ""),
                 new YoutubeDataApiClient.ChannelVideo("DRB_vCLbu7A", "아침 민낯 김채연", "2026-11-01", "7:02", "PT7M2S",
+                        20L, "none", "UCchaeyeonxxxxxxxxxxx", "13년 차 신인 김채연", ""),
+                new YoutubeDataApiClient.ChannelVideo("tenminutes1", "영상 #shorts", "2026-11-01", "10:00", "PT10M",
                         20L, "none", "UCchaeyeonxxxxxxxxxxx", "13년 차 신인 김채연", "")));
         Media shortClip = Media.builder().youtubeId("0hNuXQ0-FZM").tab("external").curatedTab(true).build();
         Media vlog = Media.builder().youtubeId("DRB_vCLbu7A").tab("external").curatedTab(true).build();
-        when(mediaRepository.findAllWithArtists()).thenReturn(List.of(shortClip, vlog));
+        Media tenMinutes = Media.builder().youtubeId("tenminutes1").tab("external").curatedTab(true).build();
+        when(mediaRepository.findAllWithArtists()).thenReturn(List.of(shortClip, vlog, tenMinutes));
         when(artistRepository.findAll()).thenReturn(List.of());
 
         service.syncFull();
 
-        assertThat(shortClip.getTab()).isEqualTo("external");
+        assertThat(shortClip.getTab()).isEqualTo("shorts");
+        assertThat(shortClip.isCuratedTab()).isTrue();
+        assertThat(vlog.getTab()).isEqualTo("external");
+        assertThat(tenMinutes.getTab()).isEqualTo("external");
+        verify(youtube, never()).hasUploadFormat(any(), eq("tenminutes1"), anyBoolean());
         verify(mediaRepository, never()).deleteAll(any());
     }
 

@@ -9,8 +9,8 @@
     const search = form?.querySelector('.ar-search');
     let refreshSavedMedia;
 
-    function revealActiveSignalEra() {
-        const active = document.querySelector('.media-era-tabs [aria-current="page"]');
+    function revealActiveMediaSubtab() {
+        const active = document.querySelector('.media-subtabs [aria-current="page"]');
         const tabs = active?.closest('.media-tabs');
         if (!tabs) return;
         const itemBounds = active.getBoundingClientRect();
@@ -19,7 +19,7 @@
         if (itemBounds.left < tabBounds.left) tabs.scrollLeft -= tabBounds.left - itemBounds.left;
     }
 
-    revealActiveSignalEra();
+    revealActiveMediaSubtab();
 
     function selectedMembers() {
         if (!window.MemberPortraitPicker || !panel) return [];
@@ -251,11 +251,11 @@
                 }
                 swapSection(shell, nextShell, 'media-archive');
                 swapSection(shell, nextShell, 'media-shorts');
-                const eraTabs = shell.querySelector('.media-era-tabs');
-                const nextEraTabs = nextShell.querySelector('.media-era-tabs');
-                if (eraTabs && nextEraTabs) {
-                    eraTabs.replaceWith(document.importNode(nextEraTabs, true));
-                    revealActiveSignalEra();
+                const subtabs = shell.querySelector('.media-subtabs');
+                const nextSubtabs = nextShell.querySelector('.media-subtabs');
+                if (subtabs && nextSubtabs) {
+                    subtabs.replaceWith(document.importNode(nextSubtabs, true));
+                    revealActiveMediaSubtab();
                 }
                 const catalog = document.getElementById('mediaCatalog');
                 const nextCatalog = doc.getElementById('mediaCatalog');
@@ -273,7 +273,7 @@
                     else history.pushState({ mediaLive: true }, '', url);
                 }
                 paintMediaCols();
-                if (fromPager) document.querySelector('.media-archive')?.scrollIntoView({ block: 'start' });
+                if (fromPager) shell.querySelector('.media-archive, .media-shorts')?.scrollIntoView({ block: 'start' });
                 else window.scrollTo(0, y);
             } catch (error) {
                 if (keepPosition) throw error;

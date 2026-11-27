@@ -105,7 +105,7 @@ body.media-page {
     border-bottom-color: rgba(255, 255, 255, 0.08);
 }
 
-.media-page .media-era-tabs {
+.media-page .media-subtabs {
     display: inline-flex;
     flex-shrink: 0;
     gap: 0.125rem;
@@ -113,7 +113,7 @@ body.media-page {
     border-inline: 1px solid var(--site-border, rgba(129, 150, 145, 0.3));
 }
 
-.media-page .media-era-tabs .site-section-tab {
+.media-page .media-subtabs .site-section-tab {
     padding-inline: 0.55rem;
     font-size: 0.78rem;
 }

@@ -15,6 +15,7 @@ public class MediaDto {
     private Long id;
     @NotBlank private String tab;
     @NotBlank private String youtubeId;
+    private String channelId;
     /** 저장 시 비어 있으면 유튜브 메타데이터로 채운다. */
     @Size(max = 200) private String title;
     private Long views;

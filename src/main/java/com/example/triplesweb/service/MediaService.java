@@ -212,7 +212,7 @@ public class MediaService {
 
     private MediaDto toDto(Media m) {
         long views=m.getViewCount()!=null?m.getViewCount():0L;
-        MediaDto dto = localCatalog.applyTabOverride(MediaDto.builder().id(m.getId()).tab(m.getTab()).youtubeId(m.getYoutubeId())
+        MediaDto dto = localCatalog.applyTabOverride(MediaDto.builder().id(m.getId()).tab(m.getTab()).youtubeId(m.getYoutubeId()).channelId(m.getChannelId())
                 .title(m.getMediaTitle()).duration(m.getMediaDur()).views(views)
                 .viewCountFmt(NumberFormat.getInstance().format(views)).description(visibleDescription(m.getDescription()))
                 .artistNames(m.getArtistNames()).publishedOn(m.getPublishedOn()==null?"":m.getPublishedOn().toString()).build());

@@ -388,6 +388,44 @@ class MediaArchiveControllerTest {
     }
 
     @Test
+    void shortsSubtabsKeepTheirCategoryAcrossSearchAndPagination() throws Exception {
+        List<MediaDto> matches = new ArrayList<>();
+        for (int i = 0; i < 26; i++) {
+            MediaDto video = video(i, "shorts", "Episode collaboration " + i, "0:29", "2026-11-24");
+            video.setChannelId("UChhKBlh_wvspTh5n4mL0b5g");
+            matches.add(video);
+        }
+        matches.add(video(40, "shorts", "Episode #SIGNAL_261124", "0:39", "2026-11-24"));
+        matches.add(video(41, "shorts", "Episode regular challenge", "0:30", "2026-11-24"));
+        matches.add(video(42, "contents", "Episode long-form", "2:00", "2026-11-24"));
+        when(media.allByTab("shorts")).thenReturn(matches);
+
+        String html = mvc.perform(get("/media").param("tab", "shorts").param("shortsCategory", "collaboration")
+                        .param("sort", "oldest").param("q", "Episode").param("page", "2"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        var document = Jsoup.parse(html);
+        assertThat(document.select(".media-shorts-tabs .site-section-tab").eachText())
+                .containsExactly("전체", "챌린지 품앗이", "챌린지", "시그널 미리보기");
+        assertThat(document.select(".media-shorts-tabs [aria-current=page]").text())
+                .isEqualTo("챌린지 품앗이");
+        assertThat(document.select(".media-short__caption strong").eachText())
+                .containsExactly("Episode collaboration 24", "Episode collaboration 25");
+        assertThat(document.select("#mediaFilterForm input[name=shortsCategory], .ar-page-jump input[name=shortsCategory]"))
+                .hasSize(2).allMatch(input -> "collaboration".equals(input.val()));
+        assertThat(document.select(".ar-pager-num").eachAttr("href"))
+                .allSatisfy(href -> assertThat(href).contains("shortsCategory=collaboration", "q=Episode"));
+        assertThat(document.select(".ar-reset").attr("href")).isEqualTo("/media?tab=shorts&shortsCategory=collaboration");
+
+        for (String[] scope : List.of(
+                new String[]{"signal-preview", "Episode #SIGNAL_261124"},
+                new String[]{"challenge", "Episode regular challenge"})) {
+            String filtered = mvc.perform(get("/media").param("tab", "shorts").param("shortsCategory", scope[0]))
+                    .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+            assertThat(Jsoup.parse(filtered).select(".media-short__caption strong").eachText()).containsExactly(scope[1]);
+        }
+    }
+
+    @Test
     void shortsKindKeepsOnlyShortVideos() throws Exception {
         String html = mvc.perform(get("/media").param("kind", "shorts"))
                 .andExpect(status().isOk())
