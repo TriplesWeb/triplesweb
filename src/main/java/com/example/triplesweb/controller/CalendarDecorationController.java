@@ -26,6 +26,13 @@ import java.util.regex.Pattern;
 @RequestMapping("/api/calendar-decorations")
 @RequiredArgsConstructor
 public class CalendarDecorationController {
+    // bite 이미지 번호는 artistId가 아니라 고정된 멤버 순서로 매핑한다.
+    private static final List<String> BITE_IMAGE_ORDER = List.of(
+            "seoyeon", "hyerin", "jiwoo", "chaeyeon", "yooyeon", "soomin",
+            "nakyoung", "yubin", "kaede", "dahyun", "kotone", "yeonji",
+            "nien", "sohyun", "xinyu", "mayu", "lynn", "joobin",
+            "hayeon", "shion", "chaewon", "sullin", "seoah", "jiyeon"
+    );
     private static final Pattern BIRTH_DATE = Pattern.compile("(?:19|20)\\d{2}\\s*[./-]\\s*(\\d{1,2})\\s*[./-]\\s*(\\d{1,2})");
     private final CalendarDecorationService service;
     private final ArtistRepository artistRepository;
@@ -55,7 +62,7 @@ public class CalendarDecorationController {
                 try {
                     LocalDate birthday = LocalDate.of(year, month, day);
                     if (birthday.isBefore(start) || birthday.isAfter(end)) continue;
-                    result.add(Map.of(
+                    Map<String, Object> birthdayEvent = new java.util.LinkedHashMap<>(Map.of(
                             "id", "birthday-" + artist.getArtistId() + "-" + year,
                             "title", artist.getName() + " 생일",
                             "start", birthday.toString(),
@@ -63,9 +70,13 @@ public class CalendarDecorationController {
                             "categoryLabel", "생일",
                             "kind", "BIRTHDAY",
                             "artistName", artist.getName(),
-                            "imageUrl", "/images/artist/bite/" + artist.getArtistId() + ".png",
                             "description", artist.getName() + "의 생일입니다."
                     ));
+                    int biteImageNumber = BITE_IMAGE_ORDER.indexOf(artist.getEngName()) + 1;
+                    if (biteImageNumber > 0) {
+                        birthdayEvent.put("imageUrl", "/images/artist/bite/" + biteImageNumber + ".png");
+                    }
+                    result.add(birthdayEvent);
                 } catch (DateTimeException ignored) {
                     // 윤년이 아닌 해의 2월 29일은 표시하지 않는다.
                 }
