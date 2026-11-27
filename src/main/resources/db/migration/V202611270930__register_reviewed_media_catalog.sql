@@ -1384,8 +1384,9 @@ SET m.tab = reviewed.tab,
     m.published_on = COALESCE(m.published_on, reviewed.published_on)
 WHERE reviewed.assignment > 0 AND NOT m.curated_tab;
 
-INSERT INTO media (youtube_id, tab, media_title, media_dur, view_count, published_on, curated_tab)
-SELECT reviewed.youtube_id, reviewed.tab, reviewed.title, reviewed.duration, reviewed.views, reviewed.published_on, TRUE
+INSERT INTO media (youtube_id, tab, media_title, media_dur, view_count, published_on, sort_order, curated_tab)
+SELECT reviewed.youtube_id, reviewed.tab, reviewed.title, reviewed.duration, reviewed.views, reviewed.published_on,
+       YEAR(reviewed.published_on) * 10000 + MONTH(reviewed.published_on) * 100 + DAY(reviewed.published_on), TRUE
 FROM tmp_reviewed_media reviewed
 WHERE NOT EXISTS (
     SELECT 1 FROM media m WHERE BINARY LOWER(m.youtube_id) = BINARY LOWER(reviewed.youtube_id)

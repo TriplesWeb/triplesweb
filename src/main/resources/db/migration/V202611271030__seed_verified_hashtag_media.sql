@@ -86,8 +86,10 @@ INSERT INTO tmp_verified_hashtag_media (youtube_id, channel_id, title, duration,
 DELETE seed FROM tmp_verified_hashtag_media seed
 JOIN media m ON BINARY LOWER(m.youtube_id) = BINARY LOWER(seed.youtube_id);
 
-INSERT INTO media (youtube_id, channel_id, tab, media_title, media_dur, view_count, published_on, curated_external)
-SELECT youtube_id, channel_id, 'external', title, duration, views, published_on, TRUE FROM tmp_verified_hashtag_media;
+INSERT INTO media (youtube_id, channel_id, tab, media_title, media_dur, view_count, published_on, sort_order, curated_external)
+SELECT youtube_id, channel_id, 'external', title, duration, views, published_on,
+       YEAR(published_on) * 10000 + MONTH(published_on) * 100 + DAY(published_on), TRUE
+FROM tmp_verified_hashtag_media;
 
 INSERT INTO media_artist (media_id, artist_id)
 SELECT m.id, a.artist_id
