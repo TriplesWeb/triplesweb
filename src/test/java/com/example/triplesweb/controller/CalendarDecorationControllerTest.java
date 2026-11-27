@@ -85,15 +85,24 @@ class CalendarDecorationControllerTest {
                         .param("start", "2026-01-01")
                         .param("end", "2026-10-31"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[?(@.start == '2026-01-08')].length()").value(2))
-                .andExpect(jsonPath("$[?(@.start == '2026-01-08')][0].imageUrl").value("/images/artist/bite/10.png"))
-                .andExpect(jsonPath("$[?(@.start == '2026-01-08')][1].imageUrl").value("/images/artist/bite/12.png"))
-                .andExpect(jsonPath("$[?(@.start == '2026-04-12')].length()").value(2))
-                .andExpect(jsonPath("$[?(@.start == '2026-04-12')][0].imageUrl").value("/images/artist/bite/2.png"))
-                .andExpect(jsonPath("$[?(@.start == '2026-04-12')][1].imageUrl").value("/images/artist/bite/17.png"))
-                .andExpect(jsonPath("$[?(@.start == '2026-10-13')].length()").value(2))
-                .andExpect(jsonPath("$[?(@.start == '2026-10-13')][0].imageUrl").value("/images/artist/bite/7.png"))
-                .andExpect(jsonPath("$[?(@.start == '2026-10-13')][1].imageUrl").value("/images/artist/bite/14.png"));
+                .andExpect(jsonPath("$[0].start").value("2026-01-08"))
+                .andExpect(jsonPath("$[0].title").value("서다현 생일"))
+                .andExpect(jsonPath("$[0].imageUrl").value("/images/artist/bite/10.png"))
+                .andExpect(jsonPath("$[1].start").value("2026-01-08"))
+                .andExpect(jsonPath("$[1].title").value("곽연지 생일"))
+                .andExpect(jsonPath("$[1].imageUrl").value("/images/artist/bite/12.png"))
+                .andExpect(jsonPath("$[2].start").value("2026-04-12"))
+                .andExpect(jsonPath("$[2].title").value("정혜린 생일"))
+                .andExpect(jsonPath("$[2].imageUrl").value("/images/artist/bite/2.png"))
+                .andExpect(jsonPath("$[3].start").value("2026-04-12"))
+                .andExpect(jsonPath("$[3].title").value("린 생일"))
+                .andExpect(jsonPath("$[3].imageUrl").value("/images/artist/bite/17.png"))
+                .andExpect(jsonPath("$[4].start").value("2026-10-13"))
+                .andExpect(jsonPath("$[4].title").value("김나경 생일"))
+                .andExpect(jsonPath("$[4].imageUrl").value("/images/artist/bite/7.png"))
+                .andExpect(jsonPath("$[5].start").value("2026-10-13"))
+                .andExpect(jsonPath("$[5].title").value("박소현 생일"))
+                .andExpect(jsonPath("$[5].imageUrl").value("/images/artist/bite/14.png"));
     }
 
     private Artist birthdayArtist(long id, String name, String engName, String birthDate) {
