@@ -820,51 +820,11 @@
         input._archiveLastFiles = files.slice();
     }
 
-    function slotRoot(form) {
-        return form?.closest('.ar-dialog') || form;
-    }
-
-    function captureSlot(form) {
-        if (kind !== 'image' || !form || form._archiveApplyingSlot) return;
-        const slots = slotsOf(form);
-        if (!slots.length) return;
-        // 초기화(-1)나 미선택 상태에선 슬롯을 덮지 않는다. 합집합 피커가 첫 장 출연진을 오염시키지 않게.
-        const index = form._archiveSlotPreviewIndex;
-        if (!Number.isInteger(index) || index < 0) return;
-        const slot = slots[index];
-        if (!slot) return;
-        slot.artists = selectedArtists(slotRoot(form));
-    }
-
-    /** 피커 출연진을 모든 사진 슬롯에 맞춰, 저장 시 옛 slot.artists가 남지 않게 한다. */
-    function syncAllSlotArtists(form, names) {
-        if (kind !== 'image' || !form) return;
-        const next = Array.isArray(names) ? names.map(String).filter(Boolean) : selectedArtists(slotRoot(form));
-        slotsOf(form).forEach(slot => {
-            slot.artists = next.slice();
-        });
-    }
-
-    function applySlot(form, slot) {
-        if (kind !== 'image' || !form || !slot || !Array.isArray(slot.artists)) return;
-        form._archiveApplyingSlot = true;
-        try {
-            applyArtists(slotRoot(form), slot.artists.join(','), { syncUnits: false });
-        } finally {
-            form._archiveApplyingSlot = false;
-        }
-    }
-
-    function artistRows(form) {
-        return slotsOf(form).map(slot => (Array.isArray(slot.artists) ? slot.artists : selectedArtists(slotRoot(form))).join(','));
-    }
-
     function previewSlot(form, input, index) {
         const slots = slotsOf(form);
         const slot = slots[index];
         const preview = form?.querySelector('.ar-preview');
         if (!slot || !preview) return;
-        if (form._archiveSlotPreviewIndex !== index) captureSlot(form);
         form._archiveSlotPreviewIndex = index;
         if (slot.kind === 'url') {
             if (input) input._archivePreviewIndex = -1;
@@ -874,7 +834,6 @@
             if (input) input._archivePreviewIndex = fileIndex;
             showPreview(preview, rememberUrl(slot.file), { sourceFile: slot.file, index: fileIndex });
         }
-        applySlot(form, slot);
         if (kind === 'image' && input && window.FilePicker) window.FilePicker.select(input, index);
         syncFileName(input);
     }
@@ -1260,7 +1219,7 @@
         ids.forEach(id => body.append('unitIds', id));
     }
 
-    function renderArtists(root, { syncUnits = true } = {}) {
+    function renderArtists(root) {
         if (!root) return;
         const values = selectedArtists(root);
         const count = root.querySelector('[data-picker-count]');
@@ -1284,17 +1243,13 @@
             });
             if (!values.length) chips.textContent = '멤버를 선택하면 여기에 표시됩니다.';
         }
-        if (syncUnits) {
-            window.UnitCheckboxGroup?.syncFromMembers(unitChecksRoot(root), values, {
-                registeredOn: registeredOnOf(root)
-            });
-        }
-        const form = root.querySelector?.('form') || root.closest?.('form');
-        captureSlot(form);
-        syncPreview(form);
+        window.UnitCheckboxGroup?.syncFromMembers(unitChecksRoot(root), values, {
+            registeredOn: registeredOnOf(root)
+        });
+        syncPreview(root.querySelector?.('form') || root.closest?.('form'));
     }
 
-    function applyArtists(root, raw, { allSlots = false, syncUnits = true } = {}) {
+    function applyArtists(root, raw) {
         if (window.MemberPortraitPicker) MemberPortraitPicker.clear(root);
         const names = (raw || "").split(",").map(part => part.trim()).filter(Boolean);
         root.querySelectorAll(".mpp-item").forEach(button => {
@@ -1303,10 +1258,7 @@
                 window.MemberPortraitPicker.setActive(button, true);
             }
         });
-        renderArtists(root, { syncUnits });
-        const form = root.querySelector?.('form') || root.closest?.('form');
-        // 유닛 프리셋은 게시글 전체 출연진을 바꾸므로 모든 사진 슬롯을 맞춘다.
-        if (allSlots) syncAllSlotArtists(form, selectedArtists(root));
+        renderArtists(root);
     }
 
     function bindPicker(root) {
@@ -1321,7 +1273,7 @@
         });
         window.UnitCheckboxGroup?.bindMemberHelper(unitChecksRoot(root), {
             getMembers: () => selectedArtists(root),
-            applyMembers: (names) => applyArtists(root, names.join(','), { allSlots: true }),
+            applyMembers: (names) => applyArtists(root, names.join(',')),
             onChange: () => syncPreview(root.querySelector('form'))
         });
         root.querySelector('form')?.addEventListener('input', (event) => {
@@ -2195,20 +2147,7 @@
         }
         body.delete("artistNames");
         body.delete("extraArtists");
-        captureSlot(uploadForm);
-        const uploadLive = selectedArtists(uploadDialog);
-        // 유닛 체크만으로 전 장 출연진을 덮지 않는다. 유닛 멤버 적용(allSlots)일 때만 syncAllSlotArtists가 돈다.
-        if (kind === 'image' && slotsOf(uploadForm).length > 1) {
-            const names = [];
-            artistRows(uploadForm).forEach(row => row.split(',').forEach(name => {
-                const trimmed = name.trim();
-                if (trimmed && !names.includes(trimmed)) names.push(trimmed);
-            }));
-            names.forEach(name => body.append("artistNames", name));
-            body.set("imageArtistsJson", JSON.stringify(artistRows(uploadForm)));
-        } else {
-            uploadLive.forEach(name => body.append("artistNames", name));
-        }
+        selectedArtists(uploadDialog).forEach(name => body.append("artistNames", name));
         appendSelectedUnit(body, uploadDialog);
         const button = uploadForm.querySelector("[type='submit']");
         if (button) button.disabled = true;
@@ -2301,21 +2240,12 @@
         const existingUrls = kind === 'image'
             ? parseImageUrls(button.dataset.images, button.dataset.url)
             : [];
-        let perImage = [];
-        try {
-            const parsed = JSON.parse(button.dataset.imageArtists || '[]');
-            if (Array.isArray(parsed)) perImage = parsed.map(row => String(row || ''));
-        } catch (_) { perImage = []; }
         const coverUrl = button.dataset.url || existingUrls[0] || '';
         editForm.dataset.originalUrl = coverUrl;
         editForm.dataset.originalImages = JSON.stringify(existingUrls);
-        const shared = (button.dataset.artists || '').split(',').map(name => name.trim()).filter(Boolean);
-        setSlots(editForm, existingUrls.map((url, imageIndex) => ({
+        setSlots(editForm, existingUrls.map(url => ({
             kind: 'url',
-            url,
-            artists: (perImage[imageIndex] || button.dataset.artists || '').split(',').map(name => name.trim()).filter(Boolean).length
-                ? (perImage[imageIndex] || button.dataset.artists || '').split(',').map(name => name.trim()).filter(Boolean)
-                : shared.slice()
+            url
         })), { syncInput: false });
         editForm._archiveCoverSlot = slotsOf(editForm).find(slot => slot.url === coverUrl) || slotsOf(editForm)[0];
         editForm._archiveSlotPreviewIndex = -1;
@@ -2541,19 +2471,7 @@
         if (kind === "video") body.set("title", title);
         else body.set("description", description);
         body.set("registeredOn", registeredOn);
-        // 피커에서 바꾼 출연진이 활성 슬롯에만 반영되게 한다. 소속 유닛은 appendSelectedUnit으로 따로 간다.
-        captureSlot(editForm);
-        const liveNames = selectedArtists(editDialog);
-        const editRows = kind === 'image' ? artistRows(editForm) : [];
-        const editNames = [];
-        (editRows.length ? editRows : [liveNames.join(',')]).forEach(row => {
-            row.split(',').forEach(name => {
-                const trimmed = name.trim();
-                if (trimmed && !editNames.includes(trimmed)) editNames.push(trimmed);
-            });
-        });
-        body.set("artistNames", editNames.join(","));
-        if (kind === 'image' && slots.length > 1) body.set("imageArtistsJson", JSON.stringify(editRows));
+        body.set("artistNames", selectedArtists(editDialog).join(","));
         appendSelectedUnit(body, editDialog);
         const source = editForm.querySelector("[name='source']")?.value || "";
         if (source) body.set("source", source);

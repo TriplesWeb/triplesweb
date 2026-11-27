@@ -374,6 +374,8 @@ ${chemistryModals}
     assert.equal(album.nextHidden, false);
     assert.equal(album.dots, 3);
     assert.equal(album.src, '/one.svg');
+    const albumCast = page.locator('#archiveDetailMembers .unit-member-chip span');
+    assert.deepEqual(await albumCast.allTextContents(), ['지연']);
     await page.click('#archiveDetailNext');
     const slid = await page.evaluate(() => ({
       description: document.getElementById('archiveDetailDescription').textContent.trim(),
@@ -383,6 +385,7 @@ ${chemistryModals}
     assert.equal(slid.description, '묶음');
     assert.equal(slid.count, '2 / 3');
     assert.equal(slid.src, '/two.svg');
+    assert.deepEqual(await albumCast.allTextContents(), ['지연']);
     await page.keyboard.press('ArrowLeft');
     assert.equal(await page.locator('#archiveDetailImage').getAttribute('src'), '/one.svg');
     await page.evaluate(() => { document.getElementById('archiveDetail').hidden = true; });

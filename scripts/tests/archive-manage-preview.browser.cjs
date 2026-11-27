@@ -8,6 +8,7 @@ const staticRoot = path.join(root, 'src/main/resources/static');
 const css = fs.readFileSync(path.join(staticRoot, 'css', 'archive-page.css'), 'utf8');
 const site = fs.readFileSync(path.join(staticRoot, 'css', 'site.css'), 'utf8');
 const siteUi = fs.readFileSync(path.join(staticRoot, 'css', 'site-ui.css'), 'utf8');
+const unitPickerJs = fs.readFileSync(path.join(staticRoot, 'js', 'unit-checkbox-group.js'), 'utf8');
 const pickerJs = fs.readFileSync(path.join(staticRoot, 'js', 'member-portrait-picker.js'), 'utf8');
 const filePickerJs = fs.readFileSync(path.join(staticRoot, 'js', 'file-picker.js'), 'utf8');
 const manageJs = fs.readFileSync(path.join(staticRoot, 'js', 'archive-manage.js'), 'utf8');
@@ -197,7 +198,7 @@ ${site}${css}${siteUi}
 </body></html>`;
 }
 
-function pageHtml(kind) {
+function pageHtml(kind, { postArtists = false } = {}) {
   const isVideo = kind === 'video';
   const noun = isVideo ? '영상' : '사진';
   const previewLabel = '목록에서 보이는 모습';
@@ -220,6 +221,11 @@ function pageHtml(kind) {
   const titleField = isVideo
     ? '<label class="ar-field">제목<input type="text" name="title"></label>'
     : '<label class="ar-field">설명<textarea name="description" rows="3"></textarea></label>';
+  const additionalMembers = postArtists ? ['서연', '혜린'].map(name =>
+    `<button type="button" class="mpp-item" data-value="${name}" aria-pressed="false">${name}</button>`).join('') : '';
+  const unitPicker = postArtists
+    ? '<div data-unit-checks><label><input type="checkbox" value="7" data-members="지연,서연" data-formation-date="2025-06-01"> 테스트 유닛</label></div>'
+    : '';
   return `<!doctype html><html lang="ko"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
@@ -228,7 +234,7 @@ body{margin:0;background:#0d0e12;color:#e3e2e8;font-family:"Pretendard Variable"
 ${site}${css}${siteUi}
 </style></head>
 <body class="site-page site-admin-enabled">
-<main class="archive-page" data-archive-kind="${kind}" data-date-label="${noun} 날짜" data-default-artists="지연">
+<main class="archive-page" data-archive-kind="${kind}" data-date-label="${noun} 날짜" data-default-artists="${postArtists ? '' : '지연'}">
   <section class="ar-grid" id="archiveGrid">
     <article class="ar-panel ar-card" data-id="1" data-title="${isVideo ? '지서연' : ''}" data-description="${isVideo ? '' : '지서연'}" data-headline="지서연" data-artists="지연" data-url="${isVideo ? '/clip.mp4' : '/portrait.svg'}" data-images='${isVideo ? '' : '["/portrait.svg","/poster.svg"]'}' data-registered="2026-10-25" data-thumbnail-url="${isVideo ? '/poster.svg' : ''}" data-source="COSMO_ROOM" data-source-label="코스모룸">
       ${isVideo
@@ -242,7 +248,7 @@ ${site}${css}${siteUi}
         </div>
         <div class="ar-card-members" hidden><span class="unit-member-chip"><span>지연</span></span></div>
       </div>
-      ${isVideo ? '' : `<button type="button" class="site-btn" data-archive-edit data-id="1" data-description="지서연" data-artists="지연" data-url="/portrait.svg" data-images='["/portrait.svg","/poster.svg"]' data-registered="2026-10-25" data-source="COSMO_ROOM">수정하기</button>`}
+      ${isVideo ? '' : `<button type="button" class="site-btn" data-archive-edit ${postArtists ? 'data-unit-ids="7"' : ''} data-id="1" data-description="지서연" data-artists="지연" data-url="/portrait.svg" data-images='["/portrait.svg","/poster.svg"]' data-registered="2026-10-25" data-source="COSMO_ROOM">수정하기</button>`}
     </article>
   </section>
 </main>
@@ -251,12 +257,15 @@ ${site}${css}${siteUi}
     <form id="archiveUploadForm" enctype="multipart/form-data" data-upload-url="/archive/upload/${kind}">
       ${titleField}
       <label class="ar-field">${noun} 날짜<input type="date" name="registeredOn"></label>
+      ${postArtists ? '<select name="source"><option value="COSMO_ROOM">코스모룸</option></select>' : ''}
       <div class="member-portrait-picker" id="archive-upload-picker">
         <button type="button" class="mpp-item" data-value="지연" data-name="지연" data-frame="24" style="--artist-color:#7bba8d" aria-pressed="false">
           <span class="artist-tab-avatar"><img class="artist-tab-photo" src="/portrait.svg" alt=""></span>
           <span class="artist-tab-label">지연</span>
         </button>
+        ${additionalMembers}
       </div>
+      ${unitPicker}
       <div data-artist-chips></div>
       <span data-picker-count>0</span>
       <span class="ar-file">
@@ -266,6 +275,7 @@ ${site}${css}${siteUi}
       </span>
       ${isVideo ? '<input type="file" name="thumbnail" accept="image/*"><div class="ar-thumbnail-preview" data-thumbnail-preview hidden><img alt=""><p data-thumbnail-info></p></div>' : ''}
       ${isVideo ? videoPreviewShell('uploadPreview', '원본') : imagePreviewShell('uploadPreview', '원본')}
+      ${postArtists ? '<button type="submit">저장</button>' : ''}
     </form>
   </div>
 </div>
@@ -280,7 +290,9 @@ ${site}${css}${siteUi}
           <span class="artist-tab-avatar"><img class="artist-tab-photo" src="/portrait.svg" alt=""></span>
           <span class="artist-tab-label">지연</span>
         </button>
+        ${additionalMembers}
       </div>
+      ${unitPicker}
       <div data-artist-chips></div>
       <span data-picker-count>0</span>
       <span class="ar-file">
@@ -290,10 +302,12 @@ ${site}${css}${siteUi}
       </span>
       ${isVideo ? '<input type="file" name="thumbnail" accept="image/*"><input type="hidden" name="clearThumbnail" value="false"><div class="ar-thumbnail-preview" data-thumbnail-preview hidden><img alt=""><p data-thumbnail-info></p></div>' : ''}
       ${isVideo ? videoPreviewShell('editPreview', '현재 ' + noun) : imagePreviewShell('editPreview', '현재 사진')}
+      ${postArtists ? '<button type="submit">저장</button>' : ''}
     </form>
   </div>
 </div>
 <script>${pickerJs}</script>
+${postArtists ? `<script>${unitPickerJs}</script>` : ''}
 <script>${manageJs}</script>
 ${isVideo ? videoDialog + '<script>' + videoJs + '</script>' : ''}
 </body></html>`;
@@ -349,7 +363,98 @@ async function withPage(html, run, { filePicker = false } = {}) {
   }
 }
 
+async function archiveSave(page, form, pathname) {
+  const saved = page.waitForResponse(response =>
+    response.request().method() === 'POST' && new URL(response.url()).pathname === pathname);
+  await form.locator('[type="submit"]').click();
+  await page.getByRole('alertdialog').getByRole('button', { name: '확인' }).click();
+  const response = await saved;
+  assert.equal(response.status(), 200);
+  await form.locator('[type="submit"]:enabled').waitFor();
+  const request = response.request();
+  return new Request(request.url(), {
+    method: 'POST',
+    headers: { 'content-type': request.headers()['content-type'] },
+    body: request.postDataBuffer()
+  }).formData();
+}
+
+function checkedCast(form) {
+  return form.locator('.mpp-item[aria-pressed="true"]').evaluateAll(items => items.map(item => item.dataset.value));
+}
+
+async function assertPostArtists(page) {
+  await page.addInitScript(() => {
+    window.refreshArchiveGrid = async () => {};
+  });
+  await page.route('**/archive/{upload/image,1}', route => route.request().method() === 'POST'
+    ? route.fulfill({ status: 200, body: 'ok' })
+    : route.fallback());
+  const files = ['first.svg', 'second.svg'].map(name => ({
+    name, mimeType: 'image/svg+xml', buffer: Buffer.from(svg)
+  }));
+  const cases = [
+    { initialMembers: [], changeMember: '서연', expected: ['지연'] },
+    { initialMembers: [], changeMember: '혜린', expected: ['지연', '서연', '혜린'] },
+    { initialMembers: ['지연'], expected: ['지연'] },
+    { initialMembers: ['지연', '서연'], autoMatch: true, expected: ['지연', '서연'] }
+  ];
+  for (const date of ['2025-05-01', '2025-07-01']) {
+    for (const count of [1, 2]) {
+      for (const { initialMembers, changeMember, autoMatch, expected } of cases) {
+        await page.reload();
+        await page.evaluate(() => window.showAddModal());
+        const form = page.locator('#archiveUploadForm');
+        const unit = form.getByRole('checkbox');
+        const member = name => form.locator(`.mpp-item[data-value="${name}"]`);
+        await form.locator('[name="registeredOn"]').fill(date);
+        await form.locator('[name="file"]').setInputFiles(files.slice(0, count));
+        for (const name of initialMembers) await member(name).click();
+        if (!autoMatch) {
+          await unit.check();
+          if (!initialMembers.length) assert.deepEqual(await checkedCast(form), ['지연', '서연']);
+        }
+        if (changeMember) await member(changeMember).click();
+        if (count === 2) {
+          await form.locator('.ar-file-thumb').nth(1).click();
+          assert.deepEqual(await checkedCast(form), expected);
+          await form.locator('.ar-file-thumb').first().click();
+        }
+        assert.deepEqual(await checkedCast(form), expected);
+        const unitSelected = !autoMatch || date >= '2025-06-01';
+        assert.equal(await unit.isChecked(), unitSelected);
+        await page.locator('#uploadPreview:not([hidden]):not([data-pending])').waitFor();
+        const body = await archiveSave(page, form, '/archive/upload/image');
+        assert.deepEqual(body.getAll('artistNames'), expected);
+        assert.deepEqual(body.getAll('unitIds'), unitSelected ? ['7'] : []);
+        assert.equal(body.getAll('file').length, count);
+        assert.equal(body.has('imageArtistsJson'), false);
+      }
+    }
+
+    await page.reload();
+    const editButton = page.locator('[data-archive-edit]');
+    await editButton.evaluate((button, date) => { button.dataset.registered = date; }, date);
+    await editButton.click();
+    const edit = page.locator('#archiveEditForm');
+    await edit.locator('.ar-file-thumb').nth(1).waitFor();
+    assert.equal(await edit.locator('[name="registeredOn"]').inputValue(), date);
+    assert.deepEqual(await checkedCast(edit), ['지연']);
+    assert.equal(await edit.getByRole('checkbox').isChecked(), true);
+    await edit.locator('.mpp-item[data-value="혜린"]').click();
+    await edit.locator('.ar-file-thumb').nth(1).click();
+    assert.deepEqual(await checkedCast(edit), ['지연', '혜린']);
+    const body = await archiveSave(page, edit, '/archive/1');
+    assert.equal(body.get('artistNames'), '지연,혜린');
+    assert.deepEqual(body.getAll('unitIds'), ['7']);
+    assert.deepEqual(JSON.parse(body.get('keepImageUrlsJson')), ['/portrait.svg', '/poster.svg']);
+    assert.equal(body.has('imageArtistsJson'), false);
+  }
+}
+
 (async () => {
+  await withPage(pageHtml('image', { postArtists: true }), assertPostArtists);
+
   await withPage(pageHtml('image'), async (page) => {
     const artifactDir = fs.existsSync('/opt/cursor/artifacts') ? '/opt/cursor/artifacts' : '/tmp/objekt-ui';
     fs.mkdirSync(artifactDir, { recursive: true });
