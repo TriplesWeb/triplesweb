@@ -99,8 +99,9 @@ SET m.tab = 'external',
     m.view_count = IF(m.view_count = 0, curated.views, m.view_count),
     m.published_on = COALESCE(m.published_on, curated.published_on);
 
-INSERT INTO media (youtube_id, tab, media_title, media_dur, view_count, published_on, curated_external)
-SELECT curated.youtube_id, 'external', curated.title, curated.duration, curated.views, curated.published_on, TRUE
+INSERT INTO media (youtube_id, tab, media_title, media_dur, view_count, published_on, sort_order, curated_external)
+SELECT curated.youtube_id, 'external', curated.title, curated.duration, curated.views, curated.published_on,
+       YEAR(curated.published_on) * 10000 + MONTH(curated.published_on) * 100 + DAY(curated.published_on), TRUE
 FROM tmp_curated_external_media curated
 WHERE NOT EXISTS (
     SELECT 1 FROM media m WHERE BINARY LOWER(m.youtube_id) = BINARY LOWER(curated.youtube_id)
